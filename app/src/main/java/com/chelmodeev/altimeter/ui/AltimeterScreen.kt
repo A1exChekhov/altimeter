@@ -1,0 +1,996 @@
+package com.chelmodeev.altimeter.ui
+
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.FiberManualRecord
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.MonitorHeart
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.material.icons.rounded.Watch
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.chelmodeev.altimeter.R
+import com.chelmodeev.altimeter.model.Advice
+import com.chelmodeev.altimeter.model.AdviceKind
+import com.chelmodeev.altimeter.model.AdviceSeverity
+import com.chelmodeev.altimeter.model.AltUnit
+import com.chelmodeev.altimeter.model.CalibrationMode
+import com.chelmodeev.altimeter.model.MslSource
+import com.chelmodeev.altimeter.model.UiState
+import com.chelmodeev.altimeter.ui.theme.zoneAccent
+import com.chelmodeev.altimeter.util.Fmt
+import kotlin.math.abs
+import kotlin.math.roundToInt
+
+data class ScreenActions(
+    val onSendWatch: () -> Unit,
+    val onWearEngine: () -> Unit,
+    val onRefreshVitals: () -> Unit,
+    val onRequestHealth: () -> Unit,
+    val onGrantLocation: () -> Unit,
+    val onSetUnit: (AltUnit) -> Unit,
+    val onCalibAuto: () -> Unit,
+    val onCalibManual: (String) -> Unit,
+    val onCalibQnh: (String) -> Unit,
+    val onToggleTopo: (Boolean) -> Unit,
+    val onToggleKeepOn: (Boolean) -> Unit,
+    val onToggleAutoSend: (Boolean) -> Unit,
+    val onResetStats: () -> Unit,
+    val onStartTrack: () -> Unit,
+    val onStopTrack: () -> Unit,
+    val onShareTrack: (String) -> Unit,
+)
+
+@Composable
+fun AltimeterScreen(state: UiState, actions: ScreenActions) {
+    val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
+    var showSettings by remember { mutableStateOf(false) }
+    var mapExpanded by remember { mutableStateOf(false) }
+    val mapHeight by animateDpAsState(if (mapExpanded) 470.dp else 210.dp, label = "mapHeight")
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(340.dp)
+                .background(
+                    Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent))
+                )
+        )
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp)
+        ) {
+            HeaderRow(onSettings = { showSettings = true })
+            Spacer(Modifier.height(4.dp))
+            Readout(state, accent)
+            Spacer(Modifier.height(16.dp))
+            StatusChipsRow(state)
+            if (!state.locationPermissionGranted) {
+                Spacer(Modifier.height(14.dp))
+                PermissionCard(actions.onGrantLocation)
+            }
+            Spacer(Modifier.height(14.dp))
+            MapCard(
+                latitude = state.latitude,
+                longitude = state.longitude,
+                accuracyMeters = state.gpsAccuracy,
+                topo = state.topoMap,
+                accent = accent,
+                expanded = mapExpanded,
+                onToggleExpanded = { mapExpanded = !mapExpanded },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(mapHeight),
+            )
+            Spacer(Modifier.height(14.dp))
+            TrackCard(state, actions)
+            if (state.advices.isNotEmpty()) {
+                Spacer(Modifier.height(14.dp))
+                AdviceCard(state.advices)
+            }
+            Spacer(Modifier.height(14.dp))
+            VitalsCard(state, actions)
+            Spacer(Modifier.height(14.dp))
+            ChartCard(state, accent)
+            Spacer(Modifier.height(14.dp))
+            DetailsGrid(state)
+            Spacer(Modifier.height(14.dp))
+            WatchCard(state, actions)
+            Spacer(Modifier.height(18.dp))
+            Footer()
+            Spacer(Modifier.navigationBarsPadding())
+            Spacer(Modifier.height(6.dp))
+        }
+
+        if (showSettings) {
+            SettingsSheet(state = state, actions = actions, onDismiss = { showSettings = false })
+        }
+    }
+}
+
+@Composable
+private fun HeaderRow(onSettings: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.brand_name),
+                fontSize = 9.5.sp,
+                letterSpacing = 3.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+            )
+            Text(
+                text = stringResource(R.string.app_name).uppercase(),
+                fontSize = 13.sp,
+                letterSpacing = 4.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onSettings) {
+            Icon(
+                Icons.Rounded.Settings,
+                contentDescription = stringResource(R.string.cd_settings),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun Readout(state: UiState, accent: Color) {
+    val context = LocalContext.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        if (state.altitude != null) {
+            Text(
+                text = Fmt.altitudeValue(state.altitude, state.unit),
+                style = TextStyle(
+                    fontSize = 86.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-2).sp,
+                    fontFeatureSettings = "tnum",
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White, accent.copy(alpha = 0.85f))
+                    ),
+                ),
+                maxLines = 1,
+            )
+            Text(
+                text = "${Fmt.unitLabel(context, state.unit)} · ${stringResource(R.string.above_sea_level)}",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                text = "– – – –",
+                fontSize = 64.sp,
+                fontWeight = FontWeight.Light,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(
+                    when {
+                        !state.locationPermissionGranted -> R.string.perm_needed
+                        state.isCalibrating -> R.string.waiting_calibration
+                        else -> R.string.waiting_fix
+                    }
+                ),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 10.dp),
+        ) {
+            val accuracy = state.accuracy
+            if (state.altitude != null && accuracy != null) {
+                Pill(text = Fmt.accuracy(context, accuracy, state.unit), color = accent)
+            }
+            val vs = state.verticalSpeedMpm
+            if (vs != null && abs(vs) >= 0.5) {
+                Pill(
+                    text = Fmt.vspeed(context, vs, state.unit),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    icon = {
+                        Icon(
+                            when {
+                                vs >= 0.5 -> Icons.AutoMirrored.Rounded.TrendingUp
+                                vs <= -0.5 -> Icons.AutoMirrored.Rounded.TrendingDown
+                                else -> Icons.AutoMirrored.Rounded.TrendingFlat
+                            },
+                            contentDescription = null,
+                            tint = accent,
+                            modifier = Modifier.size(15.dp),
+                        )
+                    },
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 12.dp),
+        ) {
+            Icon(
+                Icons.Rounded.Place,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(15.dp),
+            )
+            Spacer(Modifier.size(5.dp))
+            Text(
+                text = state.placeName
+                    ?: if (state.latitude != null) stringResource(R.string.place_unknown) else "—",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        if (state.latitude != null && state.longitude != null) {
+            Text(
+                text = Fmt.coords(state.latitude, state.longitude),
+                fontSize = 11.5.sp,
+                letterSpacing = 0.6.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun Pill(text: String, color: Color, icon: (@Composable () -> Unit)? = null) {
+    Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.06f)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+        ) {
+            icon?.invoke()
+            Text(text = text, fontSize = 12.5.sp, fontWeight = FontWeight.Medium, color = color)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StatusChipsRow(state: UiState) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        StatusChip(
+            text = if (state.hasFix) {
+                stringResource(R.string.chip_gps, state.satellitesUsed, state.satellitesTotal)
+            } else {
+                stringResource(R.string.chip_gps_search)
+            },
+            dotColor = if (state.hasFix) Color(0xFF6FCF97) else Color(0xFFF2B94B),
+        )
+        StatusChip(
+            text = stringResource(if (state.hasBarometer) R.string.chip_baro else R.string.chip_no_baro),
+            dotColor = if (state.hasBarometer) Color(0xFF6FCF97) else Color(0xFF8FA3C2),
+        )
+        StatusChip(
+            text = stringResource(
+                when (state.calibrationMode) {
+                    CalibrationMode.AUTO_GPS -> R.string.chip_calib_auto
+                    CalibrationMode.MANUAL_ALTITUDE -> R.string.chip_calib_manual
+                    CalibrationMode.QNH -> R.string.chip_calib_qnh
+                }
+            ),
+            dotColor = Color(0xFF7FB4FF),
+        )
+        if (state.mslSource != MslSource.NONE) {
+            StatusChip(
+                text = stringResource(
+                    when (state.mslSource) {
+                        MslSource.API34 -> R.string.src_api34
+                        MslSource.NMEA_MSL -> R.string.src_nmea
+                        MslSource.GEOID_CORRECTED -> R.string.src_geoid
+                        else -> R.string.src_ellipsoid
+                    }
+                ),
+                dotColor = Color(0xFF4DD0C4),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusChip(text: String, dotColor: Color) {
+    Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.05f)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+            Box(
+                Modifier
+                    .size(7.dp)
+                    .background(dotColor, CircleShape)
+            )
+            Text(
+                text = text,
+                fontSize = 11.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+fun SectionCard(content: @Composable () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp)) { content() }
+    }
+}
+
+@Composable
+private fun PermissionCard(onGrant: () -> Unit) {
+    SectionCard {
+        Text(
+            text = stringResource(R.string.perm_needed),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(10.dp))
+        Button(onClick = onGrant) { Text(stringResource(R.string.grant_permission)) }
+    }
+}
+
+@Composable
+private fun AdviceCard(advices: List<Advice>) {
+    SectionCard {
+        Text(
+            text = stringResource(R.string.advice_title),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(10.dp))
+        advices.forEach { advice ->
+            Row(modifier = Modifier.padding(vertical = 5.dp)) {
+                val (icon, tint) = when (advice.severity) {
+                    AdviceSeverity.WARNING -> Icons.Rounded.Error to Color(0xFFFF8A80)
+                    AdviceSeverity.CAUTION -> Icons.Rounded.WarningAmber to Color(0xFFF2B94B)
+                    AdviceSeverity.INFO -> Icons.Rounded.Lightbulb to Color(0xFF4DD0C4)
+                }
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.size(9.dp))
+                Text(
+                    text = adviceText(advice),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.advice_disclaimer),
+            fontSize = 10.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun adviceText(a: Advice): String = when (a.kind) {
+    AdviceKind.PRESSURE_FALLING_FAST ->
+        stringResource(R.string.advice_pressure_falling_fast, a.value.orEmpty())
+    AdviceKind.PRESSURE_FALLING ->
+        stringResource(R.string.advice_pressure_falling, a.value.orEmpty())
+    AdviceKind.PRESSURE_RISING -> stringResource(R.string.advice_pressure_rising)
+    AdviceKind.ALTITUDE_ACCLIMATIZE -> stringResource(R.string.advice_alt_acclimatize)
+    AdviceKind.ALTITUDE_HIGH -> stringResource(R.string.advice_alt_high)
+    AdviceKind.ALTITUDE_VERY_HIGH -> stringResource(R.string.advice_alt_very_high)
+    AdviceKind.FAST_ASCENT -> stringResource(R.string.advice_fast_ascent)
+    AdviceKind.HYDRATION -> stringResource(R.string.advice_hydration)
+    AdviceKind.SPO2_LOW -> stringResource(R.string.advice_spo2_low, a.value.orEmpty())
+    AdviceKind.SPO2_VERY_LOW -> stringResource(R.string.advice_spo2_very_low, a.value.orEmpty())
+    AdviceKind.HR_HIGH -> stringResource(R.string.advice_hr_high, a.value.orEmpty())
+    AdviceKind.GPS_WEAK -> stringResource(R.string.advice_gps_weak)
+}
+
+@Composable
+private fun VitalsCard(state: UiState, actions: ScreenActions) {
+    val context = LocalContext.current
+    val vitals = state.vitals
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Rounded.MonitorHeart,
+                contentDescription = null,
+                tint = Color(0xFFFF8A80),
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = stringResource(R.string.vitals_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (vitals.permissionsGranted) {
+                if (vitals.refreshing) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            Icons.Rounded.Refresh,
+                            contentDescription = stringResource(R.string.vitals_refresh),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        when {
+            !vitals.available -> {
+                Text(
+                    text = stringResource(
+                        if (vitals.needsProviderInstall) R.string.vitals_install_provider
+                        else R.string.vitals_unavailable
+                    ),
+                    fontSize = 13.sp,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.vitals_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            !vitals.permissionsGranted -> {
+                Text(
+                    text = stringResource(R.string.vitals_hint),
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                FilledTonalButton(onClick = actions.onRequestHealth) {
+                    Text(stringResource(R.string.vitals_grant))
+                }
+            }
+            else -> {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    VitalStat(
+                        label = stringResource(R.string.vitals_hr),
+                        value = vitals.heartRateBpm?.toString() ?: "—",
+                        unit = stringResource(R.string.vitals_bpm),
+                        atMs = vitals.heartRateAtMs,
+                        color = Color(0xFFFF8A80),
+                        modifier = Modifier.weight(1f),
+                    )
+                    VitalStat(
+                        label = stringResource(R.string.vitals_spo2),
+                        value = vitals.spo2Percent?.let { "${it.roundToInt()}%" } ?: "—",
+                        unit = "",
+                        atMs = vitals.spo2AtMs,
+                        color = Color(0xFF80D8FF),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (vitals.heartRateBpm == null && vitals.spo2Percent == null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.vitals_no_data),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (vitals.hrSeries.size >= 2) {
+                    Spacer(Modifier.height(12.dp))
+                    HrSparkline(
+                        series = vitals.hrSeries,
+                        color = Color(0xFFFF8A80),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.vitals_auto),
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VitalStat(
+    label: String,
+    value: String,
+    unit: String,
+    atMs: Long?,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White.copy(alpha = 0.04f),
+        modifier = modifier,
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    style = TextStyle(
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFeatureSettings = "tnum",
+                    ),
+                    color = color,
+                )
+                if (unit.isNotEmpty()) {
+                    Spacer(Modifier.size(4.dp))
+                    Text(
+                        text = unit,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
+            }
+            if (atMs != null) {
+                Text(
+                    text = stringResource(R.string.vitals_updated, Fmt.timeShort(context, atMs)),
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HrSparkline(series: List<Pair<Long, Long>>, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        if (series.size < 2) return@Canvas
+        val t0 = series.first().first
+        val t1 = series.last().first
+        if (t1 <= t0) return@Canvas
+        val minV = (series.minOf { it.second } - 5).coerceAtLeast(30)
+        val maxV = (series.maxOf { it.second } + 5).coerceAtMost(220)
+        val range = (maxV - minV).coerceAtLeast(1)
+        val path = androidx.compose.ui.graphics.Path()
+        series.forEachIndexed { i, (t, v) ->
+            val x = (t - t0).toFloat() / (t1 - t0).toFloat() * size.width
+            val y = size.height - (v - minV).toFloat() / range.toFloat() * size.height
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(
+            path = path,
+            color = color.copy(alpha = 0.8f),
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+        )
+    }
+}
+
+@Composable
+private fun ChartCard(state: UiState, accent: Color) {
+    SectionCard {
+        Text(
+            text = stringResource(R.string.chart_title),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(10.dp))
+        if (state.history.size < 2) {
+            Text(
+                text = stringResource(R.string.chart_empty),
+                fontSize = 12.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            AltitudeChart(
+                points = state.history,
+                unit = state.unit,
+                accent = accent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(170.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailsGrid(state: UiState) {
+    val context = LocalContext.current
+    val cells = buildList {
+        add(
+            stringResource(R.string.detail_pressure) to
+                (state.pressureHpa?.let { Fmt.pressure(context, it) } ?: "—")
+        )
+        add(
+            stringResource(R.string.detail_vacc) to
+                (state.gpsVertAccuracy?.let { Fmt.accuracy(context, it.toDouble(), state.unit) } ?: "—")
+        )
+        add(
+            stringResource(R.string.detail_ascent) to
+                Fmt.altitudeSigned(context, state.totalAscent, state.unit)
+        )
+        add(
+            stringResource(R.string.detail_descent) to
+                Fmt.altitudeSigned(context, -state.totalDescent, state.unit)
+        )
+        add(
+            stringResource(R.string.detail_min) to
+                (state.minAltitude?.let { Fmt.altitude(context, it, state.unit) } ?: "—")
+        )
+        add(
+            stringResource(R.string.detail_max) to
+                (state.maxAltitude?.let { Fmt.altitude(context, it, state.unit) } ?: "—")
+        )
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        cells.chunked(2).forEach { rowCells ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                rowCells.forEach { (label, value) ->
+                    DetailCell(label, value, Modifier.weight(1f))
+                }
+                if (rowCells.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailCell(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
+        modifier = modifier,
+    ) {
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+                text = value,
+                style = TextStyle(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFeatureSettings = "tnum",
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WatchCard(state: UiState, actions: ScreenActions) {
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Rounded.Watch,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = stringResource(R.string.watch_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        state.watch.statusText?.let {
+            Spacer(Modifier.height(8.dp))
+            Text(text = it, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.primary)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.watch_hint),
+            fontSize = 12.sp,
+            lineHeight = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FilledTonalButton(
+                onClick = actions.onSendWatch,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.watch_send))
+            }
+            OutlinedButton(
+                onClick = actions.onWearEngine,
+                enabled = !state.watch.busy,
+                modifier = Modifier.weight(1f),
+            ) {
+                if (state.watch.busy) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.watch_wear_engine))
+                }
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 6.dp),
+        ) {
+            Switch(checked = state.autoSendToWatch, onCheckedChange = actions.onToggleAutoSend)
+            Spacer(Modifier.size(10.dp))
+            Text(text = stringResource(R.string.watch_auto), fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun TrackCard(state: UiState, actions: ScreenActions) {
+    val context = LocalContext.current
+    val t = state.tracking
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (t.recording) {
+                val transition = rememberInfiniteTransition(label = "rec")
+                val recAlpha by transition.animateFloat(
+                    initialValue = 0.35f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+                    label = "recAlpha",
+                )
+                Box(
+                    Modifier
+                        .size(10.dp)
+                        .background(Color(0xFFFF5252).copy(alpha = recAlpha), CircleShape)
+                )
+            } else {
+                Icon(
+                    Icons.Rounded.Route,
+                    contentDescription = null,
+                    tint = Color(0xFF4DD0C4),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = stringResource(R.string.track_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (t.recording) {
+                Text(
+                    text = Fmt.duration(System.currentTimeMillis() - t.startedAtMs),
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFeatureSettings = "tnum",
+                    ),
+                    color = Color(0xFFFF8A80),
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+
+        if (t.recording) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TrackMiniStat(
+                    label = stringResource(R.string.track_points),
+                    value = "${t.points}",
+                    modifier = Modifier.weight(1f),
+                )
+                TrackMiniStat(
+                    label = stringResource(R.string.track_distance),
+                    value = Fmt.distance(context, t.distanceM),
+                    modifier = Modifier.weight(1f),
+                )
+                TrackMiniStat(
+                    label = stringResource(R.string.detail_ascent),
+                    value = Fmt.altitude(context, t.ascentM, state.unit),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = actions.onStopTrack,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8C3A33),
+                    contentColor = Color.White,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Rounded.Stop, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.track_stop))
+            }
+        } else {
+            FilledTonalButton(
+                onClick = actions.onStartTrack,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    Icons.Rounded.FiberManualRecord,
+                    contentDescription = null,
+                    tint = Color(0xFFFF5252),
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(stringResource(R.string.track_start))
+            }
+            if (t.lastSavedName != null) {
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = stringResource(R.string.track_saved, t.lastSavedName),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = { t.lastSavedPath?.let(actions.onShareTrack) },
+                        modifier = Modifier.size(30.dp),
+                    ) {
+                        Icon(
+                            Icons.Rounded.Share,
+                            contentDescription = stringResource(R.string.track_share),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.track_hint),
+                fontSize = 10.5.sp,
+                lineHeight = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrackMiniStat(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(
+            text = label,
+            fontSize = 10.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = TextStyle(
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFeatureSettings = "tnum",
+            ),
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun Footer() {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.settings_about),
+            fontSize = 10.sp,
+            lineHeight = 14.sp,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.brand_rights),
+            fontSize = 10.sp,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}

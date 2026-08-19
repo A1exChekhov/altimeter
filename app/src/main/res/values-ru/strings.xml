@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Альтиметр</string>
+    <string name="brand_rights">© 2026 Errarium™ · Все права защищены.</string>
+
+    <string name="above_sea_level">над уровнем моря</string>
+    <string name="waiting_fix">Ищу спутники…</string>
+    <string name="waiting_calibration">Калибруюсь по GPS…</string>
+    <string name="place_unknown">Определяю место…</string>
+    <string name="perm_needed">Для измерения высоты и карты нужен доступ к геолокации.</string>
+    <string name="grant_permission">Разрешить доступ</string>
+
+    <string name="chip_gps">GPS %1$d/%2$d</string>
+    <string name="chip_gps_search">GPS: поиск</string>
+    <string name="chip_baro">барометр</string>
+    <string name="chip_no_baro">без барометра</string>
+    <string name="chip_calib_auto">АВТО</string>
+    <string name="chip_calib_manual">РУЧН</string>
+    <string name="chip_calib_qnh">QNH</string>
+
+    <string name="src_api34">MSL</string>
+    <string name="src_nmea">MSL·NMEA</string>
+    <string name="src_geoid">геоид</string>
+    <string name="src_ellipsoid">эллипсоид</string>
+
+    <string name="accuracy_fmt">±%1$s %2$s</string>
+
+    <string name="chart_title">Высота · последний час</string>
+    <string name="chart_empty">График появится через пару минут…</string>
+
+    <string name="detail_pressure">Давление</string>
+    <string name="detail_vacc">Верт. точность GPS</string>
+    <string name="detail_ascent">Подъём</string>
+    <string name="detail_descent">Спуск</string>
+    <string name="detail_min">Минимум</string>
+    <string name="detail_max">Максимум</string>
+
+    <string name="unit_m">м</string>
+    <string name="unit_ft">фт</string>
+    <string name="unit_km">км</string>
+    <string name="unit_hpa">гПа</string>
+    <string name="vspeed_m">м/мин</string>
+    <string name="vspeed_ft">фт/мин</string>
+
+    <string name="map_locating">Жду координаты…</string>
+
+    <string name="watch_title">Часы Huawei</string>
+    <string name="watch_hint">Кнопка «На часы» отправляет высоту уведомлением, которое Huawei Health зеркалирует на часы. Включите показ уведомлений этого приложения в настройках Huawei Health.</string>
+    <string name="watch_send">На часы</string>
+    <string name="watch_wear_engine">Wear Engine</string>
+    <string name="watch_auto">Автоотправка каждые 5 мин</string>
+    <string name="watch_notif_sent">Уведомление отправлено — проверьте часы</string>
+    <string name="watch_notif_denied">Сначала разрешите приложению уведомления</string>
+    <string name="watch_no_data">Высота ещё не измерена — подождите</string>
+
+    <string name="we_auth_cancelled">Авторизация отклонена в Huawei Health</string>
+    <string name="we_no_devices">В Huawei Health не найдено привязанных часов</string>
+    <string name="we_sent">Отправлено через Wear Engine ✓</string>
+    <string name="we_sending">Подключаюсь к часам…</string>
+    <string name="we_error">Wear Engine: ошибка %1$s. Проверьте: установлен и авторизован Huawei Health; приложение зарегистрировано в AppGallery Connect с доступом Wear Engine; в gradle.properties указаны пакет и отпечаток приложения на часах.</string>
+
+    <string name="settings">Настройки</string>
+    <string name="settings_units">Единицы</string>
+    <string name="settings_calibration">Калибровка</string>
+    <string name="calib_auto">Авто (GPS)</string>
+    <string name="calib_manual">Вручную</string>
+    <string name="calib_qnh">QNH</string>
+    <string name="calib_auto_desc">Барометр непрерывно привязывается к высоте GPS. Рекомендуется.</string>
+    <string name="calib_manual_desc">Введите известную высоту текущей точки (табличка на тропе, отметка вершины).</string>
+    <string name="calib_qnh_desc">Введите давление на уровне моря QNH ближайшего аэропорта (METAR).</string>
+    <string name="calib_manual_need_baro">Ручная калибровка и QNH требуют барометра.</string>
+    <string name="calib_known_altitude">Известная высота, %1$s</string>
+    <string name="calib_qnh_value">QNH, гПа</string>
+    <string name="apply">Применить</string>
+
+    <string name="settings_map">Карта</string>
+    <string name="settings_map_topo">Топографическая карта (OpenTopoMap)</string>
+    <string name="settings_keep_on">Не гасить экран</string>
+    <string name="settings_reset">Сбросить статистику</string>
+    <string name="settings_about">Высота: барометр + GPS (поправка NMEA/геоид). Карты: © участники OpenStreetMap, © OpenTopoMap. Названия мест: Nominatim.</string>
+
+    <string name="notif_channel">Высота</string>
+    <string name="notif_channel_tracking">Запись трека</string>
+
+    <string name="track_title">Запись трека (GPX)</string>
+    <string name="track_start">Начать запись</string>
+    <string name="track_stop">Стоп</string>
+    <string name="track_points">точек</string>
+    <string name="track_distance">дистанция</string>
+    <string name="track_saved">Сохранён: %1$s</string>
+    <string name="track_share">Поделиться треком</string>
+    <string name="track_hint">Запись идёт в фоне (и при выключенном экране). Файлы: Android/data/com.chelmodeev.altimeter/files/tracks</string>
+    <string name="track_notif_title">Идёт запись трека</string>
+
+    <string name="vitals_title">Пульс и SpO₂</string>
+    <string name="vitals_hr">Пульс</string>
+    <string name="vitals_spo2">Кислород (SpO₂)</string>
+    <string name="vitals_bpm">уд/мин</string>
+    <string name="vitals_grant">Дать доступ</string>
+    <string name="vitals_unavailable">Health Connect недоступен на этом телефоне</string>
+    <string name="vitals_install_provider">Установите/обновите приложение Health Connect</string>
+    <string name="vitals_hint">Измеряют часы, данные приходят через Huawei Health → Health Connect. Включите синхронизацию с Health Connect в Huawei Health (Я → Настройки).</string>
+    <string name="vitals_no_data">Пока нет данных — включите синхронизацию в Huawei Health</string>
+    <string name="vitals_updated">обновлено %1$s</string>
+    <string name="vitals_refresh">Обновить</string>
+    <string name="vitals_auto">Проверяется автоматически каждые 5 мин</string>
+
+    <string name="advice_title">Советы и предупреждения</string>
+    <string name="advice_pressure_falling_fast">Давление быстро падает (−%1$s гПа/ч) — возможна резкая порча погоды, гроза. Подумайте об укрытии или спуске.</string>
+    <string name="advice_pressure_falling">Давление падает (−%1$s гПа/ч) — погода может испортиться.</string>
+    <string name="advice_pressure_rising">Давление растёт — погода, скорее всего, улучшается.</string>
+    <string name="advice_alt_acclimatize">Выше 2500 м возможна горная болезнь — набирайте высоту постепенно, следите за самочувствием.</string>
+    <string name="advice_alt_high">Выше 3000 м: набирайте не более 300–500 м высоты ночёвки в день, пейте больше воды.</string>
+    <string name="advice_alt_very_high">Выше 4000 м: высокий риск горной болезни. Головная боль, тошнота, головокружение — немедленно вниз.</string>
+    <string name="advice_fast_ascent">Быстрый набор высоты — для акклиматизации лучше сбавить темп.</string>
+    <string name="advice_hydration">На высоте организм быстрее теряет воду — пейте регулярно.</string>
+    <string name="advice_spo2_low">SpO₂ %1$s%% понижен — сделайте паузу и отдохните. При плохом самочувствии спускайтесь.</string>
+    <string name="advice_spo2_very_low">SpO₂ %1$s%% низкий — остановитесь, отдохните, согрейтесь. Если не растёт или самочувствие плохое — спуск и за помощью.</string>
+    <string name="advice_hr_high">Пульс %1$s уд/мин на высоте — сделайте паузу, восстановитесь.</string>
+    <string name="advice_gps_weak">Слабый сигнал GPS — точность высоты снижена. Выйдите на открытое место.</string>
+    <string name="advice_disclaimer">Подсказки информационные и не являются медицинской рекомендацией.</string>
+
+    <string name="cd_settings">Настройки</string>
+    <string name="cd_expand_map">Развернуть карту</string>
+    <string name="cd_collapse_map">Свернуть карту</string>
+    <string name="cd_center_map">Центрировать на мне</string>
+    <string name="cd_map_layer">Слой карты</string>
+</resources>

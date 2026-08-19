@@ -1,0 +1,38 @@
+{
+  "app": {
+    "bundleName": "com.chelmodeev.altimeter.watch",
+    "vendor": "errarium",
+    "version": {
+      "code": 1,
+      "name": "1.0"
+    },
+    "apiVersion": {
+      "compatible": 6,
+      "target": 6
+    }
+  },
+  "deviceConfig": {},
+  "module": {
+    "package": "com.chelmodeev.altimeter.watch",
+    "deviceType": [
+      "liteWearable"
+    ],
+    "distro": {
+      "deliveryWithInstall": true,
+      "moduleName": "entry",
+      "moduleType": "entry"
+    },
+    "js": [
+      {
+        "pages": [
+          "pages/index/index"
+        ],
+        "name": "default",
+        "window": {
+          "designWidth": 454,
+          "autoDesignWidth": true
+        }
+      }
+    ]
+  }
+}

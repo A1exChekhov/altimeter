@@ -1,0 +1,17 @@
+<div class="page">
+    <text class="brand">ERRARIUM</text>
+    <text class="altitude">{{ altitude }}</text>
+    <text class="unit">{{ unit }} над ур. моря</text>
+    <text class="place">{{ place }}</text>
+    <div class="row">
+        <div class="stat">
+            <text class="stat-label">пульс</text>
+            <text class="stat-value hr">{{ hr }}</text>
+        </div>
+        <div class="stat">
+            <text class="stat-label">SpO₂</text>
+            <text class="stat-value spo2">{{ spo2 }}</text>
+        </div>
+    </div>
+    <text class="updated">{{ updated }}</text>
+</div>

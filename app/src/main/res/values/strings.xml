@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Altimeter</string>
+    <string name="brand_name" translatable="false">ERRARIUM™</string>
+    <string name="brand_rights">© 2026 Errarium™ · All rights reserved.</string>
+
+    <string name="above_sea_level">above sea level</string>
+    <string name="waiting_fix">Searching for satellites…</string>
+    <string name="waiting_calibration">Calibrating with GPS…</string>
+    <string name="place_unknown">Determining place…</string>
+    <string name="perm_needed">Location access is required to measure altitude and show the map.</string>
+    <string name="grant_permission">Allow access</string>
+
+    <string name="chip_gps">GPS %1$d/%2$d</string>
+    <string name="chip_gps_search">GPS: searching</string>
+    <string name="chip_baro">barometer</string>
+    <string name="chip_no_baro">no barometer</string>
+    <string name="chip_calib_auto">AUTO</string>
+    <string name="chip_calib_manual">MANUAL</string>
+    <string name="chip_calib_qnh">QNH</string>
+
+    <string name="src_api34">MSL</string>
+    <string name="src_nmea">MSL·NMEA</string>
+    <string name="src_geoid">geoid</string>
+    <string name="src_ellipsoid">ellipsoid</string>
+
+    <string name="accuracy_fmt">±%1$s %2$s</string>
+
+    <string name="chart_title">Altitude · last hour</string>
+    <string name="chart_empty">The chart will appear in a couple of minutes…</string>
+
+    <string name="detail_pressure">Pressure</string>
+    <string name="detail_vacc">GPS vert. accuracy</string>
+    <string name="detail_ascent">Ascent</string>
+    <string name="detail_descent">Descent</string>
+    <string name="detail_min">Minimum</string>
+    <string name="detail_max">Maximum</string>
+
+    <string name="unit_m">m</string>
+    <string name="unit_ft">ft</string>
+    <string name="unit_km">km</string>
+    <string name="unit_hpa">hPa</string>
+    <string name="vspeed_m">m/min</string>
+    <string name="vspeed_ft">ft/min</string>
+
+    <string name="map_locating">Waiting for location…</string>
+
+    <string name="watch_title">Huawei Watch</string>
+    <string name="watch_hint">The «Send» button delivers altitude to the watch as a notification mirrored by Huawei Health. Enable notification mirroring for this app in Huawei Health settings.</string>
+    <string name="watch_send">Send to watch</string>
+    <string name="watch_wear_engine">Wear Engine</string>
+    <string name="watch_auto">Auto-send every 5 min</string>
+    <string name="watch_notif_sent">Notification sent — check your watch</string>
+    <string name="watch_notif_denied">Allow notifications for this app first</string>
+    <string name="watch_no_data">No altitude yet — wait for a reading</string>
+
+    <string name="we_auth_cancelled">Authorization was declined in Huawei Health</string>
+    <string name="we_no_devices">No paired watch found in Huawei Health</string>
+    <string name="we_sent">Sent via Wear Engine ✓</string>
+    <string name="we_sending">Connecting to the watch…</string>
+    <string name="we_error">Wear Engine: error %1$s. Check that Huawei Health is installed and signed in, the app is registered in AppGallery Connect with Wear Engine access, and the watch app package/fingerprint are set in gradle.properties.</string>
+
+    <string name="settings">Settings</string>
+    <string name="settings_units">Units</string>
+    <string name="settings_calibration">Calibration</string>
+    <string name="calib_auto">Auto (GPS)</string>
+    <string name="calib_manual">Manual</string>
+    <string name="calib_qnh">QNH</string>
+    <string name="calib_auto_desc">The barometer is continuously anchored to GPS altitude. Recommended.</string>
+    <string name="calib_manual_desc">Enter the known altitude of your current spot (trail sign, summit mark).</string>
+    <string name="calib_qnh_desc">Enter sea-level pressure QNH from the nearest airport (METAR).</string>
+    <string name="calib_manual_need_baro">Manual and QNH calibration require a barometer.</string>
+    <string name="calib_known_altitude">Known altitude, %1$s</string>
+    <string name="calib_qnh_value">QNH, hPa</string>
+    <string name="apply">Apply</string>
+
+    <string name="settings_map">Map</string>
+    <string name="settings_map_topo">Topographic map (OpenTopoMap)</string>
+    <string name="settings_keep_on">Keep screen on</string>
+    <string name="settings_reset">Reset statistics</string>
+    <string name="settings_about">Altitude: barometer + GPS (NMEA/geoid corrected). Maps: © OpenStreetMap contributors, © OpenTopoMap. Places: Nominatim.</string>
+
+    <string name="notif_channel">Altitude</string>
+    <string name="notif_channel_tracking">Track recording</string>
+
+    <string name="track_title">Track recording (GPX)</string>
+    <string name="track_start">Start recording</string>
+    <string name="track_stop">Stop</string>
+    <string name="track_points">points</string>
+    <string name="track_distance">distance</string>
+    <string name="track_saved">Saved: %1$s</string>
+    <string name="track_share">Share track</string>
+    <string name="track_hint">Recording keeps running in the background (screen off too). Files: Android/data/com.chelmodeev.altimeter/files/tracks</string>
+    <string name="track_notif_title">Recording track</string>
+
+    <string name="vitals_title">Heart rate &amp; SpO₂</string>
+    <string name="vitals_hr">Heart rate</string>
+    <string name="vitals_spo2">Oxygen (SpO₂)</string>
+    <string name="vitals_bpm">bpm</string>
+    <string name="vitals_grant">Grant access</string>
+    <string name="vitals_unavailable">Health Connect is not available on this phone</string>
+    <string name="vitals_install_provider">Install/update the Health Connect app</string>
+    <string name="vitals_hint">Measured by the watch and delivered via Huawei Health → Health Connect. Enable Health Connect sync in Huawei Health (Me → Settings).</string>
+    <string name="vitals_no_data">No data yet — enable sync in Huawei Health</string>
+    <string name="vitals_updated">updated %1$s</string>
+    <string name="vitals_refresh">Refresh</string>
+    <string name="vitals_auto">Checked automatically every 5 min</string>
+
+    <string name="advice_title">Tips &amp; alerts</string>
+    <string name="advice_pressure_falling_fast">Pressure is falling fast (−%1$s hPa/h) — weather may turn bad quickly, thunderstorm possible. Consider shelter or descent.</string>
+    <string name="advice_pressure_falling">Pressure is falling (−%1$s hPa/h) — weather may deteriorate.</string>
+    <string name="advice_pressure_rising">Pressure is rising — weather is likely improving.</string>
+    <string name="advice_alt_acclimatize">Above 2500 m altitude sickness is possible — ascend gradually and watch how you feel.</string>
+    <string name="advice_alt_high">Above 3000 m: limit daily sleeping-altitude gain to 300–500 m, drink more water.</string>
+    <string name="advice_alt_very_high">Above 4000 m: high risk of altitude sickness. Headache, nausea, dizziness — descend immediately.</string>
+    <string name="advice_fast_ascent">Fast ascent — a slower pace helps acclimatization.</string>
+    <string name="advice_hydration">At altitude the body loses water faster — drink regularly.</string>
+    <string name="advice_spo2_low">SpO₂ %1$s%% is lowered — take a break and rest. If you feel unwell, descend.</string>
+    <string name="advice_spo2_very_low">SpO₂ %1$s%% is low — stop, rest, warm up. If it doesn\'t rise or you feel bad — descend and seek help.</string>
+    <string name="advice_hr_high">Pulse %1$s bpm at altitude — take a pause to recover.</string>
+    <string name="advice_gps_weak">Weak GPS signal — altitude accuracy is reduced. Move to open sky.</string>
+    <string name="advice_disclaimer">Tips are informational only, not medical advice.</string>
+
+    <string name="cd_settings">Settings</string>
+    <string name="cd_expand_map">Expand map</string>
+    <string name="cd_collapse_map">Collapse map</string>
+    <string name="cd_center_map">Center on my location</string>
+    <string name="cd_map_layer">Map layer</string>
+</resources>
