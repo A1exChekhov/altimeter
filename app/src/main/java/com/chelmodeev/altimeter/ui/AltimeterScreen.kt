@@ -74,10 +74,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chelmodeev.altimeter.R
@@ -697,26 +700,38 @@ private fun CompactVitalStat(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
-            Row(verticalAlignment = Alignment.Bottom) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.height(40.dp),
+            ) {
+                val unitColor = MaterialTheme.colorScheme.onSurfaceVariant
+                val valueWithUnit = buildAnnotatedString {
+                    append(value)
+                    if (unit.isNotEmpty()) {
+                        append('\u00A0')
+                        withStyle(
+                            SpanStyle(
+                                color = unitColor,
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Normal,
+                            )
+                        ) {
+                            append(unit)
+                        }
+                    }
+                }
                 Text(
-                    text = value,
+                    text = valueWithUnit,
                     style = TextStyle(
-                        fontSize = 25.sp,
+                        fontSize = 23.sp,
                         fontWeight = FontWeight.Bold,
                         fontFeatureSettings = "tnum",
                     ),
                     color = color,
                     maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip,
                 )
-                if (unit.isNotEmpty()) {
-                    Spacer(Modifier.size(3.dp))
-                    Text(
-                        text = unit,
-                        fontSize = 9.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
             }
         }
     }
