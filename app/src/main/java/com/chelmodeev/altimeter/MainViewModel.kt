@@ -7,12 +7,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.chelmodeev.altimeter.core.AltimeterCore
 import com.chelmodeev.altimeter.data.SettingsRepository
+import com.chelmodeev.altimeter.health.HealthPermissionState
 import com.chelmodeev.altimeter.health.HealthReader
 import com.chelmodeev.altimeter.health.HuaweiHealthReader
 import com.chelmodeev.altimeter.health.VitalsSnapshot
 import com.chelmodeev.altimeter.logic.Advisor
 import com.chelmodeev.altimeter.logic.AdvisorInput
 import com.chelmodeev.altimeter.model.AltUnit
+import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.model.WatchState
@@ -29,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import java.io.File
 import kotlin.math.roundToLong
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -75,7 +78,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         viewModelScope.launch {
-            TrackingService.state.collect { t -> _ui.update { it.copy(tracking = t) } }
+            var wasRecording = false
+            TrackingService.state.collect { track ->
+                val shouldReload = (!track.recording && wasRecording) ||
+                    (!track.recording && _ui.value.savedTracks.isEmpty())
+                wasRecording = track.recording
+                val savedTracks = if (shouldReload) loadSavedTracks() else _ui.value.savedTracks
+                _ui.update { it.copy(tracking = track, savedTracks = savedTracks) }
+            }
         }
 
         viewModelScope.launch {
@@ -233,6 +243,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             s.verticalSpeedMpm?.let { put("vspeed_mpm", r1(it)) }
             s.vitals.heartRateBpm?.let { put("hr_bpm", it) }
             s.vitals.spo2Percent?.let { put("spo2", it) }
+            s.vitals.stepsToday?.let { put("steps", it) }
             put("ascent_m", s.totalAscent.roundToLong())
             put("descent_m", s.totalDescent.roundToLong())
         }.toString()
@@ -243,7 +254,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun refreshHealthStatus() {
         val available = healthReader.isAvailable()
         val needsInstall = healthReader.needsProviderInstall()
-        val granted = if (available) healthReader.grantedAll() else false
+        val granted = if (available) {
+            healthReader.grantedPermissions()
+        } else {
+            HealthPermissionState()
+        }
         val huaweiInstalled = huaweiHealthReader.isInstalled()
         val huaweiConfigured = huaweiHealthReader.isConfigured()
         val huaweiAuthorized = huaweiConfigured && huaweiInstalled &&
@@ -253,14 +268,33 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 vitals = it.vitals.copy(
                     available = available,
                     needsProviderInstall = needsInstall,
-                    permissionsGranted = granted,
+                    permissionsGranted = granted.anyGranted,
+                    heartRatePermissionGranted = granted.heartRate,
+                    spo2PermissionGranted = granted.oxygenSaturation,
+                    stepsPermissionGranted = granted.steps,
                     huaweiHealthInstalled = huaweiInstalled,
                     huaweiHealthConfigured = huaweiConfigured,
                     huaweiHealthAuthorized = huaweiAuthorized,
                 )
             )
         }
-        if (huaweiAuthorized || granted) refreshVitals()
+        if (huaweiAuthorized || granted.anyGranted) refreshVitals()
+    }
+
+    private fun loadSavedTracks(): List<SavedTrack> {
+        val directory = File(getApplication<Application>().getExternalFilesDir(null), "tracks")
+        return directory.listFiles { file ->
+            file.isFile && file.extension.equals("gpx", ignoreCase = true)
+        }.orEmpty()
+            .sortedByDescending(File::lastModified)
+            .map { file ->
+                SavedTrack(
+                    name = file.name,
+                    path = file.absolutePath,
+                    modifiedAtMs = file.lastModified(),
+                    sizeBytes = file.length(),
+                )
+            }
     }
 
     fun onHealthPermissionsResult() {
@@ -313,13 +347,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (authorizationLost) huaweiHealthReader.clearAuthorization()
 
             val healthConnectSnapshot = if (before.permissionsGranted) {
-                healthReader.readLatest()
+                healthReader.readLatest(
+                    HealthPermissionState(
+                        heartRate = before.heartRatePermissionGranted,
+                        oxygenSaturation = before.spo2PermissionGranted,
+                        steps = before.stepsPermissionGranted,
+                    )
+                )
             } else {
                 null
             }
 
             val heartRate = newestHeartRate(huaweiSnapshot, healthConnectSnapshot, before)
             val oxygen = newestOxygen(huaweiSnapshot, healthConnectSnapshot, before)
+            val steps = newestSteps(huaweiSnapshot, healthConnectSnapshot, before)
             val series = newestSeries(huaweiSnapshot, healthConnectSnapshot, before.hrSeries)
             _ui.update {
                 val v = it.vitals
@@ -328,12 +369,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         refreshing = false,
                         huaweiHealthAuthorized = v.huaweiHealthAuthorized && !authorizationLost,
                         huaweiError = huaweiError?.let(huaweiHealthReader::describeError),
+                        healthConnectError = healthConnectSnapshot?.readErrors
+                            ?.takeIf { errors -> errors.isNotEmpty() }
+                            ?.joinToString("; "),
                         heartRateBpm = heartRate?.value,
                         heartRateAtMs = heartRate?.atMs,
                         heartRateSource = heartRate?.source,
+                        heartRateOrigin = heartRate?.origin,
                         spo2Percent = oxygen?.value,
                         spo2AtMs = oxygen?.atMs,
                         spo2Source = oxygen?.source,
+                        spo2Origin = oxygen?.origin,
+                        stepsToday = steps?.value,
+                        stepsAtMs = steps?.atMs,
+                        stepsSource = steps?.source,
+                        stepsOrigin = steps?.origin,
                         hrSeries = series,
                     )
                 )
@@ -346,12 +396,21 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val value: Long,
         val atMs: Long,
         val source: VitalsSource,
+        val origin: String?,
     )
 
     private data class OxygenValue(
         val value: Double,
         val atMs: Long,
         val source: VitalsSource,
+        val origin: String?,
+    )
+
+    private data class StepsValue(
+        val value: Long,
+        val atMs: Long,
+        val source: VitalsSource,
+        val origin: String?,
     )
 
     private fun newestHeartRate(
@@ -360,17 +419,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         previous: com.chelmodeev.altimeter.model.VitalsState,
     ): HeartRateValue? = listOfNotNull(
         huawei?.heartRateBpm?.let { bpm ->
-            HeartRateValue(bpm, huawei.heartRateAt?.toEpochMilli() ?: 0L, VitalsSource.HUAWEI_HEALTH)
+            HeartRateValue(
+                bpm,
+                huawei.heartRateAt?.toEpochMilli() ?: 0L,
+                VitalsSource.HUAWEI_HEALTH,
+                huawei.heartRateOrigin,
+            )
         },
         healthConnect?.heartRateBpm?.let { bpm ->
             HeartRateValue(
                 bpm,
                 healthConnect.heartRateAt?.toEpochMilli() ?: 0L,
                 VitalsSource.HEALTH_CONNECT,
+                healthConnect.heartRateOrigin,
             )
         },
         previous.heartRateBpm?.let { bpm ->
-            HeartRateValue(bpm, previous.heartRateAtMs ?: 0L, previous.heartRateSource ?: return@let null)
+            HeartRateValue(
+                bpm,
+                previous.heartRateAtMs ?: 0L,
+                previous.heartRateSource ?: return@let null,
+                previous.heartRateOrigin,
+            )
         },
     ).maxByOrNull { it.atMs }
 
@@ -380,17 +450,59 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         previous: com.chelmodeev.altimeter.model.VitalsState,
     ): OxygenValue? = listOfNotNull(
         huawei?.spo2Percent?.let { value ->
-            OxygenValue(value, huawei.spo2At?.toEpochMilli() ?: 0L, VitalsSource.HUAWEI_HEALTH)
+            OxygenValue(
+                value,
+                huawei.spo2At?.toEpochMilli() ?: 0L,
+                VitalsSource.HUAWEI_HEALTH,
+                huawei.spo2Origin,
+            )
         },
         healthConnect?.spo2Percent?.let { value ->
             OxygenValue(
                 value,
                 healthConnect.spo2At?.toEpochMilli() ?: 0L,
                 VitalsSource.HEALTH_CONNECT,
+                healthConnect.spo2Origin,
             )
         },
         previous.spo2Percent?.let { value ->
-            OxygenValue(value, previous.spo2AtMs ?: 0L, previous.spo2Source ?: return@let null)
+            OxygenValue(
+                value,
+                previous.spo2AtMs ?: 0L,
+                previous.spo2Source ?: return@let null,
+                previous.spo2Origin,
+            )
+        },
+    ).maxByOrNull { it.atMs }
+
+    private fun newestSteps(
+        huawei: VitalsSnapshot?,
+        healthConnect: VitalsSnapshot?,
+        previous: com.chelmodeev.altimeter.model.VitalsState,
+    ): StepsValue? = listOfNotNull(
+        huawei?.stepsToday?.let { value ->
+            StepsValue(
+                value,
+                huawei.stepsAt?.toEpochMilli() ?: 0L,
+                VitalsSource.HUAWEI_HEALTH,
+                huawei.stepsOrigin,
+            )
+        },
+        healthConnect?.stepsToday?.let { value ->
+            StepsValue(
+                value,
+                healthConnect.stepsAt?.toEpochMilli() ?: 0L,
+                VitalsSource.HEALTH_CONNECT,
+                healthConnect.stepsOrigin,
+            )
+        },
+        previous.stepsToday?.let { value ->
+            StepsValue(
+                value,
+                previous.stepsAtMs ?: 0L,
+                previous.stepsSource ?: return@let null,
+                previous.stepsOrigin,
+            )
         },
     ).maxByOrNull { it.atMs }
 

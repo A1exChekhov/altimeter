@@ -14,8 +14,10 @@ data class AltimeterWidgetSnapshot(
     val trackPoints: Int,
     val heartRateBpm: Long?,
     val spo2Percent: Double?,
+    val stepsToday: Long?,
     val heartRateSource: VitalsSource?,
     val spo2Source: VitalsSource?,
+    val stepsSource: VitalsSource?,
     val updatedAtMs: Long,
 )
 
@@ -68,8 +70,11 @@ object AltimeterWidgetStore {
         else edit.putLong("heart_rate", vitals.heartRateBpm)
         if (vitals.spo2Percent == null) edit.remove("spo2")
         else edit.putLong("spo2", vitals.spo2Percent.toBits())
+        if (vitals.stepsToday == null) edit.remove("steps")
+        else edit.putLong("steps", vitals.stepsToday)
         putSource(edit, "heart_source", vitals.heartRateSource)
         putSource(edit, "spo2_source", vitals.spo2Source)
+        putSource(edit, "steps_source", vitals.stepsSource)
         edit.apply()
         AltimeterWidgetProvider.updateAll(context)
     }
@@ -86,8 +91,10 @@ object AltimeterWidgetStore {
             trackPoints = p.getInt("track_points", 0),
             heartRateBpm = p.getLongOrNull("heart_rate"),
             spo2Percent = p.getLongOrNull("spo2")?.let(Double::fromBits),
+            stepsToday = p.getLongOrNull("steps"),
             heartRateSource = p.source("heart_source"),
             spo2Source = p.source("spo2_source"),
+            stepsSource = p.source("steps_source"),
             updatedAtMs = p.getLong("updated", 0L),
         )
     }

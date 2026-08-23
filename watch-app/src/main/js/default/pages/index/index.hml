@@ -12,6 +12,10 @@
             <text class="stat-label">SpO₂</text>
             <text class="stat-value spo2">{{ spo2 }}</text>
         </div>
+        <div class="stat">
+            <text class="stat-label">шаги</text>
+            <text class="stat-value steps">{{ steps }}</text>
+        </div>
     </div>
     <text class="updated">{{ updated }}</text>
 </div>

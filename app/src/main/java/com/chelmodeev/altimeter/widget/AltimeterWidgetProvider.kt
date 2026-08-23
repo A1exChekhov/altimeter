@@ -56,12 +56,15 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
             }
             val heart = data.heartRateBpm?.toString() ?: "—"
             val oxygen = data.spo2Percent?.roundToInt()?.let { "$it%" } ?: "—"
+            val steps = data.stepsToday?.toString() ?: "—"
             val source = when {
                 data.heartRateSource == VitalsSource.HUAWEI_HEALTH ||
-                    data.spo2Source == VitalsSource.HUAWEI_HEALTH ->
+                    data.spo2Source == VitalsSource.HUAWEI_HEALTH ||
+                    data.stepsSource == VitalsSource.HUAWEI_HEALTH ->
                     context.getString(R.string.vitals_source_huawei)
                 data.heartRateSource == VitalsSource.HEALTH_CONNECT ||
-                    data.spo2Source == VitalsSource.HEALTH_CONNECT ->
+                    data.spo2Source == VitalsSource.HEALTH_CONNECT ||
+                    data.stepsSource == VitalsSource.HEALTH_CONNECT ->
                     context.getString(R.string.vitals_source_health_connect)
                 else -> context.getString(R.string.widget_health_waiting)
             }
@@ -78,7 +81,7 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_track, track)
             views.setTextViewText(
                 R.id.widget_health,
-                context.getString(R.string.widget_health_values, heart, oxygen),
+                context.getString(R.string.widget_health_values, heart, oxygen, steps),
             )
             views.setTextViewText(R.id.widget_health_source, source)
             views.setTextViewText(R.id.widget_updated, updated)

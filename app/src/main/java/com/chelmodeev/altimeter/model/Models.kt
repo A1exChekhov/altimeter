@@ -42,6 +42,13 @@ data class TrackRecState(
     val lastSavedPath: String? = null,
 )
 
+data class SavedTrack(
+    val name: String,
+    val path: String,
+    val modifiedAtMs: Long,
+    val sizeBytes: Long,
+)
+
 enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT }
 
 /** Пульс и SpO₂, измеренные часами. В repo-сборке основной источник — Health Connect. */
@@ -49,7 +56,12 @@ data class VitalsState(
     /** Состояние резервного источника Health Connect. */
     val available: Boolean = false,
     val needsProviderInstall: Boolean = false,
+    /** Есть хотя бы одно разрешение; отдельные флаги позволяют работать частично. */
     val permissionsGranted: Boolean = false,
+    val heartRatePermissionGranted: Boolean = false,
+    val spo2PermissionGranted: Boolean = false,
+    val stepsPermissionGranted: Boolean = false,
+    val healthConnectError: String? = null,
 
     /** Состояние прямого источника Huawei Health Kit. */
     val huaweiHealthInstalled: Boolean = false,
@@ -60,9 +72,15 @@ data class VitalsState(
     val heartRateBpm: Long? = null,
     val heartRateAtMs: Long? = null,
     val heartRateSource: VitalsSource? = null,
+    val heartRateOrigin: String? = null,
     val spo2Percent: Double? = null,
     val spo2AtMs: Long? = null,
     val spo2Source: VitalsSource? = null,
+    val spo2Origin: String? = null,
+    val stepsToday: Long? = null,
+    val stepsAtMs: Long? = null,
+    val stepsSource: VitalsSource? = null,
+    val stepsOrigin: String? = null,
     val hrSeries: List<Pair<Long, Long>> = emptyList(),
     val refreshing: Boolean = false,
 )
@@ -105,4 +123,5 @@ data class UiState(
     val vitals: VitalsState = VitalsState(),
     val advices: List<Advice> = emptyList(),
     val tracking: TrackRecState = TrackRecState(),
+    val savedTracks: List<SavedTrack> = emptyList(),
 )

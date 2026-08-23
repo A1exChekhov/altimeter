@@ -58,6 +58,9 @@ class WatchNotifier(private val context: Context) {
         state.vitals.spo2Percent?.let {
             bigParts += "SpO₂ ${it.toInt()}%"
         }
+        state.vitals.stepsToday?.let {
+            bigParts += "👣 $it"
+        }
 
         val contentIntent = PendingIntent.getActivity(
             context, 0,

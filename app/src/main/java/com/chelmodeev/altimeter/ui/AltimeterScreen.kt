@@ -561,7 +561,9 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
             Spacer(Modifier.height(8.dp))
         }
 
-        if (!vitals.permissionsGranted) {
+        val allHealthConnectPermissions = vitals.heartRatePermissionGranted &&
+            vitals.spo2PermissionGranted && vitals.stepsPermissionGranted
+        if (!allHealthConnectPermissions) {
             when {
                 vitals.available -> OutlinedButton(onClick = actions.onRequestHealth) {
                     Text(stringResource(R.string.vitals_health_connect_grant))
@@ -575,6 +577,20 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
             if (vitals.available || vitals.needsProviderInstall) Spacer(Modifier.height(8.dp))
         }
 
+        if (vitals.available) {
+            Text(
+                text = stringResource(
+                    R.string.vitals_permissions_status,
+                    if (vitals.heartRatePermissionGranted) "✓" else "—",
+                    if (vitals.spo2PermissionGranted) "✓" else "—",
+                    if (vitals.stepsPermissionGranted) "✓" else "—",
+                ),
+                fontSize = 10.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
         val errorText = when (vitals.huaweiError) {
             "HUAWEI_HEALTH_NOT_INSTALLED" -> stringResource(R.string.vitals_huawei_not_installed)
             "HUAWEI_APP_ID_NOT_CONFIGURED" -> stringResource(R.string.vitals_huawei_not_configured)
@@ -586,6 +602,15 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
         if (vitals.huaweiHealthConfigured && errorText != null) {
             Text(
                 text = errorText,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+        if (vitals.healthConnectError != null) {
+            Text(
+                text = stringResource(R.string.vitals_health_connect_error, vitals.healthConnectError),
                 fontSize = 11.sp,
                 lineHeight = 15.sp,
                 color = MaterialTheme.colorScheme.error,
@@ -609,7 +634,7 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                         value = vitals.heartRateBpm?.toString() ?: "—",
                         unit = stringResource(R.string.vitals_bpm),
                         atMs = vitals.heartRateAtMs,
-                        source = vitalsSourceLabel(vitals.heartRateSource),
+                        source = vitalsSourceLabel(vitals.heartRateSource, vitals.heartRateOrigin),
                         color = Color(0xFFFF8A80),
                         modifier = Modifier.weight(1f),
                     )
@@ -618,12 +643,24 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                         value = vitals.spo2Percent?.let { "${it.roundToInt()}%" } ?: "—",
                         unit = "",
                         atMs = vitals.spo2AtMs,
-                        source = vitalsSourceLabel(vitals.spo2Source),
+                        source = vitalsSourceLabel(vitals.spo2Source, vitals.spo2Origin),
                         color = Color(0xFF80D8FF),
                         modifier = Modifier.weight(1f),
                     )
                 }
-                if (vitals.heartRateBpm == null && vitals.spo2Percent == null) {
+                Spacer(Modifier.height(10.dp))
+                VitalStat(
+                    label = stringResource(R.string.vitals_steps),
+                    value = vitals.stepsToday?.toString() ?: "—",
+                    unit = stringResource(R.string.vitals_steps_today),
+                    atMs = vitals.stepsAtMs,
+                    source = vitalsSourceLabel(vitals.stepsSource, vitals.stepsOrigin),
+                    color = Color(0xFFB9F6CA),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (vitals.heartRateBpm == null && vitals.spo2Percent == null &&
+                    vitals.stepsToday == null
+                ) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = stringResource(R.string.vitals_no_data),
@@ -713,10 +750,15 @@ private fun VitalStat(
 }
 
 @Composable
-private fun vitalsSourceLabel(source: VitalsSource?): String? = when (source) {
-    VitalsSource.HUAWEI_HEALTH -> stringResource(R.string.vitals_source_huawei)
-    VitalsSource.HEALTH_CONNECT -> stringResource(R.string.vitals_source_health_connect)
-    null -> null
+private fun vitalsSourceLabel(source: VitalsSource?, origin: String?): String? {
+    val base = when (source) {
+        VitalsSource.HUAWEI_HEALTH -> stringResource(R.string.vitals_source_huawei)
+        VitalsSource.HEALTH_CONNECT -> stringResource(R.string.vitals_source_health_connect)
+        null -> return null
+    }
+    return origin?.takeIf { it.isNotBlank() && it != "com.huawei.health" }
+        ?.let { "$base · $it" }
+        ?: base
 }
 
 @Composable
@@ -979,28 +1021,62 @@ private fun TrackCard(state: UiState, actions: ScreenActions) {
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(R.string.track_start))
             }
-            if (t.lastSavedName != null) {
-                Spacer(Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.track_saved, t.lastSavedName),
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconButton(
-                        onClick = { t.lastSavedPath?.let(actions.onShareTrack) },
-                        modifier = Modifier.size(30.dp),
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.track_archive, state.savedTracks.size),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (state.savedTracks.isEmpty()) {
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    text = stringResource(R.string.track_archive_empty),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                state.savedTracks.take(12).forEach { saved ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 6.dp),
                     ) {
-                        Icon(
-                            Icons.Rounded.Share,
-                            contentDescription = stringResource(R.string.track_share),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = saved.name,
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.track_file_meta,
+                                    Fmt.timeShort(context, saved.modifiedAtMs),
+                                    (saved.sizeBytes + 1023L) / 1024L,
+                                ),
+                                fontSize = 9.5.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(
+                            onClick = { actions.onShareTrack(saved.path) },
+                            modifier = Modifier.size(30.dp),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Share,
+                                contentDescription = stringResource(R.string.track_share),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     }
+                }
+                if (state.savedTracks.size > 12) {
+                    Text(
+                        text = stringResource(R.string.track_archive_more, state.savedTracks.size - 12),
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
                 }
             }
             Spacer(Modifier.height(6.dp))

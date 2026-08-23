@@ -14,6 +14,7 @@ export default {
         place: '',
         hr: '–',
         spo2: '–',
+        steps: '–',
         updated: ''
     },
 
@@ -50,6 +51,9 @@ export default {
         }
         if (d.spo2 !== undefined && d.spo2 !== null) {
             this.spo2 = String(Math.round(d.spo2)) + '%';
+        }
+        if (d.steps !== undefined && d.steps !== null) {
+            this.steps = String(Math.round(d.steps));
         }
         var t = new Date(d.ts || Date.now());
         this.updated = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2);

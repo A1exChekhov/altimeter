@@ -44,6 +44,7 @@ class HuaweiHealthReader(private val context: Context) {
         val SCOPES: Array<String> = arrayOf(
             Scopes.HEALTHKIT_HEARTRATE_READ,
             Scopes.HEALTHKIT_OXYGEN_SATURATION_READ,
+            Scopes.HEALTHKIT_STEP_READ,
         )
     }
 
@@ -95,13 +96,16 @@ class HuaweiHealthReader(private val context: Context) {
         val requestedTypes = arrayListOf(
             DataType.DT_INSTANTANEOUS_HEART_RATE,
             HealthDataTypes.DT_INSTANTANEOUS_SPO2,
+            DataType.DT_CONTINUOUS_STEPS_TOTAL,
         )
         val latest = controller.readLatestData(requestedTypes).await()
 
         val heartPoint = latest[DataType.DT_INSTANTANEOUS_HEART_RATE]
         val oxygenPoint = latest[HealthDataTypes.DT_INSTANTANEOUS_SPO2]
+        val stepsPoint = latest[DataType.DT_CONTINUOUS_STEPS_TOTAL]
         val heartAt = heartPoint?.sampleTime()
         val oxygenAt = oxygenPoint?.sampleTime()
+        val stepsAt = stepsPoint?.sampleTime()
         val heartRate = heartPoint
             ?.getFieldValue(Field.FIELD_BPM)
             ?.asDoubleValue()
@@ -111,6 +115,11 @@ class HuaweiHealthReader(private val context: Context) {
             ?.getFieldValue(HealthFields.FIELD_SATURATION)
             ?.asDoubleValue()
             ?.takeIf { it in 1.0..100.0 }
+        val steps = stepsPoint
+            ?.getFieldValue(Field.FIELD_STEPS)
+            ?.asIntValue()
+            ?.toLong()
+            ?.takeIf { it >= 0L }
 
         val series = runCatching {
             readHeartRateSeries(controller.read(heartRateReadOptions()).await())
@@ -119,8 +128,13 @@ class HuaweiHealthReader(private val context: Context) {
         return VitalsSnapshot(
             heartRateBpm = heartRate,
             heartRateAt = heartAt,
+            heartRateOrigin = HEALTH_PACKAGE,
             spo2Percent = oxygen,
             spo2At = oxygenAt,
+            spo2Origin = HEALTH_PACKAGE,
+            stepsToday = steps,
+            stepsAt = stepsAt,
+            stepsOrigin = HEALTH_PACKAGE,
             hrSeries = series,
         )
     }

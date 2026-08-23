@@ -38,8 +38,8 @@
 .stat {
     flex-direction: column;
     align-items: center;
-    margin-left: 18px;
-    margin-right: 18px;
+    margin-left: 11px;
+    margin-right: 11px;
 }
 
 .stat-label {
@@ -48,7 +48,7 @@
 }
 
 .stat-value {
-    font-size: 34px;
+    font-size: 30px;
 }
 
 .hr {
@@ -57,6 +57,10 @@
 
 .spo2 {
     color: #80D8FF;
+}
+
+.steps {
+    color: #B9F6CA;
 }
 
 .updated {
