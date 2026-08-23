@@ -47,6 +47,7 @@ jobs:
       - name: Compile for iOS Simulator
         run: |
           set -o pipefail
+          mkdir -p build
           xcodebuild \
             -project ios/Altimeter.xcodeproj \
             -scheme Altimeter \
@@ -157,6 +158,7 @@ jobs:
       - name: Archive signed application
         run: |
           set -o pipefail
+          mkdir -p build
           xcodebuild \
             -project ios/Altimeter.xcodeproj \
             -scheme Altimeter \
