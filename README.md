@@ -49,6 +49,36 @@ cd /i/Altimeter && JAVA_HOME=".toolchain/jdk17" GRADLE_USER_HOME=".toolchain/gra
 APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скопируйте на
 телефон и установите (разрешите установку из неизвестных источников).
 
+## Где находятся устанавливаемые файлы
+
+### Android
+
+На рабочем компьютере готовый debug APK находится здесь:
+
+```text
+I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
+```
+
+После самостоятельной сборки в любом клоне используется тот же относительный путь:
+`app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` является результатом
+сборки и не хранится в GitHub; APK создаётся локально командой `:app:assembleDebug`.
+
+### iPhone
+
+Готового универсального `.ipa` в репозитории нет: iOS-приложение должно быть собрано
+и подписано вашей Apple Developer Team на Mac. Обычная кнопка Run в Xcode сразу
+устанавливает приложение на подключённый iPhone, без отдельного IPA.
+
+После Build файл приложения обычно находится в:
+
+```text
+~/Library/Developer/Xcode/DerivedData/Altimeter-*/Build/Products/Debug-iphoneos/Altimeter.app
+```
+
+Архив для последующего экспорта создаётся через **Product → Archive** и сохраняется
+в `~/Library/Developer/Xcode/Archives/`. При необходимости `.ipa` экспортируется из
+Xcode Organizer с development/ad hoc подписью.
+
 ## Калибровка высоты (меню ⚙)
 
 | Режим | Как работает | Когда использовать |

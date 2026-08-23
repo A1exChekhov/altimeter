@@ -32,6 +32,15 @@ xcodegen generate
 open Altimeter.xcodeproj
 ```
 
+### Что изменилось после добавления Developer Team
+
+Team ID `76UD6VNBTE` теперь записан прямо в `project.yml` как
+`DEVELOPMENT_TEAM`. Поэтому выбирать команду вручную при каждой генерации проекта
+больше не нужно. На Mac требуется только войти в Apple Account, которому доступна
+эта Team, оставить **Automatically manage signing** включённым и запустить приложение.
+Публикация в App Store или создание приложения в App Store Connect для такой установки
+по-прежнему не нужны.
+
 В Xcode выберите target `Altimeter` → Signing & Capabilities:
 
 1. проверьте выбранную Apple Developer Team `76UD6VNBTE` (она уже задана в
@@ -50,6 +59,20 @@ capabilities доступны в provisioning profile. Бесплатная Pers
 тестировать приложения на своих устройствах, но профили действуют 7 дней и часть
 расширенных capabilities может потребовать участие в Apple Developer Program. Для
 TestFlight и App Store нужны только если позже решите распространять приложение другим.
+
+## Где появляется исполняемый файл
+
+При нажатии Run Xcode собирает `Altimeter.app`, подписывает его Team `76UD6VNBTE` и
+сразу устанавливает на выбранный iPhone. Локальный результат сборки обычно лежит в:
+
+```text
+~/Library/Developer/Xcode/DerivedData/Altimeter-*/Build/Products/Debug-iphoneos/Altimeter.app
+```
+
+Для экспортируемого `.ipa` выполните **Product → Archive**, затем в Organizer выберите
+**Distribute App → Development** или **Ad Hoc**. Архивы Xcode хранятся в
+`~/Library/Developer/Xcode/Archives/`. Готовый `.ipa` нельзя заранее собрать на Windows,
+потому что для него требуются Xcode, сертификат и provisioning profile вашей Team.
 
 ## Пульс и SpO₂
 
