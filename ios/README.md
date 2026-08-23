@@ -74,6 +74,26 @@ TestFlight и App Store нужны только если позже решите
 `~/Library/Developer/Xcode/Archives/`. Готовый `.ipa` нельзя заранее собрать на Windows,
 потому что для него требуются Xcode, сертификат и provisioning profile вашей Team.
 
+## Сборка в GitHub Actions
+
+Workflow `.github/workflows/ios.yml` автоматически компилирует iPhone-проект на
+macOS при изменениях в `ios/` и доступен для ручного запуска на вкладке **Actions →
+iOS build**. Обычный запуск создаёт simulator-артефакт только для проверки компиляции;
+его нельзя установить на физический iPhone.
+
+Для устанавливаемого IPA запустите workflow вручную с параметром
+`signed_ipa = true`. Репозиторий должен содержать четыре GitHub Actions secret:
+
+- `IOS_CERTIFICATE_BASE64` — сертификат `.p12` в Base64;
+- `IOS_CERTIFICATE_PASSWORD` — пароль `.p12`;
+- `IOS_APP_PROFILE_BASE64` — development profile приложения в Base64;
+- `IOS_WIDGET_PROFILE_BASE64` — отдельный development profile виджета в Base64.
+
+Profiles должны относиться к Team `76UD6VNBTE`, bundle IDs `ai.errarium.altimeter`
+и `ai.errarium.altimeter.widget` и включать UDID устанавливаемого iPhone. При успешной
+сборке GitHub публикует приватный Actions artifact `Altimeter-signed-ipa`; сертификат
+и profiles в исходники или публичный Release не попадают.
+
 ## Пульс и SpO₂
 
 Приложение читает последние разрешённые измерения из Apple HealthKit. Для Apple Watch

@@ -49,6 +49,9 @@ cd /i/Altimeter && JAVA_HOME=".toolchain/jdk17" GRADLE_USER_HOME=".toolchain/gra
 APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скопируйте на
 телефон и установите (разрешите установку из неизвестных источников).
 
+Актуальная готовая сборка опубликована в GitHub Releases:
+**[скачать app-debug.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.0/app-debug.apk)**.
+
 ## Где находятся устанавливаемые файлы
 
 ### Android
@@ -60,8 +63,9 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 ```
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
-`app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` является результатом
-сборки и не хранится в GitHub; APK создаётся локально командой `:app:assembleDebug`.
+`app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
+Git, но готовый APK отдельно опубликован как asset релиза `v1.0`. Локально он создаётся
+командой `:app:assembleDebug`.
 
 ### iPhone
 

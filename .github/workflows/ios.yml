@@ -1,0 +1,225 @@
+name: iOS build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+    inputs:
+      signed_ipa:
+        description: "Build an installable, signed IPA"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Compile iPhone project
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Compile for iOS Simulator
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/Altimeter.xcodeproj \
+            -scheme Altimeter \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build/ios-simulator \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee build/ios-simulator-build.log
+
+      - name: Package simulator build
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            build/ios-simulator/Build/Products/Debug-iphonesimulator/Altimeter.app \
+            build/Altimeter-simulator.zip
+
+      - name: Upload simulator artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Altimeter-simulator-not-installable-on-iPhone
+          path: |
+            build/Altimeter-simulator.zip
+            build/ios-simulator-build.log
+          if-no-files-found: error
+          retention-days: 14
+
+  signed-ipa:
+    name: Export signed IPA
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.signed_ipa }}
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Validate signing secrets
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_APP_PROFILE_BASE64: ${{ secrets.IOS_APP_PROFILE_BASE64 }}
+          IOS_WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROFILE_BASE64 }}
+        run: |
+          missing=0
+          for name in \
+            IOS_CERTIFICATE_BASE64 \
+            IOS_CERTIFICATE_PASSWORD \
+            IOS_APP_PROFILE_BASE64 \
+            IOS_WIDGET_PROFILE_BASE64
+          do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Install signing certificate and profiles
+        env:
+          IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          IOS_APP_PROFILE_BASE64: ${{ secrets.IOS_APP_PROFILE_BASE64 }}
+          IOS_WIDGET_PROFILE_BASE64: ${{ secrets.IOS_WIDGET_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/altimeter-signing.p12"
+          APP_PROFILE_PATH="$RUNNER_TEMP/altimeter-app.mobileprovision"
+          WIDGET_PROFILE_PATH="$RUNNER_TEMP/altimeter-widget.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/altimeter-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+
+          printf '%s' "$IOS_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          printf '%s' "$IOS_APP_PROFILE_BASE64" | base64 --decode > "$APP_PROFILE_PATH"
+          printf '%s' "$IOS_WIDGET_PROFILE_BASE64" | base64 --decode > "$WIDGET_PROFILE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -P "$IOS_CERTIFICATE_PASSWORD" \
+            -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          for profile in "$APP_PROFILE_PATH" "$WIDGET_PROFILE_PATH"; do
+            plist="$profile.plist"
+            security cms -D -i "$profile" > "$plist"
+            uuid=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$plist")
+            cp "$profile" "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
+          done
+
+          app_profile_plist="$APP_PROFILE_PATH.plist"
+          widget_profile_plist="$WIDGET_PROFILE_PATH.plist"
+          echo "APP_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$app_profile_plist")" >> "$GITHUB_ENV"
+          echo "WIDGET_PROFILE_NAME=$(/usr/libexec/PlistBuddy -c 'Print :Name' "$widget_profile_plist")" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+
+      - name: Archive signed application
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/Altimeter.xcodeproj \
+            -scheme Altimeter \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath build/Altimeter.xcarchive \
+            -derivedDataPath build/ios-device \
+            DEVELOPMENT_TEAM=76UD6VNBTE \
+            archive | tee build/ios-archive.log
+
+      - name: Create export configuration
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>debugging</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>teamID</key>
+            <string>76UD6VNBTE</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>ai.errarium.altimeter</key>
+              <string>$APP_PROFILE_NAME</string>
+              <key>ai.errarium.altimeter.widget</key>
+              <string>$WIDGET_PROFILE_NAME</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Export IPA
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/Altimeter.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            | tee build/ios-export.log
+
+      - name: Verify IPA exists
+        run: test -f build/ipa/Altimeter.ipa
+
+      - name: Upload signed IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Altimeter-signed-ipa
+          path: |
+            build/ipa/Altimeter.ipa
+            build/ios-archive.log
+            build/ios-export.log
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Clean signing material
+        if: ${{ always() }}
+        run: |
+          if [ -n "${KEYCHAIN_PATH:-}" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
+          rm -f "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision
