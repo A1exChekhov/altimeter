@@ -9,6 +9,8 @@ enum class MslSource { NONE, API34, NMEA_MSL, GEOID_CORRECTED, ELLIPSOID }
 
 data class ChartPoint(val timeMs: Long, val altitude: Double)
 
+data class TrackMapPoint(val latitude: Double, val longitude: Double)
+
 enum class AdviceSeverity { INFO, CAUTION, WARNING }
 
 enum class AdviceKind {
@@ -38,6 +40,7 @@ data class TrackRecState(
     val points: Int = 0,
     val distanceM: Double = 0.0,
     val ascentM: Double = 0.0,
+    val route: List<TrackMapPoint> = emptyList(),
     val lastSavedName: String? = null,
     val lastSavedPath: String? = null,
 )
@@ -98,6 +101,9 @@ data class VitalsState(
     val stepsSource: VitalsSource? = null,
     val stepsOrigin: String? = null,
     val hrSeries: List<Pair<Long, Long>> = emptyList(),
+    val spo2Series: List<Pair<Long, Double>> = emptyList(),
+    /** Накопительные шаги внутри окна графика: (epochMs, count). */
+    val stepsSeries: List<Pair<Long, Long>> = emptyList(),
     val refreshing: Boolean = false,
 )
 
@@ -140,4 +146,6 @@ data class UiState(
     val advices: List<Advice> = emptyList(),
     val tracking: TrackRecState = TrackRecState(),
     val savedTracks: List<SavedTrack> = emptyList(),
+    /** Текущий либо выбранный из архива маршрут, отображаемый на карте. */
+    val mapTrack: List<TrackMapPoint> = emptyList(),
 )

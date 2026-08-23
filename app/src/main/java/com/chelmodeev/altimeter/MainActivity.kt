@@ -15,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
                         onRequestHealth = ::requestHealthPermissions,
                         onRequestHuaweiHealth = ::requestHuaweiHealthPermissions,
                         onOpenHealthSync = ::openHealthSync,
+                        onOpenHealthConnect = ::openHealthConnect,
+                        onRepairHealth = ::repairHealthPermissions,
                         onConnectBluetooth = ::requestBluetoothHeartRate,
                         onGrantLocation = ::requestLocationPermissions,
                         onSetUnit = viewModel::setUnit,
@@ -83,6 +86,7 @@ class MainActivity : ComponentActivity() {
                         onResetStats = viewModel::resetStats,
                         onStartTrack = { TrackingService.start(this) },
                         onStopTrack = { TrackingService.stop(this) },
+                        onViewTrack = viewModel::viewTrack,
                         onShareTrack = ::shareTrack,
                     ),
                 )
@@ -132,6 +136,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        viewModel.onAppForegrounded()
+    }
+
+    override fun onStop() {
+        viewModel.onAppBackgrounded()
+        super.onStop()
+    }
+
     private fun openHealthSync() {
         val intent = packageManager.getLaunchIntentForPackage(HEALTH_SYNC_PACKAGE)
         if (intent != null) {
@@ -139,6 +153,22 @@ class MainActivity : ComponentActivity() {
         } else {
             Toast.makeText(this, R.string.vitals_health_sync_not_installed, Toast.LENGTH_LONG)
                 .show()
+        }
+    }
+
+    private fun openHealthConnect() {
+        runCatching {
+            startActivity(HealthConnectClient.getHealthConnectManageDataIntent(this))
+        }.onFailure {
+            Toast.makeText(this, R.string.vitals_health_connect_open_failed, Toast.LENGTH_LONG)
+                .show()
+        }
+    }
+
+    private fun repairHealthPermissions() {
+        lifecycleScope.launch {
+            HealthReader(this@MainActivity).revokeAllPermissions()
+            requestHealthPermissions()
         }
     }
 

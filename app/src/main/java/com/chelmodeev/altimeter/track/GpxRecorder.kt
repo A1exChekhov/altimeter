@@ -2,6 +2,7 @@ package com.chelmodeev.altimeter.track
 
 import android.location.Location
 import com.chelmodeev.altimeter.core.AltimeterCore
+import com.chelmodeev.altimeter.model.TrackMapPoint
 import java.io.File
 import java.time.Instant
 import java.util.Locale
@@ -28,6 +29,10 @@ class GpxRecorder {
         private set
     val pointCount: Int
         @Synchronized get() = points.size
+
+    @Synchronized
+    fun mapPoints(): List<TrackMapPoint> =
+        points.map { TrackMapPoint(latitude = it.lat, longitude = it.lon) }
 
     @Synchronized
     fun begin() {

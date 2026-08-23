@@ -9,8 +9,8 @@ import kotlin.math.abs
 class TrackStats {
 
     private companion object {
-        const val HISTORY_STEP_MS = 2_000L
-        const val HISTORY_MAX_POINTS = 1_800 // ~60 минут
+        const val HISTORY_STEP_MS = 5_000L
+        const val HISTORY_MAX_POINTS = 4_320 // до 6 часов
         const val SPEED_WINDOW_MS = 20_000L
         const val ASCENT_THRESHOLD_M = 2.0 // гистерезис против шума
     }

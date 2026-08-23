@@ -38,7 +38,8 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
             val content = WidgetContent.create(context, data)
             return RemoteViews(context.packageName, R.layout.altitude_widget).apply {
                 setTextViewText(R.id.altitude_widget_altitude, content.altitude)
-                setTextViewText(R.id.altitude_widget_track, content.track)
+                setTextViewText(R.id.altitude_widget_heart, content.heart)
+                setTextViewText(R.id.altitude_widget_steps, content.steps)
                 setOnClickPendingIntent(
                     R.id.altitude_widget_root,
                     PendingIntent.getActivity(

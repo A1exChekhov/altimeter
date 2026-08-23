@@ -216,6 +216,13 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                 checked = state.topoMap,
                 onChecked = actions.onToggleTopo,
             )
+            Text(
+                text = stringResource(R.string.settings_map_offline_cache),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+            )
             SettingSwitch(
                 label = stringResource(R.string.settings_keep_on),
                 checked = state.keepScreenOn,

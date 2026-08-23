@@ -12,6 +12,9 @@ internal data class WidgetContent(
     val altitude: String,
     val track: String,
     val health: String,
+    val heart: String,
+    val oxygen: String,
+    val steps: String,
     val source: String,
     val updated: String,
 ) {
@@ -54,7 +57,16 @@ internal data class WidgetContent(
             } else {
                 context.getString(R.string.widget_open_to_update)
             }
-            return WidgetContent(altitude, track, health, source, updated)
+            return WidgetContent(
+                altitude = altitude,
+                track = track,
+                health = health,
+                heart = "♥ $heart",
+                oxygen = "O₂ $oxygen",
+                steps = "👣 $steps",
+                source = source,
+                updated = updated,
+            )
         }
     }
 }

@@ -37,8 +37,9 @@ class HealthWidgetProvider : AppWidgetProvider() {
         private fun views(context: Context, data: AltimeterWidgetSnapshot): RemoteViews {
             val content = WidgetContent.create(context, data)
             return RemoteViews(context.packageName, R.layout.health_widget).apply {
-                setTextViewText(R.id.health_widget_values, content.health)
-                setTextViewText(R.id.health_widget_source, content.source)
+                setTextViewText(R.id.health_widget_heart, content.heart)
+                setTextViewText(R.id.health_widget_oxygen, content.oxygen)
+                setTextViewText(R.id.health_widget_steps, content.steps)
                 setTextViewText(R.id.health_widget_updated, content.updated)
                 setOnClickPendingIntent(
                     R.id.health_widget_root,

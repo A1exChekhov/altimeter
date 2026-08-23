@@ -130,6 +130,7 @@ class TrackingService : Service() {
                     points = recorder.pointCount,
                     distanceM = recorder.distanceM,
                     ascentM = recorder.ascentM,
+                    route = recorder.mapPoints(),
                 )
             }
         }

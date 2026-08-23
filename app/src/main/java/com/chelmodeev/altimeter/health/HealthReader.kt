@@ -1,6 +1,8 @@
 package com.chelmodeev.altimeter.health
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
@@ -8,11 +10,13 @@ import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
+import androidx.health.connect.client.request.AggregateGroupByDurationRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.Duration
 
 data class HealthPermissionState(
     val heartRate: Boolean = false,
@@ -38,6 +42,8 @@ data class VitalsSnapshot(
     val stepsOrigin: String? = null,
     /** Пульс за последние 3 часа для мини-графика: (epochMs, bpm). */
     val hrSeries: List<Pair<Long, Long>>,
+    val spo2Series: List<Pair<Long, Double>> = emptyList(),
+    val stepsSeries: List<Pair<Long, Long>> = emptyList(),
     val readErrors: List<String> = emptyList(),
 )
 
@@ -63,6 +69,7 @@ class HealthReader(private val context: Context) {
             OXYGEN_PERMISSION,
             STEPS_PERMISSION,
         )
+        private const val GRAPH_WINDOW_HOURS = 6L
     }
 
     fun sdkStatus(): Int = HealthConnectClient.getSdkStatus(context)
@@ -79,11 +86,23 @@ class HealthReader(private val context: Context) {
                 .permissionController.getGrantedPermissions()
         }.getOrDefault(emptySet())
         return HealthPermissionState(
-            heartRate = HEART_RATE_PERMISSION in granted,
-            restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted,
-            oxygenSaturation = OXYGEN_PERMISSION in granted,
-            steps = STEPS_PERMISSION in granted,
+            heartRate = HEART_RATE_PERMISSION in granted && platformPermissionGranted(
+                HEART_RATE_PERMISSION
+            ),
+            restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted &&
+                platformPermissionGranted(RESTING_HEART_RATE_PERMISSION),
+            oxygenSaturation = OXYGEN_PERMISSION in granted && platformPermissionGranted(
+                OXYGEN_PERMISSION
+            ),
+            steps = STEPS_PERMISSION in granted && platformPermissionGranted(STEPS_PERMISSION),
         )
+    }
+
+    suspend fun revokeAllPermissions() {
+        if (!isAvailable()) return
+        runCatching {
+            HealthConnectClient.getOrCreate(context).permissionController.revokeAllPermissions()
+        }
     }
 
     suspend fun readLatest(permissions: HealthPermissionState): VitalsSnapshot? {
@@ -91,6 +110,7 @@ class HealthReader(private val context: Context) {
         val client = runCatching { HealthConnectClient.getOrCreate(context) }.getOrNull() ?: return null
         val now = Instant.now()
         val from = now.minusSeconds(12 * 3600)
+        val graphFrom = now.minusSeconds(GRAPH_WINDOW_HOURS * 3600)
         val errors = mutableListOf<String>()
 
         var hrAt: Instant? = null
@@ -99,7 +119,6 @@ class HealthReader(private val context: Context) {
         var hrIsResting = false
         val series = mutableListOf<Pair<Long, Long>>()
         if (permissions.heartRate) runCatching {
-            val seriesFrom = now.minusSeconds(3 * 3600)
             var pageToken: String? = null
             var pageCount = 0
             do {
@@ -120,7 +139,7 @@ class HealthReader(private val context: Context) {
                             hrBpm = sample.beatsPerMinute
                             hrOrigin = rec.metadata.dataOrigin.packageName
                         }
-                        if (!sample.time.isBefore(seriesFrom)) {
+                        if (!sample.time.isBefore(graphFrom)) {
                             series += sample.time.toEpochMilli() to sample.beatsPerMinute
                         }
                     }
@@ -128,7 +147,7 @@ class HealthReader(private val context: Context) {
                 pageToken = resp.pageToken
                 pageCount++
             } while (pageToken != null && pageCount < 20)
-        }.onFailure { errors += "heart_rate:${it.shortDescription()}" }
+        }.onFailure { errors += it.readError("heart_rate") }
 
         // Некоторые синхронизаторы пишут суточный пульс Huawei как отдельный
         // RestingHeartRateRecord, а не как серию HeartRateRecord.
@@ -151,18 +170,19 @@ class HealthReader(private val context: Context) {
                     hrIsResting = true
                 }
             }
-        }.onFailure { errors += "resting_heart_rate:${it.shortDescription()}" }
+        }.onFailure { errors += it.readError("resting_heart_rate") }
 
         var spAt: Instant? = null
         var sp: Double? = null
         var spOrigin: String? = null
+        val spo2Series = mutableListOf<Pair<Long, Double>>()
         if (permissions.oxygenSaturation) runCatching {
             val resp = client.readRecords(
                 ReadRecordsRequest(
                     recordType = OxygenSaturationRecord::class,
                     timeRangeFilter = TimeRangeFilter.between(from, now),
                     ascendingOrder = false,
-                    pageSize = 1,
+                    pageSize = 1_000,
                 )
             )
             resp.records.firstOrNull()?.let { record ->
@@ -170,11 +190,17 @@ class HealthReader(private val context: Context) {
                 sp = record.percentage.value
                 spOrigin = record.metadata.dataOrigin.packageName
             }
-        }.onFailure { errors += "oxygen:${it.shortDescription()}" }
+            resp.records.forEach { record ->
+                if (!record.time.isBefore(graphFrom)) {
+                    spo2Series += record.time.toEpochMilli() to record.percentage.value
+                }
+            }
+        }.onFailure { errors += it.readError("oxygen") }
 
         var stepsToday: Long? = null
         var stepsAt: Instant? = null
         var stepsOrigin: String? = null
+        val stepsSeries = mutableListOf<Pair<Long, Long>>()
         if (permissions.steps) runCatching {
             val zone = ZoneId.systemDefault()
             val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant()
@@ -193,9 +219,22 @@ class HealthReader(private val context: Context) {
                     .joinToString(", ")
                     .takeIf { it.isNotBlank() }
             }
-        }.onFailure { errors += "steps:${it.shortDescription()}" }
+            val buckets = client.aggregateGroupByDuration(
+                AggregateGroupByDurationRequest(
+                    metrics = setOf(StepsRecord.COUNT_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(graphFrom, now),
+                    timeRangeSlicer = Duration.ofMinutes(15),
+                )
+            )
+            var cumulative = 0L
+            buckets.sortedBy { it.endTime }.forEach { bucket ->
+                cumulative += bucket.result[StepsRecord.COUNT_TOTAL] ?: 0L
+                stepsSeries += bucket.endTime.toEpochMilli() to cumulative
+            }
+        }.onFailure { errors += it.readError("steps") }
 
         series.sortBy { it.first }
+        spo2Series.sortBy { it.first }
         return VitalsSnapshot(
             heartRateBpm = hrBpm,
             heartRateAt = hrAt,
@@ -208,10 +247,18 @@ class HealthReader(private val context: Context) {
             stepsAt = stepsAt,
             stepsOrigin = stepsOrigin,
             hrSeries = series.distinctBy { it.first },
+            spo2Series = spo2Series.distinctBy { it.first },
+            stepsSeries = stepsSeries.distinctBy { it.first },
             readErrors = errors,
         )
     }
 
-    private fun Throwable.shortDescription(): String =
-        message?.takeIf { it.isNotBlank() } ?: javaClass.simpleName
+    private fun platformPermissionGranted(permission: String): Boolean =
+        Build.VERSION.SDK_INT < 34 ||
+            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun Throwable.readError(metric: String): String = when (this) {
+        is SecurityException -> "$metric:permission"
+        else -> "$metric:${javaClass.simpleName}"
+    }
 }

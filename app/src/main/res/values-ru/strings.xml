@@ -25,8 +25,13 @@
 
     <string name="accuracy_fmt">±%1$s %2$s</string>
 
-    <string name="chart_title">Высота · последний час</string>
-    <string name="chart_empty">График появится через пару минут…</string>
+    <string name="chart_title">Динамика показателей</string>
+    <string name="chart_empty">График появится по мере поступления данных…</string>
+    <string name="chart_altitude">Высота</string>
+    <string name="chart_range_15m">15 мин</string>
+    <string name="chart_range_1h">1 ч</string>
+    <string name="chart_range_3h">3 ч</string>
+    <string name="chart_range_6h">6 ч</string>
 
     <string name="detail_pressure">Давление</string>
     <string name="detail_vacc">Верт. точность GPS</string>
@@ -75,6 +80,7 @@
 
     <string name="settings_map">Карта</string>
     <string name="settings_map_topo">Топографическая карта (OpenTopoMap)</string>
+    <string name="settings_map_offline_cache">Просмотренные участки карты сохраняются в постоянном офлайн-хранилище (до 512 МБ).</string>
     <string name="settings_keep_on">Не гасить экран</string>
     <string name="settings_reset">Сбросить статистику</string>
     <string name="settings_about">Высота: барометр + GPS (поправка NMEA/геоид). Карты: © участники OpenStreetMap, © OpenTopoMap. Названия мест: Nominatim.</string>
@@ -86,10 +92,12 @@
     <string name="track_open">Треки и запись GPX</string>
     <string name="track_start">Начать запись</string>
     <string name="track_stop">Стоп</string>
+    <string name="track_hero_stop">Остановить трек · %1$s</string>
     <string name="track_points">точек</string>
     <string name="track_distance">дистанция</string>
     <string name="track_saved">Сохранён: %1$s</string>
     <string name="track_share">Поделиться треком</string>
+    <string name="track_view_on_map">Показать трек на карте</string>
     <string name="track_hint">Запись идёт в фоне и при выключенном экране. Сохранённые GPX показаны выше; кнопка справа открывает меню экспорта.</string>
     <string name="track_notif_title">Идёт запись трека</string>
     <string name="track_archive">Сохранённые треки: %1$d</string>
@@ -141,6 +149,16 @@
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
     <string name="vitals_source_bluetooth">Bluetooth · сейчас</string>
+    <string name="vitals_sources">Источники данных</string>
+    <string name="vitals_spo2_short">SpO₂</string>
+    <string name="vitals_permission_repair_short">Нужно обновить доступ к здоровью</string>
+    <string name="vitals_access_required_short">Разрешите доступ Health Connect</string>
+    <string name="vitals_data_incomplete_short">Ожидаю недостающие показатели</string>
+    <string name="vitals_ready">Данные здоровья подключены</string>
+    <string name="vitals_permission_repair_hint">Android отклонил чтение, хотя доступ выглядел включённым. Сбросьте его и снова разрешите пульс, сатурацию и шаги.</string>
+    <string name="vitals_repair_access">Сбросить и выдать доступ заново</string>
+    <string name="vitals_open_health_connect">Открыть Health Connect</string>
+    <string name="vitals_health_connect_open_failed">Не удалось открыть Health Connect</string>
 
     <string name="widget_combined_name">Альтиметр · всё</string>
     <string name="widget_altitude_name">Альтиметр · высота</string>

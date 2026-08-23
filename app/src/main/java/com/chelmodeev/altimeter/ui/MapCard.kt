@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chelmodeev.altimeter.R
+import com.chelmodeev.altimeter.model.TrackMapPoint
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
@@ -44,6 +45,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
+import org.osmdroid.views.overlay.Polyline
 
 private val TOPO_SOURCE = XYTileSource(
     "OpenTopoMap", 3, 17, 256, ".png",
@@ -62,6 +64,8 @@ fun MapCard(
     accuracyMeters: Float?,
     topo: Boolean,
     accent: Color,
+    trackPoints: List<TrackMapPoint>,
+    trackRecording: Boolean,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
@@ -84,6 +88,11 @@ fun MapCard(
         }
     }
     val accuracyCircle = remember { Polygon() }
+    val routeLine = remember {
+        Polyline(mapView).apply {
+            outlinePaint.strokeWidth = 7f * context.resources.displayMetrics.density
+        }
+    }
     val marker = remember {
         Marker(mapView).apply {
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
@@ -93,6 +102,7 @@ fun MapCard(
 
     LaunchedEffect(Unit) {
         mapView.overlays.add(accuracyCircle)
+        mapView.overlays.add(routeLine)
         mapView.overlays.add(marker)
         mapView.overlays.add(CopyrightOverlay(context))
     }
@@ -112,6 +122,27 @@ fun MapCard(
         accuracyCircle.fillPaint.color = accent.copy(alpha = 0.10f).toArgb()
         accuracyCircle.outlinePaint.color = accent.copy(alpha = 0.45f).toArgb()
         accuracyCircle.outlinePaint.strokeWidth = 2f
+        routeLine.outlinePaint.color = accent.toArgb()
+        mapView.invalidate()
+    }
+
+    LaunchedEffect(trackPoints, trackRecording) {
+        val points = trackPoints.map { GeoPoint(it.latitude, it.longitude) }
+        routeLine.setPoints(points)
+        if (!trackRecording && points.size >= 2) {
+            follow.value = false
+            val north = points.maxOf { it.latitude }
+            val east = points.maxOf { it.longitude }
+            val south = points.minOf { it.latitude }
+            val west = points.minOf { it.longitude }
+            mapView.post {
+                mapView.zoomToBoundingBox(
+                    org.osmdroid.util.BoundingBox(north, east, south, west),
+                    true,
+                    42,
+                )
+            }
+        }
         mapView.invalidate()
     }
 
@@ -124,8 +155,10 @@ fun MapCard(
             if (acc > 5.0) Polygon.pointsAsCircle(point, acc) else arrayListOf(point, point, point)
         if (!hadFirstFix.value) {
             hadFirstFix.value = true
-            mapView.controller.setZoom(15.0)
-            mapView.controller.setCenter(point)
+            if (trackRecording || trackPoints.isEmpty()) {
+                mapView.controller.setZoom(15.0)
+                mapView.controller.setCenter(point)
+            }
         } else if (follow.value) {
             mapView.controller.animateTo(point)
         }

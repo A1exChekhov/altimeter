@@ -32,7 +32,7 @@
             android:maxLines="1"
             android:text="— m"
             android:textColor="#F4F7FA"
-            android:textSize="25sp" />
+            android:textSize="28sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -49,7 +49,7 @@
             android:maxLines="1"
             android:text="Track —"
             android:textColor="#B9C2CC"
-            android:textSize="10sp" />
+            android:textSize="11sp" />
 
         <TextView
             android:id="@+id/widget_health"

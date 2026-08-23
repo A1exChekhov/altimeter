@@ -26,8 +26,13 @@
 
     <string name="accuracy_fmt">±%1$s %2$s</string>
 
-    <string name="chart_title">Altitude · last hour</string>
-    <string name="chart_empty">The chart will appear in a couple of minutes…</string>
+    <string name="chart_title">Trends</string>
+    <string name="chart_empty">The chart will appear as readings arrive…</string>
+    <string name="chart_altitude">Altitude</string>
+    <string name="chart_range_15m">15 min</string>
+    <string name="chart_range_1h">1 h</string>
+    <string name="chart_range_3h">3 h</string>
+    <string name="chart_range_6h">6 h</string>
 
     <string name="detail_pressure">Pressure</string>
     <string name="detail_vacc">GPS vert. accuracy</string>
@@ -76,6 +81,7 @@
 
     <string name="settings_map">Map</string>
     <string name="settings_map_topo">Topographic map (OpenTopoMap)</string>
+    <string name="settings_map_offline_cache">Viewed map areas are kept in persistent offline storage (up to 512 MB).</string>
     <string name="settings_keep_on">Keep screen on</string>
     <string name="settings_reset">Reset statistics</string>
     <string name="settings_about">Altitude: barometer + GPS (NMEA/geoid corrected). Maps: © OpenStreetMap contributors, © OpenTopoMap. Places: Nominatim.</string>
@@ -87,10 +93,12 @@
     <string name="track_open">Tracks and GPX recording</string>
     <string name="track_start">Start recording</string>
     <string name="track_stop">Stop</string>
+    <string name="track_hero_stop">Stop track · %1$s</string>
     <string name="track_points">points</string>
     <string name="track_distance">distance</string>
     <string name="track_saved">Saved: %1$s</string>
     <string name="track_share">Share track</string>
+    <string name="track_view_on_map">Show track on map</string>
     <string name="track_hint">Recording continues in the background and with the screen off. Saved GPX files are listed above; use the button on the right to export one.</string>
     <string name="track_notif_title">Recording track</string>
     <string name="track_archive">Saved tracks: %1$d</string>
@@ -142,6 +150,16 @@
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
     <string name="vitals_source_bluetooth">Bluetooth · live</string>
+    <string name="vitals_sources">Data sources</string>
+    <string name="vitals_spo2_short">SpO₂</string>
+    <string name="vitals_permission_repair_short">Health access needs to be refreshed</string>
+    <string name="vitals_access_required_short">Allow Health Connect access</string>
+    <string name="vitals_data_incomplete_short">Waiting for missing readings</string>
+    <string name="vitals_ready">Health data is connected</string>
+    <string name="vitals_permission_repair_hint">Android rejected one or more reads although access looked enabled. Reset and grant heart rate, oxygen saturation and steps again.</string>
+    <string name="vitals_repair_access">Reset and grant access again</string>
+    <string name="vitals_open_health_connect">Open Health Connect</string>
+    <string name="vitals_health_connect_open_failed">Could not open Health Connect</string>
 
     <string name="widget_combined_name">Altimeter · all</string>
     <string name="widget_altitude_name">Altimeter · altitude</string>

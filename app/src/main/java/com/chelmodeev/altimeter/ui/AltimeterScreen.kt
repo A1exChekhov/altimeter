@@ -44,11 +44,13 @@ import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.Watch
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -98,6 +100,8 @@ data class ScreenActions(
     val onRequestHealth: () -> Unit,
     val onRequestHuaweiHealth: () -> Unit,
     val onOpenHealthSync: () -> Unit,
+    val onOpenHealthConnect: () -> Unit,
+    val onRepairHealth: () -> Unit,
     val onConnectBluetooth: () -> Unit,
     val onGrantLocation: () -> Unit,
     val onSetUnit: (AltUnit) -> Unit,
@@ -110,6 +114,7 @@ data class ScreenActions(
     val onResetStats: () -> Unit,
     val onStartTrack: () -> Unit,
     val onStopTrack: () -> Unit,
+    val onViewTrack: (String) -> Unit,
     val onShareTrack: (String) -> Unit,
 )
 
@@ -118,6 +123,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
     var showSettings by remember { mutableStateOf(false) }
     var showTracks by remember { mutableStateOf(false) }
+    var showHealthDetails by remember { mutableStateOf(false) }
     var mapExpanded by remember { mutableStateOf(false) }
     val mapHeight by animateDpAsState(if (mapExpanded) 470.dp else 210.dp, label = "mapHeight")
 
@@ -147,7 +153,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 onSettings = { showSettings = true },
             )
             Spacer(Modifier.height(4.dp))
-            Readout(state, accent)
+            Readout(state, accent, actions)
             Spacer(Modifier.height(16.dp))
             StatusChipsRow(state)
             if (!state.locationPermissionGranted) {
@@ -161,18 +167,20 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 accuracyMeters = state.gpsAccuracy,
                 topo = state.topoMap,
                 accent = accent,
+                trackPoints = state.mapTrack,
+                trackRecording = state.tracking.recording,
                 expanded = mapExpanded,
                 onToggleExpanded = { mapExpanded = !mapExpanded },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(mapHeight),
             )
+            Spacer(Modifier.height(14.dp))
+            VitalsCard(state, actions, onDetails = { showHealthDetails = true })
             if (state.advices.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))
                 AdviceCard(state.advices)
             }
-            Spacer(Modifier.height(14.dp))
-            VitalsCard(state, actions)
             Spacer(Modifier.height(14.dp))
             ChartCard(state, accent)
             Spacer(Modifier.height(14.dp))
@@ -190,6 +198,13 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
         }
         if (showTracks) {
             TrackSheet(state = state, actions = actions, onDismiss = { showTracks = false })
+        }
+        if (showHealthDetails) {
+            VitalsDetailsSheet(
+                state = state,
+                actions = actions,
+                onDismiss = { showHealthDetails = false },
+            )
         }
     }
 }
@@ -239,7 +254,7 @@ private fun HeaderRow(
 }
 
 @Composable
-private fun Readout(state: UiState, accent: Color) {
+private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
     val context = LocalContext.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -340,6 +355,36 @@ private fun Readout(state: UiState, accent: Color) {
                 letterSpacing = 0.6.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+
+        Button(
+            onClick = if (state.tracking.recording) actions.onStopTrack else actions.onStartTrack,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (state.tracking.recording) Color(0xFFD84A4A)
+                else accent.copy(alpha = 0.92f),
+                contentColor = Color(0xFF07111F),
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+        ) {
+            Icon(
+                if (state.tracking.recording) Icons.Rounded.Stop else Icons.Rounded.Route,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = if (state.tracking.recording) {
+                    stringResource(
+                        R.string.track_hero_stop,
+                        Fmt.distance(context, state.tracking.distanceM),
+                    )
+                } else {
+                    stringResource(R.string.track_start)
+                },
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -506,7 +551,294 @@ private fun adviceText(a: Advice): String = when (a.kind) {
 }
 
 @Composable
-private fun VitalsCard(state: UiState, actions: ScreenActions) {
+private fun VitalsCard(
+    state: UiState,
+    actions: ScreenActions,
+    onDetails: () -> Unit,
+) {
+    val vitals = state.vitals
+    val hasHeartPermission = vitals.heartRatePermissionGranted ||
+        vitals.restingHeartRatePermissionGranted
+    val hasAllPermissions = hasHeartPermission && vitals.spo2PermissionGranted &&
+        vitals.stepsPermissionGranted
+    val missingValues = listOf(
+        vitals.heartRateBpm,
+        vitals.spo2Percent,
+        vitals.stepsToday,
+    ).count { it == null }
+
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Rounded.MonitorHeart,
+                contentDescription = null,
+                tint = Color(0xFFFF8A80),
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = stringResource(R.string.vitals_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            if (vitals.refreshing) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Rounded.Refresh,
+                        contentDescription = stringResource(R.string.vitals_refresh),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            IconButton(onClick = onDetails, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Rounded.Settings,
+                    contentDescription = stringResource(R.string.vitals_sources),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CompactVitalStat(
+                label = stringResource(R.string.vitals_hr),
+                value = vitals.heartRateBpm?.toString() ?: "—",
+                unit = stringResource(R.string.vitals_bpm),
+                color = Color(0xFFFF8A80),
+                modifier = Modifier.weight(1f),
+            )
+            CompactVitalStat(
+                label = stringResource(R.string.vitals_spo2_short),
+                value = vitals.spo2Percent?.roundToInt()?.let { "$it" } ?: "—",
+                unit = "%",
+                color = Color(0xFF80D8FF),
+                modifier = Modifier.weight(1f),
+            )
+            CompactVitalStat(
+                label = stringResource(R.string.vitals_steps),
+                value = vitals.stepsToday?.toString() ?: "—",
+                unit = "",
+                color = Color(0xFFB9F6CA),
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        val status = when {
+            vitals.healthConnectError == "PERMISSION" ->
+                stringResource(R.string.vitals_permission_repair_short)
+            !hasAllPermissions -> stringResource(R.string.vitals_access_required_short)
+            missingValues > 0 -> stringResource(R.string.vitals_data_incomplete_short)
+            vitals.bluetoothState == BluetoothVitalsState.CONNECTED ->
+                stringResource(R.string.vitals_source_bluetooth)
+            else -> stringResource(R.string.vitals_ready)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = status,
+            fontSize = 10.5.sp,
+            color = if (vitals.healthConnectError == "PERMISSION") {
+                Color(0xFFFFCC80)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun CompactVitalStat(
+    label: String,
+    value: String,
+    unit: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.045f),
+        modifier = modifier,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = label,
+                fontSize = 9.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    style = TextStyle(
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFeatureSettings = "tnum",
+                    ),
+                    color = color,
+                    maxLines = 1,
+                )
+                if (unit.isNotEmpty()) {
+                    Spacer(Modifier.size(3.dp))
+                    Text(
+                        text = unit,
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VitalsDetailsSheet(
+    state: UiState,
+    actions: ScreenActions,
+    onDismiss: () -> Unit,
+) {
+    val vitals = state.vitals
+    val hasHeartPermission = vitals.heartRatePermissionGranted ||
+        vitals.restingHeartRatePermissionGranted
+    val hasAllPermissions = hasHeartPermission && vitals.spo2PermissionGranted &&
+        vitals.stepsPermissionGranted
+    val bluetoothBusy = vitals.bluetoothState == BluetoothVitalsState.SCANNING ||
+        vitals.bluetoothState == BluetoothVitalsState.CONNECTING
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.vitals_sources),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(
+                    R.string.vitals_permissions_status,
+                    if (hasHeartPermission) "✓" else "—",
+                    if (vitals.spo2PermissionGranted) "✓" else "—",
+                    if (vitals.stepsPermissionGranted) "✓" else "—",
+                ),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+
+            if (vitals.healthConnectError == "PERMISSION") {
+                Text(
+                    text = stringResource(R.string.vitals_permission_repair_hint),
+                    fontSize = 12.5.sp,
+                    lineHeight = 17.sp,
+                    color = Color(0xFFFFCC80),
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = actions.onRepairHealth,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.vitals_repair_access))
+                }
+                Spacer(Modifier.height(8.dp))
+            } else if (!hasAllPermissions) {
+                Button(
+                    onClick = actions.onRequestHealth,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.vitals_health_connect_grant))
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            FilledTonalButton(
+                onClick = actions.onConnectBluetooth,
+                enabled = !bluetoothBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (bluetoothBusy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(Modifier.size(7.dp))
+                }
+                Text(
+                    stringResource(
+                        if (vitals.bluetoothState == BluetoothVitalsState.CONNECTED) {
+                            R.string.vitals_ble_reconnect
+                        } else {
+                            R.string.vitals_ble_connect
+                        }
+                    )
+                )
+            }
+            bluetoothStatusText(vitals.bluetoothState, vitals.bluetoothDeviceName)?.let { text ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = text,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = actions.onOpenHealthConnect,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.vitals_open_health_connect))
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = actions.onOpenHealthSync,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.vitals_open_health_sync))
+            }
+
+            Spacer(Modifier.height(14.dp))
+            listOfNotNull(
+                vitalsSourceLabel(vitals.heartRateSource, vitals.heartRateOrigin)?.let {
+                    stringResource(R.string.vitals_hr) to it
+                },
+                vitalsSourceLabel(vitals.spo2Source, vitals.spo2Origin)?.let {
+                    stringResource(R.string.vitals_spo2_short) to it
+                },
+                vitalsSourceLabel(vitals.stepsSource, vitals.stepsOrigin)?.let {
+                    stringResource(R.string.vitals_steps) to it
+                },
+            ).forEach { (label, source) ->
+                Text(
+                    text = "$label · $source",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(vertical = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun VitalsCardLegacy(state: UiState, actions: ScreenActions) {
     val context = LocalContext.current
     val vitals = state.vitals
     SectionCard {
@@ -899,31 +1231,106 @@ private fun HrSparkline(series: List<Pair<Long, Long>>, color: Color, modifier: 
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChartCard(state: UiState, accent: Color) {
+    val context = LocalContext.current
+    var windowMs by remember { mutableStateOf(60L * 60L * 1_000L) }
+    val ranges = listOf(
+        15L * 60L * 1_000L to R.string.chart_range_15m,
+        60L * 60L * 1_000L to R.string.chart_range_1h,
+        3L * 60L * 60L * 1_000L to R.string.chart_range_3h,
+        6L * 60L * 60L * 1_000L to R.string.chart_range_6h,
+    )
+    val heartColor = Color(0xFFFF6B7A)
+    val oxygenColor = Color(0xFF67C7FF)
+    val stepsColor = Color(0xFF78D89B)
+    val lines = listOf(
+        TrendLine(accent, state.history.map { it.timeMs to it.altitude }),
+        TrendLine(heartColor, state.vitals.hrSeries.map { it.first to it.second.toDouble() }),
+        TrendLine(oxygenColor, state.vitals.spo2Series),
+        TrendLine(stepsColor, state.vitals.stepsSeries.map { it.first to it.second.toDouble() }),
+    ).filter { it.points.isNotEmpty() }
+
     SectionCard {
         Text(
             text = stringResource(R.string.chart_title),
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
         )
-        Spacer(Modifier.height(10.dp))
-        if (state.history.size < 2) {
+        Spacer(Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            ranges.forEach { (range, label) ->
+                FilterChip(
+                    selected = windowMs == range,
+                    onClick = { windowMs = range },
+                    label = { Text(stringResource(label), fontSize = 10.5.sp) },
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            ChartLegend(
+                color = accent,
+                text = state.altitude?.let { Fmt.altitude(context, it, state.unit) }
+                    ?: stringResource(R.string.chart_altitude),
+            )
+            ChartLegend(
+                color = heartColor,
+                text = state.vitals.heartRateBpm?.let { "$it ${stringResource(R.string.vitals_bpm)}" }
+                    ?: stringResource(R.string.vitals_hr),
+            )
+            ChartLegend(
+                color = oxygenColor,
+                text = state.vitals.spo2Percent?.roundToInt()?.let { "SpO₂ $it%" }
+                    ?: "SpO₂",
+            )
+            ChartLegend(
+                color = stepsColor,
+                text = state.vitals.stepsToday?.let { "👣 $it" }
+                    ?: stringResource(R.string.vitals_steps),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        if (lines.isEmpty()) {
             Text(
                 text = stringResource(R.string.chart_empty),
                 fontSize = 12.5.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            AltitudeChart(
-                points = state.history,
-                unit = state.unit,
-                accent = accent,
+            CombinedTrendChart(
+                lines = lines,
+                windowMs = windowMs,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(170.dp),
+                    .height(180.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun ChartLegend(color: Color, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .background(color, CircleShape)
+        )
+        Spacer(Modifier.size(4.dp))
+        Text(
+            text = text,
+            fontSize = 10.5.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1056,13 +1463,24 @@ private fun TrackSheet(state: UiState, actions: ScreenActions, onDismiss: () -> 
                 .navigationBarsPadding()
                 .padding(bottom = 24.dp)
         ) {
-            TrackCard(state, actions)
+            TrackCard(
+                state = state,
+                actions = actions,
+                onViewTrack = { path ->
+                    actions.onViewTrack(path)
+                    onDismiss()
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun TrackCard(state: UiState, actions: ScreenActions) {
+private fun TrackCard(
+    state: UiState,
+    actions: ScreenActions,
+    onViewTrack: (String) -> Unit,
+) {
     val context = LocalContext.current
     val t = state.tracking
     SectionCard {
@@ -1188,6 +1606,17 @@ private fun TrackCard(state: UiState, actions: ScreenActions) {
                                 ),
                                 fontSize = 9.5.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        IconButton(
+                            onClick = { onViewTrack(saved.path) },
+                            modifier = Modifier.size(30.dp),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Visibility,
+                                contentDescription = stringResource(R.string.track_view_on_map),
+                                tint = Color(0xFF4DD0C4),
+                                modifier = Modifier.size(16.dp),
                             )
                         }
                         IconButton(

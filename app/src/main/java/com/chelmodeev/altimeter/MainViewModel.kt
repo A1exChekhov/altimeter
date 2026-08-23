@@ -3,6 +3,7 @@ package com.chelmodeev.altimeter
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.util.Xml
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.chelmodeev.altimeter.core.AltimeterCore
@@ -17,6 +18,7 @@ import com.chelmodeev.altimeter.logic.AdvisorInput
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.SavedTrack
+import com.chelmodeev.altimeter.model.TrackMapPoint
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.model.WatchState
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.io.File
+import org.xmlpull.v1.XmlPullParser
 import kotlin.math.roundToLong
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -55,6 +58,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var placeJob: Job? = null
     private var vitalsJob: Job? = null
     private var lastWidgetUpdateAt = 0L
+    @Volatile private var appInForeground = false
 
     init {
         wearEngine.onStatus = { msg ->
@@ -87,7 +91,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     (!track.recording && _ui.value.savedTracks.isEmpty())
                 wasRecording = track.recording
                 val savedTracks = if (shouldReload) loadSavedTracks() else _ui.value.savedTracks
-                _ui.update { it.copy(tracking = track, savedTracks = savedTracks) }
+                val visibleRoute = when {
+                    track.route.isNotEmpty() -> track.route
+                    _ui.value.mapTrack.isNotEmpty() -> _ui.value.mapTrack
+                    else -> savedTracks.firstOrNull()?.let { loadGpxTrack(it.path) }.orEmpty()
+                }
+                _ui.update {
+                    it.copy(
+                        tracking = track,
+                        savedTracks = savedTracks,
+                        mapTrack = visibleRoute,
+                    )
+                }
             }
         }
 
@@ -95,7 +110,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             refreshHealthStatus()
             while (true) {
                 delay(300_000)
-                refreshVitals()
+                if (appInForeground) refreshVitals()
             }
         }
     }
@@ -255,6 +270,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- пульс и SpO₂ (Huawei Health Kit + Health Connect) ----------
 
+    fun onAppForegrounded() {
+        appInForeground = true
+        viewModelScope.launch { refreshHealthStatus() }
+    }
+
+    fun onAppBackgrounded() {
+        appInForeground = false
+    }
+
     fun connectBluetoothHeartRate() {
         bluetoothHeartRateReader.start(object : BluetoothHeartRateReader.Listener {
             override fun onState(state: BluetoothVitalsState, deviceName: String?) {
@@ -271,6 +295,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             override fun onHeartRate(bpm: Long, deviceName: String?) {
                 val now = System.currentTimeMillis()
                 _ui.update {
+                    val recentSeries = (it.vitals.hrSeries + (now to bpm))
+                        .filter { point -> point.first >= now - GRAPH_WINDOW_MS }
+                        .takeLast(4_000)
                     it.copy(
                         vitals = it.vitals.copy(
                             bluetoothState = BluetoothVitalsState.CONNECTED,
@@ -280,6 +307,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             heartRateSource = VitalsSource.BLUETOOTH,
                             heartRateOrigin = deviceName,
                             heartRateIsResting = false,
+                            hrSeries = recentSeries,
                         )
                     )
                 }
@@ -316,7 +344,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 )
             )
         }
-        if (huaweiAuthorized || granted.anyGranted) refreshVitals()
+        if (appInForeground && (huaweiAuthorized || granted.anyGranted)) refreshVitals()
     }
 
     private fun loadSavedTracks(): List<SavedTrack> {
@@ -334,6 +362,29 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
     }
+
+    fun viewTrack(path: String) {
+        val route = loadGpxTrack(path)
+        if (route.isNotEmpty()) _ui.update { it.copy(mapTrack = route) }
+    }
+
+    private fun loadGpxTrack(path: String): List<TrackMapPoint> = runCatching {
+        File(path).inputStream().buffered().use { input ->
+            val parser = Xml.newPullParser().apply { setInput(input, null) }
+            val route = mutableListOf<TrackMapPoint>()
+            while (parser.eventType != XmlPullParser.END_DOCUMENT) {
+                if (parser.eventType == XmlPullParser.START_TAG && parser.name == "trkpt") {
+                    val latitude = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                    val longitude = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                    if (latitude != null && longitude != null) {
+                        route += TrackMapPoint(latitude, longitude)
+                    }
+                }
+                parser.next()
+            }
+            route
+        }
+    }.getOrDefault(emptyList())
 
     fun onHealthPermissionsResult() {
         viewModelScope.launch { refreshHealthStatus() }
@@ -367,6 +418,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refreshVitals() {
+        if (!appInForeground) return
         if (vitalsJob?.isActive == true) return
         val status = _ui.value.vitals
         if (!status.permissionsGranted && !status.huaweiHealthAuthorized) return
@@ -400,7 +452,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val heartRate = newestHeartRate(huaweiSnapshot, healthConnectSnapshot, before)
             val oxygen = newestOxygen(huaweiSnapshot, healthConnectSnapshot, before)
             val steps = newestSteps(huaweiSnapshot, healthConnectSnapshot, before)
-            val series = newestSeries(huaweiSnapshot, healthConnectSnapshot, before.hrSeries)
+            val hrSeries = newestSeries(
+                huaweiSnapshot?.hrSeries,
+                healthConnectSnapshot?.hrSeries,
+                before.hrSeries,
+            )
+            val spo2Series = newestSeries(
+                huaweiSnapshot?.spo2Series,
+                healthConnectSnapshot?.spo2Series,
+                before.spo2Series,
+            )
+            val stepsSeries = newestSeries(
+                huaweiSnapshot?.stepsSeries,
+                healthConnectSnapshot?.stepsSeries,
+                before.stepsSeries,
+            )
+            val readErrors = healthConnectSnapshot?.readErrors.orEmpty()
+            val permissionIssue = readErrors.any { it.endsWith(":permission") }
             _ui.update {
                 val v = it.vitals
                 it.copy(
@@ -408,9 +476,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         refreshing = false,
                         huaweiHealthAuthorized = v.huaweiHealthAuthorized && !authorizationLost,
                         huaweiError = huaweiError?.let(huaweiHealthReader::describeError),
-                        healthConnectError = healthConnectSnapshot?.readErrors
-                            ?.takeIf { errors -> errors.isNotEmpty() }
-                            ?.joinToString("; "),
+                        healthConnectError = when {
+                            permissionIssue -> "PERMISSION"
+                            readErrors.isNotEmpty() -> "READ"
+                            else -> null
+                        },
                         heartRateBpm = heartRate?.value,
                         heartRateAtMs = heartRate?.atMs,
                         heartRateSource = heartRate?.source,
@@ -424,7 +494,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         stepsAtMs = steps?.atMs,
                         stepsSource = steps?.source,
                         stepsOrigin = steps?.origin,
-                        hrSeries = series,
+                        hrSeries = hrSeries,
+                        spo2Series = spo2Series,
+                        stepsSeries = stepsSeries,
                     )
                 )
             }
@@ -550,13 +622,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         },
     ).maxByOrNull { it.atMs }
 
-    private fun newestSeries(
-        huawei: VitalsSnapshot?,
-        healthConnect: VitalsSnapshot?,
-        previous: List<Pair<Long, Long>>,
-    ): List<Pair<Long, Long>> = listOf(
-        huawei?.hrSeries.orEmpty(),
-        healthConnect?.hrSeries.orEmpty(),
+    private fun <T> newestSeries(
+        huawei: List<Pair<Long, T>>?,
+        healthConnect: List<Pair<Long, T>>?,
+        previous: List<Pair<Long, T>>,
+    ): List<Pair<Long, T>> = listOf(
+        huawei.orEmpty(),
+        healthConnect.orEmpty(),
         previous,
     ).maxByOrNull { series -> series.lastOrNull()?.first ?: 0L }.orEmpty()
+
+    private companion object {
+        const val GRAPH_WINDOW_MS = 6 * 60 * 60 * 1_000L
+    }
 }
