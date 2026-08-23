@@ -278,7 +278,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAppForegrounded() {
         appInForeground = true
-        viewModelScope.launch { refreshHealthStatus() }
+        viewModelScope.launch {
+            // Health Connect rejects aggregate reads until Android has fully promoted
+            // the resumed activity to foreground. onPostResume + a short main-loop
+            // delay avoids the foreground race seen on Honor/MagicOS.
+            delay(350)
+            if (appInForeground) refreshHealthStatus()
+        }
     }
 
     fun onAppBackgrounded() {

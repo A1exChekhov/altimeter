@@ -155,14 +155,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    override fun onPostResume() {
+        super.onPostResume()
         viewModel.onAppForegrounded()
     }
 
-    override fun onStop() {
+    override fun onPause() {
         viewModel.onAppBackgrounded()
-        super.onStop()
+        super.onPause()
     }
 
     private fun openHealthConnect() {
