@@ -10,7 +10,7 @@ import android.widget.RemoteViews
 import com.chelmodeev.altimeter.MainActivity
 import com.chelmodeev.altimeter.R
 
-class AltimeterWidgetProvider : AppWidgetProvider() {
+class HealthWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -26,31 +26,30 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
     companion object {
         fun updateAll(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
-            val component = ComponentName(context, AltimeterWidgetProvider::class.java)
-            val ids = manager.getAppWidgetIds(component)
+            val ids = manager.getAppWidgetIds(
+                ComponentName(context, HealthWidgetProvider::class.java),
+            )
             if (ids.isEmpty()) return
             val snapshot = AltimeterWidgetStore.read(context)
             ids.forEach { id -> manager.updateAppWidget(id, views(context, snapshot)) }
         }
 
         private fun views(context: Context, data: AltimeterWidgetSnapshot): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.altimeter_widget)
             val content = WidgetContent.create(context, data)
-
-            views.setTextViewText(R.id.widget_altitude, content.altitude)
-            views.setTextViewText(R.id.widget_track, content.track)
-            views.setTextViewText(R.id.widget_health, content.health)
-            views.setTextViewText(R.id.widget_health_source, content.source)
-            views.setTextViewText(R.id.widget_updated, content.updated)
-
-            val openApp = PendingIntent.getActivity(
-                context,
-                20,
-                Intent(context, MainActivity::class.java),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-            views.setOnClickPendingIntent(R.id.widget_root, openApp)
-            return views
+            return RemoteViews(context.packageName, R.layout.health_widget).apply {
+                setTextViewText(R.id.health_widget_values, content.health)
+                setTextViewText(R.id.health_widget_source, content.source)
+                setTextViewText(R.id.health_widget_updated, content.updated)
+                setOnClickPendingIntent(
+                    R.id.health_widget_root,
+                    PendingIntent.getActivity(
+                        context,
+                        22,
+                        Intent(context, MainActivity::class.java),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                )
+            }
         }
     }
 }

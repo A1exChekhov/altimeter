@@ -127,7 +127,12 @@
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
 
-    <string name="widget_description">Высота, трек, пульс, SpO₂ и шаги</string>
+    <string name="widget_combined_name">Альтиметр · всё</string>
+    <string name="widget_altitude_name">Альтиметр · высота</string>
+    <string name="widget_health_name">Альтиметр · здоровье</string>
+    <string name="widget_description">Высота, трек, пульс, SpO₂ и шаги (4×1)</string>
+    <string name="widget_altitude_description">Высота и состояние трека (2×1)</string>
+    <string name="widget_health_description">Пульс, SpO₂ и шаги (2×1)</string>
     <string name="widget_track_recording">● Трек %1$s</string>
     <string name="widget_track_saved">Трек %1$s</string>
     <string name="widget_track_empty">Трек —</string>

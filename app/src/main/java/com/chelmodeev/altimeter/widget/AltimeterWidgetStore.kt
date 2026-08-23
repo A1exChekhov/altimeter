@@ -32,7 +32,7 @@ object AltimeterWidgetStore {
         if (altitudeM == null) edit.remove("altitude")
         else edit.putLong("altitude", altitudeM.toBits())
         edit.apply()
-        AltimeterWidgetProvider.updateAll(context)
+        updateAllWidgets(context)
     }
 
     fun updateTrack(context: Context, track: TrackRecState) {
@@ -42,7 +42,7 @@ object AltimeterWidgetStore {
             .putInt("track_points", track.points)
             .putLong("updated", System.currentTimeMillis())
             .apply()
-        AltimeterWidgetProvider.updateAll(context)
+        updateAllWidgets(context)
     }
 
     fun updateAltitudeAndTrack(
@@ -60,7 +60,7 @@ object AltimeterWidgetStore {
         if (altitudeM == null) edit.remove("altitude")
         else edit.putLong("altitude", altitudeM.toBits())
         edit.apply()
-        AltimeterWidgetProvider.updateAll(context)
+        updateAllWidgets(context)
     }
 
     fun updateVitals(context: Context, vitals: VitalsState) {
@@ -76,7 +76,7 @@ object AltimeterWidgetStore {
         putSource(edit, "spo2_source", vitals.spo2Source)
         putSource(edit, "steps_source", vitals.stepsSource)
         edit.apply()
-        AltimeterWidgetProvider.updateAll(context)
+        updateAllWidgets(context)
     }
 
     fun read(context: Context): AltimeterWidgetSnapshot {
@@ -101,6 +101,12 @@ object AltimeterWidgetStore {
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    private fun updateAllWidgets(context: Context) {
+        AltimeterWidgetProvider.updateAll(context)
+        AltitudeWidgetProvider.updateAll(context)
+        HealthWidgetProvider.updateAll(context)
+    }
 
     private fun android.content.SharedPreferences.getLongOrNull(key: String): Long? =
         if (contains(key)) getLong(key, 0L) else null

@@ -128,7 +128,12 @@
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
 
-    <string name="widget_description">Altitude, track, heart rate, SpO₂ and steps</string>
+    <string name="widget_combined_name">Altimeter · all</string>
+    <string name="widget_altitude_name">Altimeter · altitude</string>
+    <string name="widget_health_name">Altimeter · health</string>
+    <string name="widget_description">Altitude, track, heart rate, SpO₂ and steps (4×1)</string>
+    <string name="widget_altitude_description">Altitude and track status (2×1)</string>
+    <string name="widget_health_description">Heart rate, SpO₂ and steps (2×1)</string>
     <string name="widget_track_recording">● Track %1$s</string>
     <string name="widget_track_saved">Track %1$s</string>
     <string name="widget_track_empty">Track —</string>

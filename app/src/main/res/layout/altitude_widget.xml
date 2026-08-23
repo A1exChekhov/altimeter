@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/altitude_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.12"
+        android:maxLines="1"
+        android:text="ERRARIUM™"
+        android:textColor="#9AA4B2"
+        android:textSize="8sp" />
+
+    <TextView
+        android:id="@+id/altitude_widget_altitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:text="— m"
+        android:textColor="#F4F7FA"
+        android:textSize="25sp" />
+
+    <TextView
+        android:id="@+id/altitude_widget_track"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:text="Track —"
+        android:textColor="#B9C2CC"
+        android:textSize="9sp" />
+</LinearLayout>

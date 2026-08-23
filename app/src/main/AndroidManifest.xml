@@ -65,13 +65,38 @@
 
         <receiver
             android:name=".widget.AltimeterWidgetProvider"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_combined_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/altimeter_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.AltitudeWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_altitude_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/altitude_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.HealthWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_health_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/health_widget_info" />
         </receiver>
 
         <!-- Шаринг GPX-файлов -->
