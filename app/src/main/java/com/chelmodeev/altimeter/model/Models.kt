@@ -49,7 +49,17 @@ data class SavedTrack(
     val sizeBytes: Long,
 )
 
-enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT }
+enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT, BLUETOOTH }
+
+enum class BluetoothVitalsState {
+    IDLE,
+    SCANNING,
+    CONNECTING,
+    CONNECTED,
+    NOT_FOUND,
+    BLUETOOTH_OFF,
+    ERROR,
+}
 
 /** Пульс и SpO₂, измеренные часами. В repo-сборке основной источник — Health Connect. */
 data class VitalsState(
@@ -59,6 +69,7 @@ data class VitalsState(
     /** Есть хотя бы одно разрешение; отдельные флаги позволяют работать частично. */
     val permissionsGranted: Boolean = false,
     val heartRatePermissionGranted: Boolean = false,
+    val restingHeartRatePermissionGranted: Boolean = false,
     val spo2PermissionGranted: Boolean = false,
     val stepsPermissionGranted: Boolean = false,
     val healthConnectError: String? = null,
@@ -69,10 +80,15 @@ data class VitalsState(
     val huaweiHealthAuthorized: Boolean = false,
     val huaweiError: String? = null,
 
+    /** Прямой стандартный BLE-канал трансляции пульса с часов. */
+    val bluetoothState: BluetoothVitalsState = BluetoothVitalsState.IDLE,
+    val bluetoothDeviceName: String? = null,
+
     val heartRateBpm: Long? = null,
     val heartRateAtMs: Long? = null,
     val heartRateSource: VitalsSource? = null,
     val heartRateOrigin: String? = null,
+    val heartRateIsResting: Boolean = false,
     val spo2Percent: Double? = null,
     val spo2AtMs: Long? = null,
     val spo2Source: VitalsSource? = null,

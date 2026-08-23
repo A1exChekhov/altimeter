@@ -34,6 +34,8 @@ internal data class WidgetContent(
             val steps = data.stepsToday?.toString() ?: "—"
             val health = context.getString(R.string.widget_health_values, heart, oxygen, steps)
             val source = when {
+                data.heartRateSource == VitalsSource.BLUETOOTH ->
+                    context.getString(R.string.vitals_source_bluetooth)
                 data.heartRateSource == VitalsSource.HUAWEI_HEALTH ||
                     data.spo2Source == VitalsSource.HUAWEI_HEALTH ||
                     data.stepsSource == VitalsSource.HUAWEI_HEALTH ->

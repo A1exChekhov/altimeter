@@ -78,6 +78,14 @@ class WatchNotifier(private val context: Context) {
             .setAutoCancel(false)
             .build()
 
+        // Keep the permission check next to notify(): POST_NOTIFICATIONS can be
+        // revoked after canPost() has returned, and Android lint cannot infer
+        // the permission guarantee across the helper call.
+        if (Build.VERSION.SDK_INT >= 33 &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) return false
+
         return runCatching {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
             true

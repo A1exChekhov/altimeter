@@ -84,6 +84,7 @@
     <string name="notif_channel_tracking">Track recording</string>
 
     <string name="track_title">Track recording (GPX)</string>
+    <string name="track_open">Tracks and GPX recording</string>
     <string name="track_start">Start recording</string>
     <string name="track_stop">Stop</string>
     <string name="track_points">points</string>
@@ -99,6 +100,7 @@
 
     <string name="vitals_title">Heart rate, SpO₂ &amp; steps</string>
     <string name="vitals_hr">Heart rate</string>
+    <string name="vitals_hr_resting">Resting heart rate</string>
     <string name="vitals_spo2">Oxygen (SpO₂)</string>
     <string name="vitals_steps">Steps</string>
     <string name="vitals_steps_today">today</string>
@@ -125,8 +127,21 @@
     <string name="vitals_sources_hint">First configure Huawei Health → Health Sync → Health Connect, then grant Altimeter access to heart rate, oxygen and steps.</string>
     <string name="vitals_repo_mode">Repository build · no Huawei App ID</string>
     <string name="vitals_repo_hint">Data is read locally from Health Connect. Huawei Watch needs a Huawei Health → Health Connect bridge; the third-party Health Sync app is one option.</string>
+    <string name="vitals_missing_data_types">Health Connect has no recent records for: %1$s. In Health Sync enable these data types and run synchronization.</string>
+    <string name="vitals_open_health_sync">Open Health Sync</string>
+    <string name="vitals_health_sync_not_installed">Health Sync is not installed</string>
+    <string name="vitals_ble_connect">Connect watch heart rate</string>
+    <string name="vitals_ble_reconnect">Reconnect watch heart rate</string>
+    <string name="vitals_ble_hint">On the watch, enable Settings → HR Data Broadcasts, then tap the button.</string>
+    <string name="vitals_ble_scanning">Searching for a heart-rate broadcast…</string>
+    <string name="vitals_ble_connecting">Connecting to the watch…</string>
+    <string name="vitals_ble_connected">Bluetooth heart rate connected: %1$s</string>
+    <string name="vitals_ble_not_found">Broadcast not found. Start HR Data Broadcasts on the watch and try again.</string>
+    <string name="vitals_ble_off">Turn on Bluetooth and try again.</string>
+    <string name="vitals_ble_error">Could not connect to the standard Bluetooth heart-rate service.</string>
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
+    <string name="vitals_source_bluetooth">Bluetooth · live</string>
 
     <string name="widget_combined_name">Altimeter · all</string>
     <string name="widget_altitude_name">Altimeter · altitude</string>

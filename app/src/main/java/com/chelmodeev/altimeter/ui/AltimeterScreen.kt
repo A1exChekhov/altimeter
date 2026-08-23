@@ -48,9 +48,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -79,6 +81,7 @@ import com.chelmodeev.altimeter.model.Advice
 import com.chelmodeev.altimeter.model.AdviceKind
 import com.chelmodeev.altimeter.model.AdviceSeverity
 import com.chelmodeev.altimeter.model.AltUnit
+import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.MslSource
 import com.chelmodeev.altimeter.model.UiState
@@ -94,6 +97,8 @@ data class ScreenActions(
     val onRefreshVitals: () -> Unit,
     val onRequestHealth: () -> Unit,
     val onRequestHuaweiHealth: () -> Unit,
+    val onOpenHealthSync: () -> Unit,
+    val onConnectBluetooth: () -> Unit,
     val onGrantLocation: () -> Unit,
     val onSetUnit: (AltUnit) -> Unit,
     val onCalibAuto: () -> Unit,
@@ -112,6 +117,7 @@ data class ScreenActions(
 fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
     var showSettings by remember { mutableStateOf(false) }
+    var showTracks by remember { mutableStateOf(false) }
     var mapExpanded by remember { mutableStateOf(false) }
     val mapHeight by animateDpAsState(if (mapExpanded) 470.dp else 210.dp, label = "mapHeight")
 
@@ -135,7 +141,11 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp)
         ) {
-            HeaderRow(onSettings = { showSettings = true })
+            HeaderRow(
+                trackRecording = state.tracking.recording,
+                onTracks = { showTracks = true },
+                onSettings = { showSettings = true },
+            )
             Spacer(Modifier.height(4.dp))
             Readout(state, accent)
             Spacer(Modifier.height(16.dp))
@@ -157,8 +167,6 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                     .fillMaxWidth()
                     .height(mapHeight),
             )
-            Spacer(Modifier.height(14.dp))
-            TrackCard(state, actions)
             if (state.advices.isNotEmpty()) {
                 Spacer(Modifier.height(14.dp))
                 AdviceCard(state.advices)
@@ -180,11 +188,18 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
         if (showSettings) {
             SettingsSheet(state = state, actions = actions, onDismiss = { showSettings = false })
         }
+        if (showTracks) {
+            TrackSheet(state = state, actions = actions, onDismiss = { showTracks = false })
+        }
     }
 }
 
 @Composable
-private fun HeaderRow(onSettings: () -> Unit) {
+private fun HeaderRow(
+    trackRecording: Boolean,
+    onTracks: () -> Unit,
+    onSettings: () -> Unit,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
@@ -203,6 +218,14 @@ private fun HeaderRow(onSettings: () -> Unit) {
                 letterSpacing = 4.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onTracks) {
+            Icon(
+                Icons.Rounded.Route,
+                contentDescription = stringResource(R.string.track_open),
+                tint = if (trackRecording) Color(0xFFFF5252)
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         IconButton(onClick = onSettings) {
@@ -532,6 +555,44 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(8.dp))
+            val bluetoothBusy = vitals.bluetoothState == BluetoothVitalsState.SCANNING ||
+                vitals.bluetoothState == BluetoothVitalsState.CONNECTING
+            FilledTonalButton(
+                onClick = actions.onConnectBluetooth,
+                enabled = !bluetoothBusy,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (bluetoothBusy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(Modifier.size(7.dp))
+                }
+                Text(
+                    stringResource(
+                        if (vitals.bluetoothState == BluetoothVitalsState.CONNECTED) {
+                            R.string.vitals_ble_reconnect
+                        } else {
+                            R.string.vitals_ble_connect
+                        }
+                    )
+                )
+            }
+            bluetoothStatusText(vitals.bluetoothState, vitals.bluetoothDeviceName)?.let { status ->
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = status,
+                    fontSize = 10.5.sp,
+                    lineHeight = 14.sp,
+                    color = if (vitals.bluetoothState == BluetoothVitalsState.CONNECTED) {
+                        Color(0xFF8BC34A)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            Spacer(Modifier.height(8.dp))
         } else if (vitals.huaweiHealthAuthorized) {
             Text(
                 text = stringResource(R.string.vitals_huawei_connected),
@@ -561,7 +622,9 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
             Spacer(Modifier.height(8.dp))
         }
 
-        val allHealthConnectPermissions = vitals.heartRatePermissionGranted &&
+        val hasHeartRatePermission = vitals.heartRatePermissionGranted ||
+            vitals.restingHeartRatePermissionGranted
+        val allHealthConnectPermissions = hasHeartRatePermission &&
             vitals.spo2PermissionGranted && vitals.stepsPermissionGranted
         if (!allHealthConnectPermissions) {
             when {
@@ -581,7 +644,7 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
             Text(
                 text = stringResource(
                     R.string.vitals_permissions_status,
-                    if (vitals.heartRatePermissionGranted) "✓" else "—",
+                    if (hasHeartRatePermission) "✓" else "—",
                     if (vitals.spo2PermissionGranted) "✓" else "—",
                     if (vitals.stepsPermissionGranted) "✓" else "—",
                 ),
@@ -630,7 +693,10 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
             else -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     VitalStat(
-                        label = stringResource(R.string.vitals_hr),
+                        label = stringResource(
+                            if (vitals.heartRateIsResting) R.string.vitals_hr_resting
+                            else R.string.vitals_hr,
+                        ),
                         value = vitals.heartRateBpm?.toString() ?: "—",
                         unit = stringResource(R.string.vitals_bpm),
                         atMs = vitals.heartRateAtMs,
@@ -658,6 +724,33 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                     color = Color(0xFFB9F6CA),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                val missingHealthConnectTypes = buildList {
+                    if (vitals.heartRateBpm == null && hasHeartRatePermission) {
+                        add(stringResource(R.string.vitals_hr))
+                    }
+                    if (vitals.spo2Percent == null && vitals.spo2PermissionGranted) {
+                        add(stringResource(R.string.vitals_spo2))
+                    }
+                }
+                if (!vitals.huaweiHealthAuthorized && missingHealthConnectTypes.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.vitals_missing_data_types,
+                            missingHealthConnectTypes.joinToString(", "),
+                        ),
+                        fontSize = 11.5.sp,
+                        lineHeight = 16.sp,
+                        color = Color(0xFFFFCC80),
+                    )
+                    Spacer(Modifier.height(7.dp))
+                    OutlinedButton(
+                        onClick = actions.onOpenHealthSync,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.vitals_open_health_sync))
+                    }
+                }
                 if (vitals.heartRateBpm == null && vitals.spo2Percent == null &&
                     vitals.stepsToday == null
                 ) {
@@ -754,12 +847,33 @@ private fun vitalsSourceLabel(source: VitalsSource?, origin: String?): String? {
     val base = when (source) {
         VitalsSource.HUAWEI_HEALTH -> stringResource(R.string.vitals_source_huawei)
         VitalsSource.HEALTH_CONNECT -> stringResource(R.string.vitals_source_health_connect)
+        VitalsSource.BLUETOOTH -> stringResource(R.string.vitals_source_bluetooth)
         null -> return null
     }
-    return origin?.takeIf { it.isNotBlank() && it != "com.huawei.health" }
+    val originLabel = when (origin) {
+        "com.huawei.health" -> null
+        "nl.appyhapps.healthsync" -> "Health Sync"
+        else -> origin
+    }
+    return originLabel?.takeIf { it.isNotBlank() }
         ?.let { "$base · $it" }
         ?: base
 }
+
+@Composable
+private fun bluetoothStatusText(state: BluetoothVitalsState, deviceName: String?): String? =
+    when (state) {
+        BluetoothVitalsState.IDLE -> stringResource(R.string.vitals_ble_hint)
+        BluetoothVitalsState.SCANNING -> stringResource(R.string.vitals_ble_scanning)
+        BluetoothVitalsState.CONNECTING -> stringResource(R.string.vitals_ble_connecting)
+        BluetoothVitalsState.CONNECTED -> stringResource(
+            R.string.vitals_ble_connected,
+            deviceName ?: "Huawei Watch",
+        )
+        BluetoothVitalsState.NOT_FOUND -> stringResource(R.string.vitals_ble_not_found)
+        BluetoothVitalsState.BLUETOOTH_OFF -> stringResource(R.string.vitals_ble_off)
+        BluetoothVitalsState.ERROR -> stringResource(R.string.vitals_ble_error)
+    }
 
 @Composable
 private fun HrSparkline(series: List<Pair<Long, Long>>, color: Color, modifier: Modifier = Modifier) {
@@ -924,6 +1038,25 @@ private fun WatchCard(state: UiState, actions: ScreenActions) {
             Switch(checked = state.autoSendToWatch, onCheckedChange = actions.onToggleAutoSend)
             Spacer(Modifier.size(10.dp))
             Text(text = stringResource(R.string.watch_auto), fontSize = 13.sp)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TrackSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 24.dp)
+        ) {
+            TrackCard(state, actions)
         }
     }
 }

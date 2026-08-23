@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
@@ -15,17 +16,20 @@ import java.time.ZoneId
 
 data class HealthPermissionState(
     val heartRate: Boolean = false,
+    val restingHeartRate: Boolean = false,
     val oxygenSaturation: Boolean = false,
     val steps: Boolean = false,
 ) {
-    val anyGranted: Boolean get() = heartRate || oxygenSaturation || steps
-    val allGranted: Boolean get() = heartRate && oxygenSaturation && steps
+    val anyHeartRateGranted: Boolean get() = heartRate || restingHeartRate
+    val anyGranted: Boolean get() = anyHeartRateGranted || oxygenSaturation || steps
+    val allGranted: Boolean get() = anyHeartRateGranted && oxygenSaturation && steps
 }
 
 data class VitalsSnapshot(
     val heartRateBpm: Long?,
     val heartRateAt: Instant?,
     val heartRateOrigin: String? = null,
+    val heartRateIsResting: Boolean = false,
     val spo2Percent: Double?,
     val spo2At: Instant?,
     val spo2Origin: String? = null,
@@ -46,6 +50,8 @@ class HealthReader(private val context: Context) {
     companion object {
         val HEART_RATE_PERMISSION: String =
             HealthPermission.getReadPermission(HeartRateRecord::class)
+        val RESTING_HEART_RATE_PERMISSION: String =
+            HealthPermission.getReadPermission(RestingHeartRateRecord::class)
         val OXYGEN_PERMISSION: String =
             HealthPermission.getReadPermission(OxygenSaturationRecord::class)
         val STEPS_PERMISSION: String =
@@ -53,6 +59,7 @@ class HealthReader(private val context: Context) {
 
         val PERMISSIONS: Set<String> = setOf(
             HEART_RATE_PERMISSION,
+            RESTING_HEART_RATE_PERMISSION,
             OXYGEN_PERMISSION,
             STEPS_PERMISSION,
         )
@@ -73,6 +80,7 @@ class HealthReader(private val context: Context) {
         }.getOrDefault(emptySet())
         return HealthPermissionState(
             heartRate = HEART_RATE_PERMISSION in granted,
+            restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted,
             oxygenSaturation = OXYGEN_PERMISSION in granted,
             steps = STEPS_PERMISSION in granted,
         )
@@ -88,6 +96,7 @@ class HealthReader(private val context: Context) {
         var hrAt: Instant? = null
         var hrBpm: Long? = null
         var hrOrigin: String? = null
+        var hrIsResting = false
         val series = mutableListOf<Pair<Long, Long>>()
         if (permissions.heartRate) runCatching {
             val seriesFrom = now.minusSeconds(3 * 3600)
@@ -120,6 +129,29 @@ class HealthReader(private val context: Context) {
                 pageCount++
             } while (pageToken != null && pageCount < 20)
         }.onFailure { errors += "heart_rate:${it.shortDescription()}" }
+
+        // Некоторые синхронизаторы пишут суточный пульс Huawei как отдельный
+        // RestingHeartRateRecord, а не как серию HeartRateRecord.
+        if (permissions.restingHeartRate) runCatching {
+            val restingFrom = now.minusSeconds(36 * 3600)
+            val resp = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = RestingHeartRateRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(restingFrom, now),
+                    ascendingOrder = false,
+                    pageSize = 10,
+                )
+            )
+            resp.records.maxByOrNull { it.time }?.let { record ->
+                val current = hrAt
+                if (current == null || record.time.isAfter(current)) {
+                    hrAt = record.time
+                    hrBpm = record.beatsPerMinute
+                    hrOrigin = record.metadata.dataOrigin.packageName
+                    hrIsResting = true
+                }
+            }
+        }.onFailure { errors += "resting_heart_rate:${it.shortDescription()}" }
 
         var spAt: Instant? = null
         var sp: Double? = null
@@ -168,6 +200,7 @@ class HealthReader(private val context: Context) {
             heartRateBpm = hrBpm,
             heartRateAt = hrAt,
             heartRateOrigin = hrOrigin,
+            heartRateIsResting = hrIsResting,
             spo2Percent = sp,
             spo2At = spAt,
             spo2Origin = spOrigin,

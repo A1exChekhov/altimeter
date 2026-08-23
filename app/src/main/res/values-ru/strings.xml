@@ -83,6 +83,7 @@
     <string name="notif_channel_tracking">Запись трека</string>
 
     <string name="track_title">Запись трека (GPX)</string>
+    <string name="track_open">Треки и запись GPX</string>
     <string name="track_start">Начать запись</string>
     <string name="track_stop">Стоп</string>
     <string name="track_points">точек</string>
@@ -98,6 +99,7 @@
 
     <string name="vitals_title">Пульс, SpO₂ и шаги</string>
     <string name="vitals_hr">Пульс</string>
+    <string name="vitals_hr_resting">Пульс покоя</string>
     <string name="vitals_spo2">Кислород (SpO₂)</string>
     <string name="vitals_steps">Шаги</string>
     <string name="vitals_steps_today">сегодня</string>
@@ -124,8 +126,21 @@
     <string name="vitals_sources_hint">Сначала настройте передачу Huawei Health → Health Sync → Health Connect, затем дайте Альтиметру доступ к пульсу, кислороду и шагам.</string>
     <string name="vitals_repo_mode">Сборка из репозитория · без Huawei App ID</string>
     <string name="vitals_repo_hint">Данные читаются локально из Health Connect. Для Huawei Watch нужен мост Huawei Health → Health Connect; подойдёт стороннее приложение Health Sync.</string>
+    <string name="vitals_missing_data_types">В Health Connect нет свежих записей: %1$s. В Health Sync включите эти типы данных и запустите синхронизацию.</string>
+    <string name="vitals_open_health_sync">Открыть Health Sync</string>
+    <string name="vitals_health_sync_not_installed">Health Sync не установлен</string>
+    <string name="vitals_ble_connect">Подключить пульс с часов</string>
+    <string name="vitals_ble_reconnect">Переподключить пульс с часов</string>
+    <string name="vitals_ble_hint">На часах включите «Настройки → Трансляция данных ЧСС», затем нажмите кнопку.</string>
+    <string name="vitals_ble_scanning">Ищу трансляцию пульса…</string>
+    <string name="vitals_ble_connecting">Подключаюсь к часам…</string>
+    <string name="vitals_ble_connected">Пульс по Bluetooth подключён: %1$s</string>
+    <string name="vitals_ble_not_found">Трансляция не найдена. Запустите её на часах и повторите поиск.</string>
+    <string name="vitals_ble_off">Включите Bluetooth и повторите.</string>
+    <string name="vitals_ble_error">Не удалось подключиться к стандартному Bluetooth-сервису пульса.</string>
     <string name="vitals_source_huawei">HUAWEI Health</string>
     <string name="vitals_source_health_connect">Health Connect</string>
+    <string name="vitals_source_bluetooth">Bluetooth · сейчас</string>
 
     <string name="widget_combined_name">Альтиметр · всё</string>
     <string name="widget_altitude_name">Альтиметр · высота</string>

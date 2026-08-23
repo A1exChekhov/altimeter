@@ -9,11 +9,13 @@ import com.chelmodeev.altimeter.core.AltimeterCore
 import com.chelmodeev.altimeter.data.SettingsRepository
 import com.chelmodeev.altimeter.health.HealthPermissionState
 import com.chelmodeev.altimeter.health.HealthReader
+import com.chelmodeev.altimeter.health.BluetoothHeartRateReader
 import com.chelmodeev.altimeter.health.HuaweiHealthReader
 import com.chelmodeev.altimeter.health.VitalsSnapshot
 import com.chelmodeev.altimeter.logic.Advisor
 import com.chelmodeev.altimeter.logic.AdvisorInput
 import com.chelmodeev.altimeter.model.AltUnit
+import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
@@ -47,6 +49,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val placeResolver = PlaceResolver(app)
     private val healthReader = HealthReader(app)
     private val huaweiHealthReader = HuaweiHealthReader(app)
+    private val bluetoothHeartRateReader = BluetoothHeartRateReader(app)
 
     private var lastAutoSendAt = 0L
     private var placeJob: Job? = null
@@ -98,6 +101,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        bluetoothHeartRateReader.stop()
         core.release()
         super.onCleared()
     }
@@ -251,6 +255,39 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- пульс и SpO₂ (Huawei Health Kit + Health Connect) ----------
 
+    fun connectBluetoothHeartRate() {
+        bluetoothHeartRateReader.start(object : BluetoothHeartRateReader.Listener {
+            override fun onState(state: BluetoothVitalsState, deviceName: String?) {
+                _ui.update {
+                    it.copy(
+                        vitals = it.vitals.copy(
+                            bluetoothState = state,
+                            bluetoothDeviceName = deviceName ?: it.vitals.bluetoothDeviceName,
+                        )
+                    )
+                }
+            }
+
+            override fun onHeartRate(bpm: Long, deviceName: String?) {
+                val now = System.currentTimeMillis()
+                _ui.update {
+                    it.copy(
+                        vitals = it.vitals.copy(
+                            bluetoothState = BluetoothVitalsState.CONNECTED,
+                            bluetoothDeviceName = deviceName ?: it.vitals.bluetoothDeviceName,
+                            heartRateBpm = bpm,
+                            heartRateAtMs = now,
+                            heartRateSource = VitalsSource.BLUETOOTH,
+                            heartRateOrigin = deviceName,
+                            heartRateIsResting = false,
+                        )
+                    )
+                }
+                AltimeterWidgetStore.updateVitals(getApplication(), _ui.value.vitals)
+            }
+        })
+    }
+
     private suspend fun refreshHealthStatus() {
         val available = healthReader.isAvailable()
         val needsInstall = healthReader.needsProviderInstall()
@@ -270,6 +307,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     needsProviderInstall = needsInstall,
                     permissionsGranted = granted.anyGranted,
                     heartRatePermissionGranted = granted.heartRate,
+                    restingHeartRatePermissionGranted = granted.restingHeartRate,
                     spo2PermissionGranted = granted.oxygenSaturation,
                     stepsPermissionGranted = granted.steps,
                     huaweiHealthInstalled = huaweiInstalled,
@@ -350,6 +388,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 healthReader.readLatest(
                     HealthPermissionState(
                         heartRate = before.heartRatePermissionGranted,
+                        restingHeartRate = before.restingHeartRatePermissionGranted,
                         oxygenSaturation = before.spo2PermissionGranted,
                         steps = before.stepsPermissionGranted,
                     )
@@ -376,6 +415,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         heartRateAtMs = heartRate?.atMs,
                         heartRateSource = heartRate?.source,
                         heartRateOrigin = heartRate?.origin,
+                        heartRateIsResting = heartRate?.isResting == true,
                         spo2Percent = oxygen?.value,
                         spo2AtMs = oxygen?.atMs,
                         spo2Source = oxygen?.source,
@@ -397,6 +437,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val atMs: Long,
         val source: VitalsSource,
         val origin: String?,
+        val isResting: Boolean,
     )
 
     private data class OxygenValue(
@@ -424,6 +465,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 huawei.heartRateAt?.toEpochMilli() ?: 0L,
                 VitalsSource.HUAWEI_HEALTH,
                 huawei.heartRateOrigin,
+                huawei.heartRateIsResting,
             )
         },
         healthConnect?.heartRateBpm?.let { bpm ->
@@ -432,6 +474,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 healthConnect.heartRateAt?.toEpochMilli() ?: 0L,
                 VitalsSource.HEALTH_CONNECT,
                 healthConnect.heartRateOrigin,
+                healthConnect.heartRateIsResting,
             )
         },
         previous.heartRateBpm?.let { bpm ->
@@ -440,6 +483,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 previous.heartRateAtMs ?: 0L,
                 previous.heartRateSource ?: return@let null,
                 previous.heartRateOrigin,
+                previous.heartRateIsResting,
             )
         },
     ).maxByOrNull { it.atMs }

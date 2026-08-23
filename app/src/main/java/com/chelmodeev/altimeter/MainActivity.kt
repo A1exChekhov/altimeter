@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -43,6 +44,12 @@ class MainActivity : ComponentActivity() {
             viewModel.onHealthPermissionsResult()
         }
 
+    private val bluetoothPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            val granted = result.values.all { it }
+            if (granted) viewModel.connectBluetoothHeartRate()
+        }
+
     private val huaweiHealthPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             viewModel.onHuaweiHealthAuthorizationResult(result.data)
@@ -63,6 +70,8 @@ class MainActivity : ComponentActivity() {
                         onRefreshVitals = viewModel::refreshVitals,
                         onRequestHealth = ::requestHealthPermissions,
                         onRequestHuaweiHealth = ::requestHuaweiHealthPermissions,
+                        onOpenHealthSync = ::openHealthSync,
+                        onConnectBluetooth = ::requestBluetoothHeartRate,
                         onGrantLocation = ::requestLocationPermissions,
                         onSetUnit = viewModel::setUnit,
                         onCalibAuto = viewModel::setCalibrationAuto,
@@ -123,6 +132,35 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun openHealthSync() {
+        val intent = packageManager.getLaunchIntentForPackage(HEALTH_SYNC_PACKAGE)
+        if (intent != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, R.string.vitals_health_sync_not_installed, Toast.LENGTH_LONG)
+                .show()
+        }
+    }
+
+    private fun requestBluetoothHeartRate() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            val permissions = arrayOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT,
+            )
+            val granted = permissions.all {
+                ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+            }
+            if (granted) {
+                viewModel.connectBluetoothHeartRate()
+            } else {
+                bluetoothPermissionLauncher.launch(permissions)
+            }
+        } else {
+            viewModel.connectBluetoothHeartRate()
+        }
+    }
+
     private fun shareTrack(path: String) {
         runCatching {
             val uri = FileProvider.getUriForFile(this, "$packageName.files", File(path))
@@ -132,5 +170,9 @@ class MainActivity : ComponentActivity() {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             startActivity(Intent.createChooser(send, getString(R.string.track_share)))
         }
+    }
+
+    companion object {
+        private const val HEALTH_SYNC_PACKAGE = "nl.appyhapps.healthsync"
     }
 }
