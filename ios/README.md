@@ -34,15 +34,16 @@ open Altimeter.xcodeproj
 
 В Xcode выберите target `Altimeter` → Signing & Capabilities:
 
-1. выберите свою Apple Developer Team;
+1. проверьте выбранную Apple Developer Team `76UD6VNBTE` (она уже задана в
+   `project.yml`);
 2. убедитесь, что включены HealthKit, Background Modes → Location updates и App Group
    `group.ai.errarium.altimeter` для targets `Altimeter` и `AltimeterWidget`;
 3. установите на физический iPhone — симулятор не даёт реальных GPS/барометрических данных.
 
 Идентификаторы проекта уже настроены под бренд: приложение `ai.errarium.altimeter`,
-виджет `ai.errarium.altimeter.widget`. При Automatic Signing Xcode создаст нужные
-development-профили в вашей Team. App Store, TestFlight и карточка приложения для
-такой установки не нужны.
+виджет `ai.errarium.altimeter.widget`. Team ID `76UD6VNBTE` также уже задан для
+всех targets. При Automatic Signing Xcode создаст нужные development-профили в
+этой Team. App Store, TestFlight и карточка приложения для такой установки не нужны.
 
 Для полной сборки с HealthKit и App Group используйте команду, для которой эти
 capabilities доступны в provisioning profile. Бесплатная Personal Team позволяет
