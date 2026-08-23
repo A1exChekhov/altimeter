@@ -7,3 +7,10 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+
+# iOS/XcodeGen (проект генерируется из ios/project.yml)
+ios/*.xcodeproj/
+ios/*.xcworkspace/
+ios/DerivedData/
+ios/.build/
+ios/**/xcuserdata/

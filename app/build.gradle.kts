@@ -17,8 +17,11 @@ android {
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
         val watchFp = (project.findProperty("WATCH_APP_FINGERPRINT") as? String).orEmpty()
+        val huaweiAppId = (project.findProperty("HUAWEI_APP_ID") as? String).orEmpty()
         buildConfigField("String", "WATCH_APP_PACKAGE", "\"$watchPkg\"")
         buildConfigField("String", "WATCH_APP_FINGERPRINT", "\"$watchFp\"")
+        buildConfigField("String", "HUAWEI_APP_ID", "\"$huaweiAppId\"")
+        manifestPlaceholders["huaweiAppId"] = huaweiAppId.ifBlank { "0" }
     }
 
     buildTypes {
@@ -66,6 +69,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.osmdroid)
     implementation(libs.wearengine)
+    implementation(libs.huawei.health)
     implementation(libs.androidx.health.connect)
     // Wear Engine тянет старый fragment; ActivityResult API требует >= 1.3.0
     implementation(libs.androidx.fragment.ktx)

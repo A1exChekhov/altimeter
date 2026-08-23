@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Altimeter</string>
     <string name="brand_name" translatable="false">ERRARIUM™</string>
-    <string name="brand_rights">© 2026 Errarium™ · All rights reserved.</string>
+    <string name="brand_rights">Errarium™ by Aleksey Hermes · errarium.ai@gmail.com</string>
 
     <string name="above_sea_level">above sea level</string>
     <string name="waiting_fix">Searching for satellites…</string>
@@ -100,11 +100,34 @@
     <string name="vitals_grant">Grant access</string>
     <string name="vitals_unavailable">Health Connect is not available on this phone</string>
     <string name="vitals_install_provider">Install/update the Health Connect app</string>
-    <string name="vitals_hint">Measured by the watch and delivered via Huawei Health → Health Connect. Enable Health Connect sync in Huawei Health (Me → Settings).</string>
-    <string name="vitals_no_data">No data yet — enable sync in Huawei Health</string>
+    <string name="vitals_hint">The app reads local Health Connect records.</string>
+    <string name="vitals_no_data">No data yet. Open Data and access in Health Connect and check the heart-rate and oxygen records.</string>
     <string name="vitals_updated">updated %1$s</string>
     <string name="vitals_refresh">Refresh</string>
     <string name="vitals_auto">Checked automatically every 5 min</string>
+    <string name="vitals_huawei_connected">HUAWEI Health connected directly</string>
+    <string name="vitals_huawei_hint">Primary source for Honor + Huawei Watch 4 Pro. Connect HUAWEI Health to read watch heart rate and SpO₂ directly.</string>
+    <string name="vitals_huawei_grant">Connect HUAWEI Health</string>
+    <string name="vitals_huawei_not_installed">Install or update HUAWEI Health and HMS Core.</string>
+    <string name="vitals_huawei_not_configured">Direct HUAWEI Health access is prepared, but this build still needs the App ID and approved heart-rate/SpO₂ scopes from HUAWEI Developers.</string>
+    <string name="vitals_huawei_auth_cancelled">HUAWEI Health authorization was cancelled.</string>
+    <string name="vitals_huawei_auth_unavailable">The HUAWEI Health authorization screen could not be opened.</string>
+    <string name="vitals_huawei_error">HUAWEI Health: %1$s</string>
+    <string name="vitals_health_connect_grant">Connect Health Connect</string>
+    <string name="vitals_sources_hint">First configure Huawei Health → Health Sync → Health Connect, then grant Altimeter access to heart rate and oxygen.</string>
+    <string name="vitals_repo_mode">Repository build · no Huawei App ID</string>
+    <string name="vitals_repo_hint">Data is read locally from Health Connect. Huawei Watch needs a Huawei Health → Health Connect bridge; the third-party Health Sync app is one option.</string>
+    <string name="vitals_source_huawei">HUAWEI Health</string>
+    <string name="vitals_source_health_connect">Health Connect</string>
+
+    <string name="widget_description">Altitude, track, heart rate and SpO₂</string>
+    <string name="widget_track_recording">● Track %1$s</string>
+    <string name="widget_track_saved">Track %1$s</string>
+    <string name="widget_track_empty">Track —</string>
+    <string name="widget_health_values">♥ %1$s   O₂ %2$s</string>
+    <string name="widget_health_waiting">open app</string>
+    <string name="widget_updated">updated %1$s</string>
+    <string name="widget_open_to_update">tap to update</string>
 
     <string name="advice_title">Tips &amp; alerts</string>
     <string name="advice_pressure_falling_fast">Pressure is falling fast (−%1$s hPa/h) — weather may turn bad quickly, thunderstorm possible. Consider shelter or descent.</string>

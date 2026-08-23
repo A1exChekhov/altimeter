@@ -1,0 +1,92 @@
+name: Altimeter
+
+options:
+  bundleIdPrefix: ai.errarium
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_LANGUAGE: ru
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    SUPPORTS_MACCATALYST: NO
+
+targets:
+  Altimeter:
+    type: application
+    platform: iOS
+    sources:
+      - path: Altimeter
+        excludes:
+          - Supporting/Info.plist
+          - Supporting/Altimeter.entitlements
+          - Resources
+    resources:
+      - path: Altimeter/Resources
+    info:
+      path: Altimeter/Supporting/Info.plist
+    entitlements:
+      path: Altimeter/Supporting/Altimeter.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.errarium.altimeter
+        PRODUCT_NAME: Altimeter
+        INFOPLIST_FILE: Altimeter/Supporting/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Altimeter/Supporting/Altimeter.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - target: AltimeterWidget
+
+  AltimeterWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: AltimeterWidget
+        excludes:
+          - Info.plist
+          - AltimeterWidget.entitlements
+          - PrivacyInfo.xcprivacy
+      - path: Altimeter/Shared/WidgetSnapshotStore.swift
+    resources:
+      - path: AltimeterWidget/PrivacyInfo.xcprivacy
+    info:
+      path: AltimeterWidget/Info.plist
+    entitlements:
+      path: AltimeterWidget/AltimeterWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.errarium.altimeter.widget
+        PRODUCT_NAME: AltimeterWidget
+        INFOPLIST_FILE: AltimeterWidget/Info.plist
+        CODE_SIGN_ENTITLEMENTS: AltimeterWidget/AltimeterWidget.entitlements
+        SKIP_INSTALL: YES
+
+  AltimeterTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: AltimeterTests
+    dependencies:
+      - target: Altimeter
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.errarium.altimeter.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Altimeter:
+    build:
+      targets:
+        Altimeter: all
+        AltimeterWidget: all
+        AltimeterTests: [test]
+    test:
+      targets:
+        - AltimeterTests

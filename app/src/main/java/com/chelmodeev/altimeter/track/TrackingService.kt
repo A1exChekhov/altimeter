@@ -20,6 +20,7 @@ import com.chelmodeev.altimeter.core.AltimeterCore
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.TrackRecState
 import com.chelmodeev.altimeter.util.Fmt
+import com.chelmodeev.altimeter.widget.AltimeterWidgetStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -100,6 +101,12 @@ class TrackingService : Service() {
                 lastSavedPath = it.lastSavedPath,
             )
         }
+        AltimeterWidgetStore.updateAltitudeAndTrack(
+            this,
+            lastAltitude,
+            AltimeterWidgetStore.read(this).unit,
+            _state.value,
+        )
         val notification = buildNotification()
         if (Build.VERSION.SDK_INT >= 29) {
             ServiceCompat.startForeground(
@@ -131,6 +138,12 @@ class TrackingService : Service() {
             lastNotifyAt = now
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.notify(NOTIFICATION_ID, buildNotification())
+            AltimeterWidgetStore.updateAltitudeAndTrack(
+                this,
+                lastAltitude,
+                AltimeterWidgetStore.read(this).unit,
+                _state.value,
+            )
         }
         if (now - lastAutosaveAt > 60_000 && recorder.pointCount > 0) {
             lastAutosaveAt = now
@@ -153,6 +166,12 @@ class TrackingService : Service() {
                     lastSavedPath = if (saved) file.absolutePath else it.lastSavedPath,
                 )
             }
+            AltimeterWidgetStore.updateAltitudeAndTrack(
+                this,
+                lastAltitude,
+                AltimeterWidgetStore.read(this).unit,
+                _state.value,
+            )
             core?.release()
             core = null
         }
@@ -168,6 +187,12 @@ class TrackingService : Service() {
                 runCatching { recorder.saveTo(trackFile()) }
             }
             _state.update { it.copy(recording = false) }
+            AltimeterWidgetStore.updateAltitudeAndTrack(
+                this,
+                lastAltitude,
+                AltimeterWidgetStore.read(this).unit,
+                _state.value,
+            )
             core?.release()
             core = null
         }

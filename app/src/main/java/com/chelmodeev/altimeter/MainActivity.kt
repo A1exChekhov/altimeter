@@ -43,6 +43,11 @@ class MainActivity : ComponentActivity() {
             viewModel.onHealthPermissionsResult()
         }
 
+    private val huaweiHealthPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            viewModel.onHuaweiHealthAuthorizationResult(result.data)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -57,6 +62,7 @@ class MainActivity : ComponentActivity() {
                         onWearEngine = { viewModel.sendViaWearEngine(this) },
                         onRefreshVitals = viewModel::refreshVitals,
                         onRequestHealth = ::requestHealthPermissions,
+                        onRequestHuaweiHealth = ::requestHuaweiHealthPermissions,
                         onGrantLocation = ::requestLocationPermissions,
                         onSetUnit = viewModel::setUnit,
                         onCalibAuto = viewModel::setCalibrationAuto,
@@ -106,6 +112,15 @@ class MainActivity : ComponentActivity() {
 
     private fun requestHealthPermissions() {
         runCatching { healthPermissionLauncher.launch(HealthReader.PERMISSIONS) }
+    }
+
+    private fun requestHuaweiHealthPermissions() {
+        val intent = viewModel.huaweiHealthAuthorizationIntent()
+        if (intent == null) {
+            viewModel.onHuaweiHealthAuthorizationUnavailable()
+        } else {
+            huaweiHealthPermissionLauncher.launch(intent)
+        }
     }
 
     private fun shareTrack(path: String) {

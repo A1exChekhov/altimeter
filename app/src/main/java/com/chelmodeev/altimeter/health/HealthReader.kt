@@ -19,8 +19,8 @@ data class VitalsSnapshot(
 )
 
 /**
- * Пульс и SpO₂, измеренные часами. Часы Huawei пишут данные в Huawei Health,
- * который синхронизирует их в Health Connect — отсюда мы их и читаем.
+ * Пульс и SpO₂ из локальной базы Health Connect. Источник часов должен быть
+ * записан туда совместимым приложением-синхронизатором до чтения Альтиметром.
  */
 class HealthReader(private val context: Context) {
 

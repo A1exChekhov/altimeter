@@ -20,6 +20,7 @@
 
     <queries>
         <package android:name="com.huawei.health" />
+        <package android:name="com.huawei.hwid" />
         <package android:name="com.google.android.apps.healthdata" />
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
@@ -34,6 +35,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Altimeter">
+
+        <!-- App ID из HUAWEI Developers/AppGallery Connect. -->
+        <meta-data
+            android:name="com.huawei.hms.client.appid"
+            android:value="appid=${huaweiAppId}" />
 
         <activity
             android:name=".MainActivity"
@@ -55,6 +61,17 @@
             android:name=".track.TrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <receiver
+            android:name=".widget.AltimeterWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/altimeter_widget_info" />
+        </receiver>
 
         <!-- Шаринг GPX-файлов -->
         <provider

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Альтиметр</string>
-    <string name="brand_rights">© 2026 Errarium™ · Все права защищены.</string>
+    <string name="brand_rights">Errarium™ by Aleksey Hermes · errarium.ai@gmail.com</string>
 
     <string name="above_sea_level">над уровнем моря</string>
     <string name="waiting_fix">Ищу спутники…</string>
@@ -99,11 +99,34 @@
     <string name="vitals_grant">Дать доступ</string>
     <string name="vitals_unavailable">Health Connect недоступен на этом телефоне</string>
     <string name="vitals_install_provider">Установите/обновите приложение Health Connect</string>
-    <string name="vitals_hint">Измеряют часы, данные приходят через Huawei Health → Health Connect. Включите синхронизацию с Health Connect в Huawei Health (Я → Настройки).</string>
-    <string name="vitals_no_data">Пока нет данных — включите синхронизацию в Huawei Health</string>
+    <string name="vitals_hint">Приложение читает локальные записи Health Connect.</string>
+    <string name="vitals_no_data">Пока нет данных. В Health Connect откройте «Данные и доступ» и проверьте записи пульса и кислорода.</string>
     <string name="vitals_updated">обновлено %1$s</string>
     <string name="vitals_refresh">Обновить</string>
     <string name="vitals_auto">Проверяется автоматически каждые 5 мин</string>
+    <string name="vitals_huawei_connected">Прямое подключение к HUAWEI Health</string>
+    <string name="vitals_huawei_hint">Основной источник для Honor + Huawei Watch 4 Pro. Подключите HUAWEI Health, чтобы напрямую читать пульс и SpO₂ с часов.</string>
+    <string name="vitals_huawei_grant">Подключить HUAWEI Health</string>
+    <string name="vitals_huawei_not_installed">Установите или обновите HUAWEI Health и HMS Core.</string>
+    <string name="vitals_huawei_not_configured">Прямой доступ к HUAWEI Health подготовлен, но для этой сборки ещё нужны App ID и одобренные разрешения пульса/SpO₂ в HUAWEI Developers.</string>
+    <string name="vitals_huawei_auth_cancelled">Авторизация в HUAWEI Health отменена.</string>
+    <string name="vitals_huawei_auth_unavailable">Не удалось открыть экран авторизации HUAWEI Health.</string>
+    <string name="vitals_huawei_error">HUAWEI Health: %1$s</string>
+    <string name="vitals_health_connect_grant">Подключить Health Connect</string>
+    <string name="vitals_sources_hint">Сначала настройте передачу Huawei Health → Health Sync → Health Connect, затем дайте Альтиметру доступ к пульсу и кислороду.</string>
+    <string name="vitals_repo_mode">Сборка из репозитория · без Huawei App ID</string>
+    <string name="vitals_repo_hint">Данные читаются локально из Health Connect. Для Huawei Watch нужен мост Huawei Health → Health Connect; подойдёт стороннее приложение Health Sync.</string>
+    <string name="vitals_source_huawei">HUAWEI Health</string>
+    <string name="vitals_source_health_connect">Health Connect</string>
+
+    <string name="widget_description">Высота, трек, пульс и SpO₂</string>
+    <string name="widget_track_recording">● Трек %1$s</string>
+    <string name="widget_track_saved">Трек %1$s</string>
+    <string name="widget_track_empty">Трек —</string>
+    <string name="widget_health_values">♥ %1$s   O₂ %2$s</string>
+    <string name="widget_health_waiting">откройте приложение</string>
+    <string name="widget_updated">обновлено %1$s</string>
+    <string name="widget_open_to_update">нажмите для обновления</string>
 
     <string name="advice_title">Советы и предупреждения</string>
     <string name="advice_pressure_falling_fast">Давление быстро падает (−%1$s гПа/ч) — возможна резкая порча погоды, гроза. Подумайте об укрытии или спуске.</string>

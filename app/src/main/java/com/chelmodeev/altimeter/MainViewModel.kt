@@ -2,20 +2,25 @@ package com.chelmodeev.altimeter
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.chelmodeev.altimeter.core.AltimeterCore
 import com.chelmodeev.altimeter.data.SettingsRepository
 import com.chelmodeev.altimeter.health.HealthReader
+import com.chelmodeev.altimeter.health.HuaweiHealthReader
+import com.chelmodeev.altimeter.health.VitalsSnapshot
 import com.chelmodeev.altimeter.logic.Advisor
 import com.chelmodeev.altimeter.logic.AdvisorInput
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.UiState
+import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.model.WatchState
 import com.chelmodeev.altimeter.place.PlaceResolver
 import com.chelmodeev.altimeter.track.TrackingService
 import com.chelmodeev.altimeter.watch.WatchNotifier
 import com.chelmodeev.altimeter.watch.WearEngineBridge
+import com.chelmodeev.altimeter.widget.AltimeterWidgetStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,10 +43,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val wearEngine = WearEngineBridge(app)
     private val placeResolver = PlaceResolver(app)
     private val healthReader = HealthReader(app)
+    private val huaweiHealthReader = HuaweiHealthReader(app)
 
     private var lastAutoSendAt = 0L
     private var placeJob: Job? = null
     private var vitalsJob: Job? = null
+    private var lastWidgetUpdateAt = 0L
 
     init {
         wearEngine.onStatus = { msg ->
@@ -128,7 +135,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         if (s.latitude != null && s.longitude != null) resolvePlace(s.latitude, s.longitude)
-        autoSendIfDue(System.currentTimeMillis())
+        val now = System.currentTimeMillis()
+        autoSendIfDue(now)
+        if (now - lastWidgetUpdateAt >= 15_000L) {
+            lastWidgetUpdateAt = now
+            AltimeterWidgetStore.updateAltitude(
+                getApplication(),
+                s.altitude,
+                _ui.value.unit,
+            )
+        }
     }
 
     fun onLocationPermission(granted: Boolean) {
@@ -222,47 +238,169 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }.toString()
     }
 
-    // ---------- пульс и SpO₂ (Health Connect) ----------
+    // ---------- пульс и SpO₂ (Huawei Health Kit + Health Connect) ----------
 
     private suspend fun refreshHealthStatus() {
         val available = healthReader.isAvailable()
         val needsInstall = healthReader.needsProviderInstall()
         val granted = if (available) healthReader.grantedAll() else false
+        val huaweiInstalled = huaweiHealthReader.isInstalled()
+        val huaweiConfigured = huaweiHealthReader.isConfigured()
+        val huaweiAuthorized = huaweiConfigured && huaweiInstalled &&
+            huaweiHealthReader.wasAuthorized()
         _ui.update {
             it.copy(
                 vitals = it.vitals.copy(
                     available = available,
                     needsProviderInstall = needsInstall,
                     permissionsGranted = granted,
+                    huaweiHealthInstalled = huaweiInstalled,
+                    huaweiHealthConfigured = huaweiConfigured,
+                    huaweiHealthAuthorized = huaweiAuthorized,
                 )
             )
         }
-        if (granted) refreshVitals()
+        if (huaweiAuthorized || granted) refreshVitals()
     }
 
     fun onHealthPermissionsResult() {
         viewModelScope.launch { refreshHealthStatus() }
     }
 
+    fun huaweiHealthAuthorizationIntent(): Intent? =
+        huaweiHealthReader.authorizationIntent()
+
+    fun onHuaweiHealthAuthorizationUnavailable() {
+        val error = when {
+            !huaweiHealthReader.isInstalled() -> "HUAWEI_HEALTH_NOT_INSTALLED"
+            !huaweiHealthReader.isConfigured() -> "HUAWEI_APP_ID_NOT_CONFIGURED"
+            else -> "HUAWEI_AUTHORIZATION_UNAVAILABLE"
+        }
+        _ui.update { it.copy(vitals = it.vitals.copy(huaweiError = error)) }
+    }
+
+    fun onHuaweiHealthAuthorizationResult(data: Intent?) {
+        val result = huaweiHealthReader.parseAuthorizationResult(data)
+        _ui.update {
+            it.copy(
+                vitals = it.vitals.copy(
+                    huaweiHealthAuthorized = result.success,
+                    huaweiError = if (result.success) null else
+                        result.errorCode?.let { code -> "Huawei Health Kit: $code" }
+                            ?: "HUAWEI_AUTHORIZATION_CANCELLED",
+                )
+            )
+        }
+        if (result.success) refreshVitals()
+    }
+
     fun refreshVitals() {
         if (vitalsJob?.isActive == true) return
-        if (!_ui.value.vitals.permissionsGranted) return
+        val status = _ui.value.vitals
+        if (!status.permissionsGranted && !status.huaweiHealthAuthorized) return
         vitalsJob = viewModelScope.launch {
             _ui.update { it.copy(vitals = it.vitals.copy(refreshing = true)) }
-            val snap = healthReader.readLatest()
+            val before = _ui.value.vitals
+
+            val huaweiResult = if (before.huaweiHealthAuthorized) {
+                runCatching { huaweiHealthReader.readLatest() }
+            } else {
+                null
+            }
+            val huaweiSnapshot = huaweiResult?.getOrNull()
+            val huaweiError = huaweiResult?.exceptionOrNull()
+            val authorizationLost = huaweiError?.let(huaweiHealthReader::isAuthorizationError) == true
+            if (authorizationLost) huaweiHealthReader.clearAuthorization()
+
+            val healthConnectSnapshot = if (before.permissionsGranted) {
+                healthReader.readLatest()
+            } else {
+                null
+            }
+
+            val heartRate = newestHeartRate(huaweiSnapshot, healthConnectSnapshot, before)
+            val oxygen = newestOxygen(huaweiSnapshot, healthConnectSnapshot, before)
+            val series = newestSeries(huaweiSnapshot, healthConnectSnapshot, before.hrSeries)
             _ui.update {
                 val v = it.vitals
                 it.copy(
                     vitals = v.copy(
                         refreshing = false,
-                        heartRateBpm = snap?.heartRateBpm ?: v.heartRateBpm,
-                        heartRateAtMs = snap?.heartRateAt?.toEpochMilli() ?: v.heartRateAtMs,
-                        spo2Percent = snap?.spo2Percent ?: v.spo2Percent,
-                        spo2AtMs = snap?.spo2At?.toEpochMilli() ?: v.spo2AtMs,
-                        hrSeries = if (snap != null && snap.hrSeries.isNotEmpty()) snap.hrSeries else v.hrSeries,
+                        huaweiHealthAuthorized = v.huaweiHealthAuthorized && !authorizationLost,
+                        huaweiError = huaweiError?.let(huaweiHealthReader::describeError),
+                        heartRateBpm = heartRate?.value,
+                        heartRateAtMs = heartRate?.atMs,
+                        heartRateSource = heartRate?.source,
+                        spo2Percent = oxygen?.value,
+                        spo2AtMs = oxygen?.atMs,
+                        spo2Source = oxygen?.source,
+                        hrSeries = series,
                     )
                 )
             }
+            AltimeterWidgetStore.updateVitals(getApplication(), _ui.value.vitals)
         }
     }
+
+    private data class HeartRateValue(
+        val value: Long,
+        val atMs: Long,
+        val source: VitalsSource,
+    )
+
+    private data class OxygenValue(
+        val value: Double,
+        val atMs: Long,
+        val source: VitalsSource,
+    )
+
+    private fun newestHeartRate(
+        huawei: VitalsSnapshot?,
+        healthConnect: VitalsSnapshot?,
+        previous: com.chelmodeev.altimeter.model.VitalsState,
+    ): HeartRateValue? = listOfNotNull(
+        huawei?.heartRateBpm?.let { bpm ->
+            HeartRateValue(bpm, huawei.heartRateAt?.toEpochMilli() ?: 0L, VitalsSource.HUAWEI_HEALTH)
+        },
+        healthConnect?.heartRateBpm?.let { bpm ->
+            HeartRateValue(
+                bpm,
+                healthConnect.heartRateAt?.toEpochMilli() ?: 0L,
+                VitalsSource.HEALTH_CONNECT,
+            )
+        },
+        previous.heartRateBpm?.let { bpm ->
+            HeartRateValue(bpm, previous.heartRateAtMs ?: 0L, previous.heartRateSource ?: return@let null)
+        },
+    ).maxByOrNull { it.atMs }
+
+    private fun newestOxygen(
+        huawei: VitalsSnapshot?,
+        healthConnect: VitalsSnapshot?,
+        previous: com.chelmodeev.altimeter.model.VitalsState,
+    ): OxygenValue? = listOfNotNull(
+        huawei?.spo2Percent?.let { value ->
+            OxygenValue(value, huawei.spo2At?.toEpochMilli() ?: 0L, VitalsSource.HUAWEI_HEALTH)
+        },
+        healthConnect?.spo2Percent?.let { value ->
+            OxygenValue(
+                value,
+                healthConnect.spo2At?.toEpochMilli() ?: 0L,
+                VitalsSource.HEALTH_CONNECT,
+            )
+        },
+        previous.spo2Percent?.let { value ->
+            OxygenValue(value, previous.spo2AtMs ?: 0L, previous.spo2Source ?: return@let null)
+        },
+    ).maxByOrNull { it.atMs }
+
+    private fun newestSeries(
+        huawei: VitalsSnapshot?,
+        healthConnect: VitalsSnapshot?,
+        previous: List<Pair<Long, Long>>,
+    ): List<Pair<Long, Long>> = listOf(
+        huawei?.hrSeries.orEmpty(),
+        healthConnect?.hrSeries.orEmpty(),
+        previous,
+    ).maxByOrNull { series -> series.lastOrNull()?.first ?: 0L }.orEmpty()
 }

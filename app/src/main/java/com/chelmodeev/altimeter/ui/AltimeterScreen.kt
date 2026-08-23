@@ -82,6 +82,7 @@ import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.MslSource
 import com.chelmodeev.altimeter.model.UiState
+import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.ui.theme.zoneAccent
 import com.chelmodeev.altimeter.util.Fmt
 import kotlin.math.abs
@@ -92,6 +93,7 @@ data class ScreenActions(
     val onWearEngine: () -> Unit,
     val onRefreshVitals: () -> Unit,
     val onRequestHealth: () -> Unit,
+    val onRequestHuaweiHealth: () -> Unit,
     val onGrantLocation: () -> Unit,
     val onSetUnit: (AltUnit) -> Unit,
     val onCalibAuto: () -> Unit,
@@ -499,7 +501,7 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
             )
-            if (vitals.permissionsGranted) {
+            if (vitals.permissionsGranted || vitals.huaweiHealthAuthorized) {
                 if (vitals.refreshing) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
@@ -516,34 +518,89 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
         }
         Spacer(Modifier.height(10.dp))
 
-        when {
-            !vitals.available -> {
+        if (!vitals.huaweiHealthConfigured) {
+            Text(
+                text = stringResource(R.string.vitals_repo_mode),
+                fontSize = 11.sp,
+                color = Color(0xFF8BC34A),
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                text = stringResource(R.string.vitals_repo_hint),
+                fontSize = 12.5.sp,
+                lineHeight = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+        } else if (vitals.huaweiHealthAuthorized) {
+            Text(
+                text = stringResource(R.string.vitals_huawei_connected),
+                fontSize = 11.sp,
+                color = Color(0xFF8BC34A),
+            )
+            Spacer(Modifier.height(8.dp))
+        } else {
+            if (!vitals.huaweiHealthInstalled) {
                 Text(
-                    text = stringResource(
-                        if (vitals.needsProviderInstall) R.string.vitals_install_provider
-                        else R.string.vitals_unavailable
-                    ),
-                    fontSize = 13.sp,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = stringResource(R.string.vitals_hint),
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
+                    text = stringResource(R.string.vitals_huawei_not_installed),
+                    fontSize = 12.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            !vitals.permissionsGranted -> {
+            } else {
                 Text(
-                    text = stringResource(R.string.vitals_hint),
+                    text = stringResource(R.string.vitals_huawei_hint),
                     fontSize = 12.5.sp,
                     lineHeight = 17.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(10.dp))
-                FilledTonalButton(onClick = actions.onRequestHealth) {
-                    Text(stringResource(R.string.vitals_grant))
+                Spacer(Modifier.height(9.dp))
+                FilledTonalButton(onClick = actions.onRequestHuaweiHealth) {
+                    Text(stringResource(R.string.vitals_huawei_grant))
                 }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        if (!vitals.permissionsGranted) {
+            when {
+                vitals.available -> OutlinedButton(onClick = actions.onRequestHealth) {
+                    Text(stringResource(R.string.vitals_health_connect_grant))
+                }
+                vitals.needsProviderInstall -> Text(
+                    text = stringResource(R.string.vitals_install_provider),
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (vitals.available || vitals.needsProviderInstall) Spacer(Modifier.height(8.dp))
+        }
+
+        val errorText = when (vitals.huaweiError) {
+            "HUAWEI_HEALTH_NOT_INSTALLED" -> stringResource(R.string.vitals_huawei_not_installed)
+            "HUAWEI_APP_ID_NOT_CONFIGURED" -> stringResource(R.string.vitals_huawei_not_configured)
+            "HUAWEI_AUTHORIZATION_CANCELLED" -> stringResource(R.string.vitals_huawei_auth_cancelled)
+            "HUAWEI_AUTHORIZATION_UNAVAILABLE" -> stringResource(R.string.vitals_huawei_auth_unavailable)
+            null -> null
+            else -> stringResource(R.string.vitals_huawei_error, vitals.huaweiError)
+        }
+        if (vitals.huaweiHealthConfigured && errorText != null) {
+            Text(
+                text = errorText,
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        when {
+            !vitals.huaweiHealthAuthorized && !vitals.permissionsGranted -> {
+                Text(
+                    text = stringResource(R.string.vitals_sources_hint),
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             else -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -552,6 +609,7 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                         value = vitals.heartRateBpm?.toString() ?: "—",
                         unit = stringResource(R.string.vitals_bpm),
                         atMs = vitals.heartRateAtMs,
+                        source = vitalsSourceLabel(vitals.heartRateSource),
                         color = Color(0xFFFF8A80),
                         modifier = Modifier.weight(1f),
                     )
@@ -560,6 +618,7 @@ private fun VitalsCard(state: UiState, actions: ScreenActions) {
                         value = vitals.spo2Percent?.let { "${it.roundToInt()}%" } ?: "—",
                         unit = "",
                         atMs = vitals.spo2AtMs,
+                        source = vitalsSourceLabel(vitals.spo2Source),
                         color = Color(0xFF80D8FF),
                         modifier = Modifier.weight(1f),
                     )
@@ -599,6 +658,7 @@ private fun VitalStat(
     value: String,
     unit: String,
     atMs: Long?,
+    source: String?,
     color: Color,
     modifier: Modifier = Modifier,
 ) {
@@ -641,8 +701,22 @@ private fun VitalStat(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            if (source != null) {
+                Text(
+                    text = source,
+                    fontSize = 9.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun vitalsSourceLabel(source: VitalsSource?): String? = when (source) {
+    VitalsSource.HUAWEI_HEALTH -> stringResource(R.string.vitals_source_huawei)
+    VitalsSource.HEALTH_CONNECT -> stringResource(R.string.vitals_source_health_connect)
+    null -> null
 }
 
 @Composable
@@ -795,24 +869,11 @@ private fun WatchCard(state: UiState, actions: ScreenActions) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            FilledTonalButton(
-                onClick = actions.onSendWatch,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(stringResource(R.string.watch_send))
-            }
-            OutlinedButton(
-                onClick = actions.onWearEngine,
-                enabled = !state.watch.busy,
-                modifier = Modifier.weight(1f),
-            ) {
-                if (state.watch.busy) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(R.string.watch_wear_engine))
-                }
-            }
+        FilledTonalButton(
+            onClick = actions.onSendWatch,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.watch_send))
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,

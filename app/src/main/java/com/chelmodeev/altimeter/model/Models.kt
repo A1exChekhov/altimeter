@@ -42,15 +42,27 @@ data class TrackRecState(
     val lastSavedPath: String? = null,
 )
 
-/** Пульс и SpO₂, измеренные часами (через Huawei Health → Health Connect). */
+enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT }
+
+/** Пульс и SpO₂, измеренные часами. В repo-сборке основной источник — Health Connect. */
 data class VitalsState(
+    /** Состояние резервного источника Health Connect. */
     val available: Boolean = false,
     val needsProviderInstall: Boolean = false,
     val permissionsGranted: Boolean = false,
+
+    /** Состояние прямого источника Huawei Health Kit. */
+    val huaweiHealthInstalled: Boolean = false,
+    val huaweiHealthConfigured: Boolean = false,
+    val huaweiHealthAuthorized: Boolean = false,
+    val huaweiError: String? = null,
+
     val heartRateBpm: Long? = null,
     val heartRateAtMs: Long? = null,
+    val heartRateSource: VitalsSource? = null,
     val spo2Percent: Double? = null,
     val spo2AtMs: Long? = null,
+    val spo2Source: VitalsSource? = null,
     val hrSeries: List<Pair<Long, Long>> = emptyList(),
     val refreshing: Boolean = false,
 )
