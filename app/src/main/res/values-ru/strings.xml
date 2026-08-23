@@ -135,6 +135,7 @@
     <string name="vitals_no_data">Пока нет данных. В Health Connect откройте «Данные и доступ» и проверьте записи пульса, кислорода и шагов.</string>
     <string name="vitals_updated">обновлено %1$s</string>
     <string name="vitals_refresh">Обновить</string>
+    <string name="vitals_get_data">Получить данные</string>
     <string name="vitals_auto">Проверяется автоматически каждые 5 мин</string>
     <string name="vitals_huawei_connected">Прямое подключение к HUAWEI Health</string>
     <string name="vitals_huawei_hint">Основной источник для Honor + Huawei Watch 4 Pro. Подключите HUAWEI Health, чтобы напрямую читать пульс, SpO₂ и шаги.</string>

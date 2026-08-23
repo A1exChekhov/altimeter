@@ -61,12 +61,12 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Altimeter-v1.5.4.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.4/Altimeter-v1.5.4.apk)**.
+**[скачать Altimeter-v1.5.5.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.5/Altimeter-v1.5.5.apk)**.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
-`Altimeter-v1.5.4.apk` и т. д.; новая сборка не
+`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk` и т. д.; новая сборка не
 перезаписывает предыдущую.
 
 ## Где находятся устанавливаемые файлы
@@ -81,7 +81,7 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно опубликован как asset релиза `v1.5.4`. Локально он создаётся
+Git, но готовый APK отдельно опубликован как asset релиза `v1.5.5`. Локально он создаётся
 командой `:app:assembleDebug`.
 
 ### iPhone

@@ -805,6 +805,22 @@ private fun VitalsDetailsSheet(
                 Spacer(Modifier.height(8.dp))
             }
 
+            Button(
+                onClick = actions.onRefreshVitals,
+                enabled = !vitals.refreshing && vitals.permissionsGranted,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (vitals.refreshing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(Modifier.size(7.dp))
+                }
+                Text(stringResource(R.string.vitals_get_data))
+            }
+            Spacer(Modifier.height(8.dp))
+
             FilledTonalButton(
                 onClick = actions.onConnectBluetooth,
                 enabled = !bluetoothBusy,

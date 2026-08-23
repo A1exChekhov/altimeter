@@ -136,6 +136,7 @@
     <string name="vitals_no_data">No data yet. Open Data and access in Health Connect and check heart-rate, oxygen and steps records.</string>
     <string name="vitals_updated">updated %1$s</string>
     <string name="vitals_refresh">Refresh</string>
+    <string name="vitals_get_data">Get data</string>
     <string name="vitals_auto">Checked automatically every 5 min</string>
     <string name="vitals_huawei_connected">HUAWEI Health connected directly</string>
     <string name="vitals_huawei_hint">Primary source for Honor + Huawei Watch 4 Pro. Connect HUAWEI Health to read heart rate, SpO₂ and steps directly.</string>
