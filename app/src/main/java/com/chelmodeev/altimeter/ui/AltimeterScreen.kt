@@ -104,7 +104,6 @@ data class ScreenActions(
     val onRefreshVitals: () -> Unit,
     val onRequestHealth: () -> Unit,
     val onRequestHuaweiHealth: () -> Unit,
-    val onOpenHealthSync: () -> Unit,
     val onOpenHealthConnect: () -> Unit,
     val onRepairHealth: () -> Unit,
     val onConnectBluetooth: () -> Unit,
@@ -843,14 +842,6 @@ private fun VitalsDetailsSheet(
             ) {
                 Text(stringResource(R.string.vitals_open_health_connect))
             }
-            Spacer(Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = actions.onOpenHealthSync,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.vitals_open_health_sync))
-            }
-
             Spacer(Modifier.height(14.dp))
             listOfNotNull(
                 vitalsSourceLabel(vitals.heartRateSource, vitals.heartRateOrigin)?.let {
@@ -1114,13 +1105,6 @@ private fun VitalsCardLegacy(state: UiState, actions: ScreenActions) {
                         lineHeight = 16.sp,
                         color = Color(0xFFFFCC80),
                     )
-                    Spacer(Modifier.height(7.dp))
-                    OutlinedButton(
-                        onClick = actions.onOpenHealthSync,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.vitals_open_health_sync))
-                    }
                 }
                 if (vitals.heartRateBpm == null && vitals.spo2Percent == null &&
                     vitals.stepsToday == null
@@ -1223,7 +1207,9 @@ private fun vitalsSourceLabel(source: VitalsSource?, origin: String?): String? {
     }
     val originLabel = when (origin) {
         "com.huawei.health" -> null
-        "nl.appyhapps.healthsync" -> "Health Sync"
+        "nodomain.freeyourgadget.gadgetbridge",
+        "nodomain.freeyourgadget.gadgetbridge.nightly",
+        -> "Gadgetbridge"
         else -> origin
     }
     return originLabel?.takeIf { it.isNotBlank() }

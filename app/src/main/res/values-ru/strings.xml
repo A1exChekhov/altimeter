@@ -147,12 +147,10 @@
     <string name="vitals_health_connect_grant">Подключить Health Connect</string>
     <string name="vitals_permissions_status">Доступ: пульс %1$s · SpO₂ %2$s · шаги %3$s</string>
     <string name="vitals_health_connect_error">Health Connect: %1$s</string>
-    <string name="vitals_sources_hint">Сначала настройте передачу Huawei Health → Health Sync → Health Connect, затем дайте Альтиметру доступ к пульсу, кислороду и шагам.</string>
+    <string name="vitals_sources_hint">Разрешите приложению-источнику записывать пульс, SpO₂ и шаги в Health Connect, затем дайте Альтиметру доступ к этим данным.</string>
     <string name="vitals_repo_mode">Сборка из репозитория · без Huawei App ID</string>
-    <string name="vitals_repo_hint">Данные читаются локально из Health Connect. Для Huawei Watch нужен мост Huawei Health → Health Connect; подойдёт стороннее приложение Health Sync.</string>
-    <string name="vitals_missing_data_types">В Health Connect нет свежих записей: %1$s. В Health Sync включите эти типы данных и запустите синхронизацию.</string>
-    <string name="vitals_open_health_sync">Открыть Health Sync</string>
-    <string name="vitals_health_sync_not_installed">Health Sync не установлен</string>
+    <string name="vitals_repo_hint">Данные читаются локально из Health Connect. Приложение-источник должно иметь разрешение на запись нужных показателей.</string>
+    <string name="vitals_missing_data_types">В Health Connect нет свежих записей: %1$s. Проверьте права на запись и состояние синхронизации в приложении-источнике.</string>
     <string name="vitals_ble_connect">Подключить пульс с часов</string>
     <string name="vitals_ble_reconnect">Переподключить пульс с часов</string>
     <string name="vitals_ble_hint">На часах включите «Настройки → Трансляция данных ЧСС», затем нажмите кнопку.</string>

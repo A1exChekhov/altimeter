@@ -148,12 +148,10 @@
     <string name="vitals_health_connect_grant">Connect Health Connect</string>
     <string name="vitals_permissions_status">Access: heart %1$s · SpO₂ %2$s · steps %3$s</string>
     <string name="vitals_health_connect_error">Health Connect: %1$s</string>
-    <string name="vitals_sources_hint">First configure Huawei Health → Health Sync → Health Connect, then grant Altimeter access to heart rate, oxygen and steps.</string>
+    <string name="vitals_sources_hint">Allow the source app to write heart rate, SpO₂ and steps to Health Connect, then grant Altimeter access to these data.</string>
     <string name="vitals_repo_mode">Repository build · no Huawei App ID</string>
-    <string name="vitals_repo_hint">Data is read locally from Health Connect. Huawei Watch needs a Huawei Health → Health Connect bridge; the third-party Health Sync app is one option.</string>
-    <string name="vitals_missing_data_types">Health Connect has no recent records for: %1$s. In Health Sync enable these data types and run synchronization.</string>
-    <string name="vitals_open_health_sync">Open Health Sync</string>
-    <string name="vitals_health_sync_not_installed">Health Sync is not installed</string>
+    <string name="vitals_repo_hint">Data is read locally from Health Connect. The source app must have permission to write the required metrics.</string>
+    <string name="vitals_missing_data_types">Health Connect has no recent records for: %1$s. Check write permissions and sync status in the source app.</string>
     <string name="vitals_ble_connect">Connect watch heart rate</string>
     <string name="vitals_ble_reconnect">Reconnect watch heart rate</string>
     <string name="vitals_ble_hint">On the watch, enable Settings → HR Data Broadcasts, then tap the button.</string>
