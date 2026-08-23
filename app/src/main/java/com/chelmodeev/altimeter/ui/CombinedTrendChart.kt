@@ -31,6 +31,14 @@ fun CombinedTrendChart(
         val chartTop = 8.dp.toPx()
         val chartBottom = size.height - 10.dp.toPx()
         val chartHeight = (chartBottom - chartTop).coerceAtLeast(1f)
+        val allVisibleTimes = lines.asSequence()
+            .flatMap { it.points.asSequence() }
+            .map { it.first }
+            .filter { it in startTime..endTime }
+            .toList()
+        val dataStart = allVisibleTimes.minOrNull() ?: startTime
+        val dataEnd = allVisibleTimes.maxOrNull() ?: endTime
+        val dataSpan = (dataEnd - dataStart).coerceAtLeast(1L)
 
         repeat(4) { index ->
             val y = chartTop + chartHeight * index / 3f
@@ -54,7 +62,7 @@ fun CombinedTrendChart(
             val maxValue = visible.maxOf { it.second }
             val valueRange = (maxValue - minValue).takeIf { it > 1e-9 }
             fun point(time: Long, value: Double): Offset {
-                val x = ((time - startTime).toDouble() / windowMs.toDouble())
+                val x = ((time - dataStart).toDouble() / dataSpan.toDouble())
                     .coerceIn(0.0, 1.0).toFloat() * size.width
                 val normalized = valueRange?.let { (value - minValue) / it } ?: 0.5
                 val y = chartBottom - normalized.toFloat() * chartHeight

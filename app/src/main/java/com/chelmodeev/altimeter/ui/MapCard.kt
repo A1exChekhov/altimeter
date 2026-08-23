@@ -58,7 +58,7 @@ private val TOPO_SOURCE = XYTileSource(
 )
 
 @Composable
-fun MapCard(
+fun LegacyMapCard(
     latitude: Double?,
     longitude: Double?,
     accuracyMeters: Float?,

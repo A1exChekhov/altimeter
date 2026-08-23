@@ -15,12 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -223,6 +225,135 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
             )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.offline_maps_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.offline_maps_description),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 3.dp, bottom = 8.dp),
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = actions.onImportOfflineMap,
+                    enabled = !state.offlineMaps.importing,
+                ) {
+                    if (state.offlineMaps.importing) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.size(7.dp))
+                    }
+                    Text(
+                        stringResource(
+                            if (state.offlineMaps.importing) R.string.offline_maps_importing
+                            else R.string.offline_maps_import
+                        )
+                    )
+                }
+                OutlinedButton(
+                    onClick = actions.onUseOnlineMap,
+                    enabled = state.offlineMaps.activePath != null,
+                ) {
+                    Text(stringResource(R.string.offline_maps_online))
+                }
+            }
+            state.offlineMaps.error?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            if (state.offlineMaps.catalog.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.offline_maps_catalog),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+                )
+                state.offlineMaps.catalog.forEach { item ->
+                    val installed = state.offlineMaps.installed.any { it.id == item.fileName }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(item.title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = "${item.description} · ${formatMapSize(item.sizeBytes + item.terrainSizeBytes)}",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 10.sp,
+                                lineHeight = 13.sp,
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { actions.onDownloadOfflineMap(item.id) },
+                            enabled = !state.offlineMaps.importing,
+                        ) {
+                            Text(
+                                stringResource(
+                                    if (installed) R.string.offline_maps_update
+                                    else R.string.offline_maps_download
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            if (state.offlineMaps.installed.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.offline_maps_empty),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            } else {
+                Spacer(Modifier.height(6.dp))
+                state.offlineMaps.installed.forEach { region ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(region.title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = buildString {
+                                    append(formatMapSize(region.sizeBytes))
+                                    region.sha256?.let { append(" · SHA-256 ").append(it.take(8)) }
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 10.sp,
+                            )
+                        }
+                        FilterChip(
+                            selected = region.active,
+                            onClick = { actions.onActivateOfflineMap(region.id) },
+                            label = {
+                                Text(
+                                    stringResource(
+                                        if (region.active) R.string.offline_maps_active
+                                        else R.string.offline_maps_use
+                                    )
+                                )
+                            },
+                        )
+                        TextButton(onClick = { actions.onDeleteOfflineMap(region.id) }) {
+                            Text(stringResource(R.string.offline_maps_delete))
+                        }
+                    }
+                }
+            }
             SettingSwitch(
                 label = stringResource(R.string.settings_keep_on),
                 checked = state.keepScreenOn,
@@ -246,6 +377,12 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
             }
         }
     }
+}
+
+private fun formatMapSize(bytes: Long): String = when {
+    bytes >= 1024L * 1024L * 1024L -> "%.1f ГБ".format(bytes / (1024.0 * 1024.0 * 1024.0))
+    bytes >= 1024L * 1024L -> "%.1f МБ".format(bytes / (1024.0 * 1024.0))
+    else -> "%.0f КБ".format(bytes / 1024.0)
 }
 
 @Composable

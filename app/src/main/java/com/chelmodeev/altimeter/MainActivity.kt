@@ -56,6 +56,16 @@ class MainActivity : ComponentActivity() {
             viewModel.onHuaweiHealthAuthorizationResult(result.data)
         }
 
+    private val offlineMapLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) viewModel.importOfflineMap(uri)
+        }
+
+    private val trackImportLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) viewModel.importTrack(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -88,6 +98,16 @@ class MainActivity : ComponentActivity() {
                         onStopTrack = { TrackingService.stop(this) },
                         onViewTrack = viewModel::viewTrack,
                         onShareTrack = ::shareTrack,
+                        onImportTrack = {
+                            trackImportLauncher.launch(
+                                arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*")
+                            )
+                        },
+                        onImportOfflineMap = { offlineMapLauncher.launch(arrayOf("*/*")) },
+                        onDownloadOfflineMap = viewModel::downloadOfflineMap,
+                        onActivateOfflineMap = viewModel::activateOfflineMap,
+                        onUseOnlineMap = viewModel::useOnlineMap,
+                        onDeleteOfflineMap = viewModel::deleteOfflineMap,
                     ),
                 )
             }

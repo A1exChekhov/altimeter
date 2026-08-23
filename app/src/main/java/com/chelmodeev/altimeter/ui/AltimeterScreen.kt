@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -59,6 +60,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -116,6 +118,12 @@ data class ScreenActions(
     val onStopTrack: () -> Unit,
     val onViewTrack: (String) -> Unit,
     val onShareTrack: (String) -> Unit,
+    val onImportTrack: () -> Unit,
+    val onImportOfflineMap: () -> Unit,
+    val onDownloadOfflineMap: (String) -> Unit,
+    val onActivateOfflineMap: (String) -> Unit,
+    val onUseOnlineMap: () -> Unit,
+    val onDeleteOfflineMap: (String) -> Unit,
 )
 
 @Composable
@@ -154,13 +162,11 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
             )
             Spacer(Modifier.height(4.dp))
             Readout(state, accent, actions)
-            Spacer(Modifier.height(16.dp))
-            StatusChipsRow(state)
             if (!state.locationPermissionGranted) {
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 PermissionCard(actions.onGrantLocation)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(12.dp))
             MapCard(
                 latitude = state.latitude,
                 longitude = state.longitude,
@@ -169,6 +175,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 accent = accent,
                 trackPoints = state.mapTrack,
                 trackRecording = state.tracking.recording,
+                offlineMapPath = state.offlineMaps.activePath,
                 expanded = mapExpanded,
                 onToggleExpanded = { mapExpanded = !mapExpanded },
                 modifier = Modifier
@@ -261,24 +268,28 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         if (state.altitude != null) {
-            Text(
-                text = Fmt.altitudeValue(state.altitude, state.unit),
-                style = TextStyle(
-                    fontSize = 86.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = (-2).sp,
-                    fontFeatureSettings = "tnum",
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White, accent.copy(alpha = 0.85f))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = Fmt.altitudeValue(state.altitude, state.unit),
+                    style = TextStyle(
+                        fontSize = 86.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = (-2).sp,
+                        fontFeatureSettings = "tnum",
+                        brush = Brush.verticalGradient(
+                            listOf(Color.White, accent.copy(alpha = 0.85f))
+                        ),
                     ),
-                ),
-                maxLines = 1,
-            )
-            Text(
-                text = "${Fmt.unitLabel(context, state.unit)} · ${stringResource(R.string.above_sea_level)}",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+                    maxLines = 1,
+                )
+                Text(
+                    text = Fmt.unitLabel(context, state.unit).lowercase(),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 5.dp, bottom = 15.dp),
+                )
+            }
         } else {
             Text(
                 text = "– – – –",
@@ -385,6 +396,8 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
                     stringResource(R.string.track_start)
                 },
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -568,40 +581,6 @@ private fun VitalsCard(
     ).count { it == null }
 
     SectionCard {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Rounded.MonitorHeart,
-                contentDescription = null,
-                tint = Color(0xFFFF8A80),
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = stringResource(R.string.vitals_title),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            if (vitals.refreshing) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Rounded.Refresh,
-                        contentDescription = stringResource(R.string.vitals_refresh),
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-            IconButton(onClick = onDetails, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Rounded.Settings,
-                    contentDescription = stringResource(R.string.vitals_sources),
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
-        Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CompactVitalStat(
                 label = stringResource(R.string.vitals_hr),
@@ -630,23 +609,68 @@ private fun VitalsCard(
             vitals.healthConnectError == "PERMISSION" ->
                 stringResource(R.string.vitals_permission_repair_short)
             !hasAllPermissions -> stringResource(R.string.vitals_access_required_short)
+            vitals.stepsToday != null && vitals.heartRateBpm == null && vitals.spo2Percent == null ->
+                stringResource(R.string.vitals_only_steps_short)
             missingValues > 0 -> stringResource(R.string.vitals_data_incomplete_short)
             vitals.bluetoothState == BluetoothVitalsState.CONNECTED ->
                 stringResource(R.string.vitals_source_bluetooth)
             else -> stringResource(R.string.vitals_ready)
         }
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = status,
-            fontSize = 10.5.sp,
-            color = if (vitals.healthConnectError == "PERMISSION") {
-                Color(0xFFFFCC80)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Rounded.MonitorHeart,
+                contentDescription = null,
+                tint = Color(0xFFFF8A80),
+                modifier = Modifier.size(15.dp),
+            )
+            Spacer(Modifier.size(6.dp))
+            if (!hasAllPermissions || vitals.healthConnectError == "PERMISSION") {
+                TextButton(
+                    onClick = if (vitals.healthConnectError == "PERMISSION") {
+                        actions.onRepairHealth
+                    } else {
+                        actions.onRequestHealth
+                    },
+                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = status,
+                        fontSize = 10.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+                Text(
+                    text = status,
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (vitals.refreshing) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(30.dp)) {
+                    Icon(
+                        Icons.Rounded.Refresh,
+                        contentDescription = stringResource(R.string.vitals_refresh),
+                        modifier = Modifier.size(17.dp),
+                    )
+                }
+            }
+            IconButton(onClick = onDetails, modifier = Modifier.size(30.dp)) {
+                Icon(
+                    Icons.Rounded.Settings,
+                    contentDescription = stringResource(R.string.vitals_sources),
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+        }
     }
 }
 
@@ -1571,6 +1595,34 @@ private fun TrackCard(
                 )
                 Spacer(Modifier.size(6.dp))
                 Text(stringResource(R.string.track_start))
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = actions.onImportTrack,
+                enabled = !state.trackImporting,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (state.trackImporting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(Modifier.size(7.dp))
+                }
+                Text(
+                    stringResource(
+                        if (state.trackImporting) R.string.track_importing
+                        else R.string.track_import
+                    )
+                )
+            }
+            state.trackImportError?.let { message ->
+                Text(
+                    text = message,
+                    fontSize = 10.5.sp,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 5.dp),
+                )
             }
             Spacer(Modifier.height(12.dp))
             Text(

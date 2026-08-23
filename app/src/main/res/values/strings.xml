@@ -49,6 +49,8 @@
     <string name="vspeed_ft">ft/min</string>
 
     <string name="map_locating">Waiting for location…</string>
+    <string name="map_tourist_beta">TOURIST MAP · BETA</string>
+    <string name="map_offline_beta">OFFLINE REGION · BETA</string>
 
     <string name="watch_title">Huawei Watch</string>
     <string name="watch_hint">The «Send» button delivers altitude to the watch as a notification mirrored by Huawei Health. Enable notification mirroring for this app in Huawei Health settings.</string>
@@ -80,8 +82,20 @@
     <string name="apply">Apply</string>
 
     <string name="settings_map">Map</string>
-    <string name="settings_map_topo">Topographic map (OpenTopoMap)</string>
-    <string name="settings_map_offline_cache">Viewed map areas are kept in persistent offline storage (up to 512 MB).</string>
+    <string name="settings_map_topo">Outdoor vector map</string>
+    <string name="settings_map_offline_cache">The online map is used when no regional package is selected.</string>
+    <string name="offline_maps_title">Offline regional maps</string>
+    <string name="offline_maps_description">Import one-file PMTiles v3 regions. Files are verified with SHA-256 and remain after app updates.</string>
+    <string name="offline_maps_import">Import region</string>
+    <string name="offline_maps_importing">Importing…</string>
+    <string name="offline_maps_online">Online map</string>
+    <string name="offline_maps_empty">No regional maps installed yet.</string>
+    <string name="offline_maps_active">Active</string>
+    <string name="offline_maps_use">Use</string>
+    <string name="offline_maps_delete">Delete</string>
+    <string name="offline_maps_catalog">Region catalog</string>
+    <string name="offline_maps_download">Download</string>
+    <string name="offline_maps_update">Update</string>
     <string name="settings_keep_on">Keep screen on</string>
     <string name="settings_reset">Reset statistics</string>
     <string name="settings_about">Altitude: barometer + GPS (NMEA/geoid corrected). Maps: © OpenStreetMap contributors, © OpenTopoMap. Places: Nominatim.</string>
@@ -98,6 +112,8 @@
     <string name="track_distance">distance</string>
     <string name="track_saved">Saved: %1$s</string>
     <string name="track_share">Share track</string>
+    <string name="track_import">Import GPX from device or Drive</string>
+    <string name="track_importing">Importing GPX…</string>
     <string name="track_view_on_map">Show track on map</string>
     <string name="track_hint">Recording continues in the background and with the screen off. Saved GPX files are listed above; use the button on the right to export one.</string>
     <string name="track_notif_title">Recording track</string>
@@ -153,8 +169,9 @@
     <string name="vitals_sources">Data sources</string>
     <string name="vitals_spo2_short">SpO₂</string>
     <string name="vitals_permission_repair_short">Health access needs to be refreshed</string>
-    <string name="vitals_access_required_short">Allow Health Connect access</string>
+    <string name="vitals_access_required_short">Tap to allow heart rate and SpO₂</string>
     <string name="vitals_data_incomplete_short">Waiting for missing readings</string>
+    <string name="vitals_only_steps_short">Only steps were written to Health Connect; heart rate and SpO₂ are absent</string>
     <string name="vitals_ready">Health data is connected</string>
     <string name="vitals_permission_repair_hint">Android rejected one or more reads although access looked enabled. Reset and grant heart rate, oxygen saturation and steps again.</string>
     <string name="vitals_repair_access">Reset and grant access again</string>

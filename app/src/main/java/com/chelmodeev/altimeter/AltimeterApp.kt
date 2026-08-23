@@ -1,12 +1,14 @@
 package com.chelmodeev.altimeter
 
 import android.app.Application
+import org.maplibre.android.MapLibre
 import org.osmdroid.config.Configuration
 import java.io.File
 
 class AltimeterApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        MapLibre.getInstance(this)
         val cfg = Configuration.getInstance()
         cfg.load(this, getSharedPreferences("osmdroid", MODE_PRIVATE))
         cfg.userAgentValue = packageName

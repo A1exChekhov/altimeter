@@ -1,0 +1,15 @@
+[
+  {
+    "id": "everest-2026",
+    "title": "Эверест · Everest",
+    "description": "Кхумбу, оба базовых лагеря и подходы · 86.35–87.55° E, 27.45–28.50° N · масштаб до 15",
+    "fileName": "errarium-everest-2026.pmtiles",
+    "downloadUrl": "https://github.com/A1exChekhov/altimeter/releases/download/v1.5/errarium-everest-2026.pmtiles",
+    "sizeBytes": 13424531,
+    "sha256": "0ab80918fff4923449a7b08066939c0315ec5b74612203548f32c48ebc1d6cf2",
+    "terrainFileName": "errarium-everest-2026-dem.pmtiles",
+    "terrainDownloadUrl": "https://github.com/A1exChekhov/altimeter/releases/download/v1.5/errarium-everest-2026-dem.pmtiles",
+    "terrainSizeBytes": 60048426,
+    "terrainSha256": "eae299024602ac294ca322cbcfe2f2cf47f89d067b8697753fe61e48e7e1ad6c"
+  }
+]

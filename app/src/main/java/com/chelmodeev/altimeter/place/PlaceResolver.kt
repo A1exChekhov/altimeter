@@ -30,7 +30,8 @@ class PlaceResolver(private val context: Context) {
             Location.distanceBetween(lastLat, lastLon, lat, lon, results)
             if (now - lastAt < 60_000 || results[0] < 300f) return@withContext cached
         }
-        val name = fromGeocoder(lat, lon) ?: fromNominatim(lat, lon)
+        val name = fromGeocoder(lat, lon)?.takeIf(::isReadableName)
+            ?: fromNominatim(lat, lon)?.takeIf(::isReadableName)
         if (name != null) {
             lastName = name
             lastLat = lat
@@ -51,13 +52,16 @@ class PlaceResolver(private val context: Context) {
     }.getOrNull()
 
     private fun fromNominatim(lat: Double, lon: Double): String? = runCatching {
-        val lang = Locale.getDefault().language.ifBlank { "en" }
+        val lang = Locale.getDefault().language.ifBlank { "ru" }
         val url = URL(
             "https://nominatim.openstreetmap.org/reverse?format=jsonv2" +
-                "&lat=$lat&lon=$lon&zoom=14&accept-language=$lang"
+                "&lat=$lat&lon=$lon&zoom=14&accept-language=$lang,en"
         )
         val conn = url.openConnection() as HttpURLConnection
-        conn.setRequestProperty("User-Agent", "AltimeterApp/1.0 (Android; personal use)")
+        conn.setRequestProperty(
+            "User-Agent",
+            "Errarium-Altimeter/1.5 (Android; errarium.ai@gmail.com)"
+        )
         conn.connectTimeout = 6_000
         conn.readTimeout = 6_000
         try {
@@ -80,4 +84,19 @@ class PlaceResolver(private val context: Context) {
             conn.disconnect()
         }
     }.getOrNull()
+
+    private fun isReadableName(value: String): Boolean {
+        if (value.isBlank()) return false
+        val preferredLanguage = Locale.getDefault().language
+        if (preferredLanguage !in setOf("ru", "uk", "be", "en")) return true
+        return value.none { ch ->
+            when (Character.UnicodeScript.of(ch.code)) {
+                Character.UnicodeScript.HAN,
+                Character.UnicodeScript.HIRAGANA,
+                Character.UnicodeScript.KATAKANA,
+                Character.UnicodeScript.HANGUL -> true
+                else -> false
+            }
+        }
+    }
 }

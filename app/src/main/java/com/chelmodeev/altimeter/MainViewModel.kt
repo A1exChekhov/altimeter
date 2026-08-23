@@ -3,6 +3,8 @@ package com.chelmodeev.altimeter
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Xml
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,6 +17,7 @@ import com.chelmodeev.altimeter.health.HuaweiHealthReader
 import com.chelmodeev.altimeter.health.VitalsSnapshot
 import com.chelmodeev.altimeter.logic.Advisor
 import com.chelmodeev.altimeter.logic.AdvisorInput
+import com.chelmodeev.altimeter.maps.OfflineMapRepository
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.SavedTrack
@@ -28,12 +31,14 @@ import com.chelmodeev.altimeter.watch.WatchNotifier
 import com.chelmodeev.altimeter.watch.WearEngineBridge
 import com.chelmodeev.altimeter.widget.AltimeterWidgetStore
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import org.xmlpull.v1.XmlPullParser
@@ -41,7 +46,8 @@ import kotlin.math.roundToLong
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val _ui = MutableStateFlow(UiState())
+    private val offlineMapRepository = OfflineMapRepository(app)
+    private val _ui = MutableStateFlow(UiState(offlineMaps = offlineMapRepository.snapshot()))
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     private val core = AltimeterCore.get(app)
@@ -366,6 +372,128 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun viewTrack(path: String) {
         val route = loadGpxTrack(path)
         if (route.isNotEmpty()) _ui.update { it.copy(mapTrack = route) }
+    }
+
+    fun importTrack(uri: Uri) {
+        if (_ui.value.trackImporting) return
+        viewModelScope.launch {
+            _ui.update { it.copy(trackImporting = true, trackImportError = null) }
+            val result = runCatching {
+                withContext(Dispatchers.IO) { copyTrackFromUri(uri) }
+            }
+            _ui.update { state ->
+                result.fold(
+                    onSuccess = { imported ->
+                        state.copy(
+                            trackImporting = false,
+                            trackImportError = null,
+                            savedTracks = loadSavedTracks(),
+                            mapTrack = loadGpxTrack(imported.absolutePath),
+                        )
+                    },
+                    onFailure = { error ->
+                        state.copy(
+                            trackImporting = false,
+                            trackImportError = error.message ?: "Ошибка импорта GPX",
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    private fun copyTrackFromUri(uri: Uri): File {
+        val app = getApplication<Application>()
+        val directory = File(app.getExternalFilesDir(null), "tracks").apply { mkdirs() }
+        val displayName = runCatching {
+            app.contentResolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null,
+            )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+        }.getOrNull().orEmpty()
+        val base = displayName.removeSuffix(".gpx")
+            .replace(Regex("[^\\p{L}\\p{N}._-]+"), "-")
+            .trim('-', '.', '_')
+            .take(80)
+            .ifBlank { "track-${System.currentTimeMillis()}" }
+        var destination = File(directory, "$base.gpx")
+        if (destination.exists()) {
+            destination = File(directory, "$base-${System.currentTimeMillis()}.gpx")
+        }
+        val partial = File(directory, ".${destination.name}.part")
+        try {
+            app.contentResolver.openInputStream(uri)?.use { input ->
+                partial.outputStream().buffered().use { output -> input.copyTo(output) }
+            } ?: error("Не удалось открыть GPX")
+            check(partial.renameTo(destination)) { "Не удалось сохранить GPX" }
+            require(loadGpxTrack(destination.absolutePath).isNotEmpty()) {
+                "В GPX нет координат трека"
+            }
+            return destination
+        } catch (error: Throwable) {
+            partial.delete()
+            destination.delete()
+            throw error
+        }
+    }
+
+    fun importOfflineMap(uri: Uri) {
+        if (_ui.value.offlineMaps.importing) return
+        viewModelScope.launch {
+            _ui.update {
+                it.copy(offlineMaps = it.offlineMaps.copy(importing = true, error = null))
+            }
+            val result = runCatching { offlineMapRepository.import(uri) }
+            _ui.update {
+                it.copy(
+                    offlineMaps = result.getOrElse { error ->
+                        offlineMapRepository.snapshot(error = error.message ?: "Ошибка импорта карты")
+                    }
+                )
+            }
+        }
+    }
+
+    fun downloadOfflineMap(packageId: String) {
+        if (_ui.value.offlineMaps.importing) return
+        viewModelScope.launch {
+            _ui.update {
+                it.copy(offlineMaps = it.offlineMaps.copy(importing = true, error = null))
+            }
+            val result = runCatching { offlineMapRepository.download(packageId) }
+            _ui.update {
+                it.copy(
+                    offlineMaps = result.getOrElse { error ->
+                        offlineMapRepository.snapshot(error = error.message ?: "Ошибка загрузки карты")
+                    }
+                )
+            }
+        }
+    }
+
+    fun activateOfflineMap(id: String) {
+        _ui.update {
+            it.copy(
+                offlineMaps = runCatching { offlineMapRepository.activate(id) }
+                    .getOrElse { error -> offlineMapRepository.snapshot(error = error.message) }
+            )
+        }
+    }
+
+    fun useOnlineMap() {
+        _ui.update { it.copy(offlineMaps = offlineMapRepository.activate(null)) }
+    }
+
+    fun deleteOfflineMap(id: String) {
+        _ui.update {
+            it.copy(
+                offlineMaps = runCatching { offlineMapRepository.delete(id) }
+                    .getOrElse { error -> offlineMapRepository.snapshot(error = error.message) }
+            )
+        }
     }
 
     private fun loadGpxTrack(path: String): List<TrackMapPoint> = runCatching {

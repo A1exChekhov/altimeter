@@ -52,6 +52,39 @@ data class SavedTrack(
     val sizeBytes: Long,
 )
 
+/** Один локальный регион в контейнере PMTiles. */
+data class OfflineMapRegion(
+    val id: String,
+    val title: String,
+    val path: String,
+    val sizeBytes: Long,
+    val sha256: String?,
+    val terrainPath: String? = null,
+    val active: Boolean,
+)
+
+data class OfflineMapPackage(
+    val id: String,
+    val title: String,
+    val description: String,
+    val fileName: String,
+    val downloadUrl: String,
+    val sizeBytes: Long,
+    val sha256: String,
+    val terrainFileName: String? = null,
+    val terrainDownloadUrl: String? = null,
+    val terrainSizeBytes: Long = 0L,
+    val terrainSha256: String? = null,
+)
+
+data class OfflineMapsState(
+    val installed: List<OfflineMapRegion> = emptyList(),
+    val catalog: List<OfflineMapPackage> = emptyList(),
+    val activePath: String? = null,
+    val importing: Boolean = false,
+    val error: String? = null,
+)
+
 enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT, BLUETOOTH }
 
 enum class BluetoothVitalsState {
@@ -146,6 +179,9 @@ data class UiState(
     val advices: List<Advice> = emptyList(),
     val tracking: TrackRecState = TrackRecState(),
     val savedTracks: List<SavedTrack> = emptyList(),
+    val trackImporting: Boolean = false,
+    val trackImportError: String? = null,
     /** Текущий либо выбранный из архива маршрут, отображаемый на карте. */
     val mapTrack: List<TrackMapPoint> = emptyList(),
+    val offlineMaps: OfflineMapsState = OfflineMapsState(),
 )

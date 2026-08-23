@@ -48,6 +48,8 @@
     <string name="vspeed_ft">фт/мин</string>
 
     <string name="map_locating">Жду координаты…</string>
+    <string name="map_tourist_beta">ТУРИСТИЧЕСКАЯ КАРТА · БЕТА</string>
+    <string name="map_offline_beta">ОФЛАЙН-РЕГИОН · БЕТА</string>
 
     <string name="watch_title">Часы Huawei</string>
     <string name="watch_hint">Кнопка «На часы» отправляет высоту уведомлением, которое Huawei Health зеркалирует на часы. Включите показ уведомлений этого приложения в настройках Huawei Health.</string>
@@ -79,8 +81,20 @@
     <string name="apply">Применить</string>
 
     <string name="settings_map">Карта</string>
-    <string name="settings_map_topo">Топографическая карта (OpenTopoMap)</string>
-    <string name="settings_map_offline_cache">Просмотренные участки карты сохраняются в постоянном офлайн-хранилище (до 512 МБ).</string>
+    <string name="settings_map_topo">Туристическая векторная карта</string>
+    <string name="settings_map_offline_cache">Если региональный пакет не выбран, используется онлайн-карта.</string>
+    <string name="offline_maps_title">Офлайн-карты регионов</string>
+    <string name="offline_maps_description">Импортируйте регион одним файлом PMTiles v3. Файл проверяется SHA-256 и сохраняется при обновлении приложения.</string>
+    <string name="offline_maps_import">Импорт региона</string>
+    <string name="offline_maps_importing">Импортирую…</string>
+    <string name="offline_maps_online">Онлайн-карта</string>
+    <string name="offline_maps_empty">Региональные карты пока не установлены.</string>
+    <string name="offline_maps_active">Активна</string>
+    <string name="offline_maps_use">Выбрать</string>
+    <string name="offline_maps_delete">Удалить</string>
+    <string name="offline_maps_catalog">Каталог регионов</string>
+    <string name="offline_maps_download">Скачать</string>
+    <string name="offline_maps_update">Обновить</string>
     <string name="settings_keep_on">Не гасить экран</string>
     <string name="settings_reset">Сбросить статистику</string>
     <string name="settings_about">Высота: барометр + GPS (поправка NMEA/геоид). Карты: © участники OpenStreetMap, © OpenTopoMap. Названия мест: Nominatim.</string>
@@ -97,6 +111,8 @@
     <string name="track_distance">дистанция</string>
     <string name="track_saved">Сохранён: %1$s</string>
     <string name="track_share">Поделиться треком</string>
+    <string name="track_import">Импорт GPX с телефона или Диска</string>
+    <string name="track_importing">Импортирую GPX…</string>
     <string name="track_view_on_map">Показать трек на карте</string>
     <string name="track_hint">Запись идёт в фоне и при выключенном экране. Сохранённые GPX показаны выше; кнопка справа открывает меню экспорта.</string>
     <string name="track_notif_title">Идёт запись трека</string>
@@ -152,8 +168,9 @@
     <string name="vitals_sources">Источники данных</string>
     <string name="vitals_spo2_short">SpO₂</string>
     <string name="vitals_permission_repair_short">Нужно обновить доступ к здоровью</string>
-    <string name="vitals_access_required_short">Разрешите доступ Health Connect</string>
+    <string name="vitals_access_required_short">Нажмите: разрешить пульс и SpO₂</string>
     <string name="vitals_data_incomplete_short">Ожидаю недостающие показатели</string>
+    <string name="vitals_only_steps_short">В Health Connect есть только шаги — пульса и SpO₂ нет</string>
     <string name="vitals_ready">Данные здоровья подключены</string>
     <string name="vitals_permission_repair_hint">Android отклонил чтение, хотя доступ выглядел включённым. Сбросьте его и снова разрешите пульс, сатурацию и шаги.</string>
     <string name="vitals_repair_access">Сбросить и выдать доступ заново</string>
