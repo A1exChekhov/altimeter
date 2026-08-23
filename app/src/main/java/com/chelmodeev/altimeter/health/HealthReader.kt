@@ -1,8 +1,6 @@
 package com.chelmodeev.altimeter.health
 
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
@@ -86,15 +84,10 @@ class HealthReader(private val context: Context) {
                 .permissionController.getGrantedPermissions()
         }.getOrDefault(emptySet())
         return HealthPermissionState(
-            heartRate = HEART_RATE_PERMISSION in granted && platformPermissionGranted(
-                HEART_RATE_PERMISSION
-            ),
-            restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted &&
-                platformPermissionGranted(RESTING_HEART_RATE_PERMISSION),
-            oxygenSaturation = OXYGEN_PERMISSION in granted && platformPermissionGranted(
-                OXYGEN_PERMISSION
-            ),
-            steps = STEPS_PERMISSION in granted && platformPermissionGranted(STEPS_PERMISSION),
+            heartRate = HEART_RATE_PERMISSION in granted,
+            restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted,
+            oxygenSaturation = OXYGEN_PERMISSION in granted,
+            steps = STEPS_PERMISSION in granted,
         )
     }
 
@@ -252,10 +245,6 @@ class HealthReader(private val context: Context) {
             readErrors = errors,
         )
     }
-
-    private fun platformPermissionGranted(permission: String): Boolean =
-        Build.VERSION.SDK_INT < 34 ||
-            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
     private fun Throwable.readError(metric: String): String = when (this) {
         is SecurityException -> "$metric:permission"
