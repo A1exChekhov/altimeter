@@ -190,6 +190,12 @@
     <string name="widget_health_waiting">open app</string>
     <string name="widget_updated">updated %1$s</string>
     <string name="widget_open_to_update">tap to update</string>
+    <string name="widget_label_heart">PULSE</string>
+    <string name="widget_label_oxygen">SpO₂</string>
+    <string name="widget_label_steps">STEPS</string>
+    <string name="widget_heart_compact">♥ %1$s</string>
+    <string name="widget_steps_compact">STEPS %1$s</string>
+    <string name="widget_steps_empty">STEPS —</string>
 
     <string name="advice_title">Tips &amp; alerts</string>
     <string name="advice_pressure_falling_fast">Pressure is falling fast (−%1$s hPa/h) — weather may turn bad quickly, thunderstorm possible. Consider shelter or descent.</string>

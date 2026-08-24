@@ -189,6 +189,12 @@
     <string name="widget_health_waiting">откройте приложение</string>
     <string name="widget_updated">обновлено %1$s</string>
     <string name="widget_open_to_update">нажмите для обновления</string>
+    <string name="widget_label_heart">ПУЛЬС</string>
+    <string name="widget_label_oxygen">SpO₂</string>
+    <string name="widget_label_steps">ШАГИ</string>
+    <string name="widget_heart_compact">♥ %1$s</string>
+    <string name="widget_steps_compact">ШАГИ %1$s</string>
+    <string name="widget_steps_empty">ШАГИ —</string>
 
     <string name="advice_title">Советы и предупреждения</string>
     <string name="advice_pressure_falling_fast">Давление быстро падает (−%1$s гПа/ч) — возможна резкая порча погоды, гроза. Подумайте об укрытии или спуске.</string>

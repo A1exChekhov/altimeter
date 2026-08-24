@@ -6,72 +6,127 @@
     android:background="@drawable/widget_background"
     android:gravity="top"
     android:orientation="vertical"
-    android:paddingLeft="10dp"
-    android:paddingTop="7dp"
-    android:paddingRight="10dp"
-    android:paddingBottom="6dp">
+    android:paddingLeft="12dp"
+    android:paddingTop="9dp"
+    android:paddingRight="12dp"
+    android:paddingBottom="9dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"
-        android:letterSpacing="0.12"
+        android:fontFamily="sans-serif"
+        android:includeFontPadding="false"
+        android:letterSpacing="0.16"
         android:maxLines="1"
         android:text="ERRARIUM™"
-        android:textColor="#9AA4B2"
+        android:textColor="#8794A5"
         android:textSize="7sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/health_widget_heart"
+        <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:text="♥ —"
-            android:textColor="#FF7D8A"
-            android:textSize="19sp" />
+            android:gravity="center_vertical"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/health_widget_oxygen"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:text="O₂ —"
-            android:textColor="#6BCBFF"
-            android:textSize="19sp" />
-    </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/widget_label_heart"
+                android:textColor="#C9D0DA"
+                android:textSize="7sp" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+            <TextView
+                android:id="@+id/health_widget_heart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="27sp"
+                android:autoSizeMinTextSize="17sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif-light"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="#FF7D8A"
+                android:textSize="27sp" />
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/health_widget_steps"
+        <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:maxLines="1"
-            android:text="👣 —"
-            android:textColor="#8DDBA6"
-            android:textSize="17sp" />
+            android:gravity="center_vertical"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/health_widget_updated"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="#697583"
-            android:textSize="7sp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/widget_label_oxygen"
+                android:textColor="#C9D0DA"
+                android:textSize="7sp" />
+
+            <TextView
+                android:id="@+id/health_widget_oxygen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="27sp"
+                android:autoSizeMinTextSize="17sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif-light"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="#6BCBFF"
+                android:textSize="27sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="@string/widget_label_steps"
+                android:textColor="#C9D0DA"
+                android:textSize="7sp" />
+
+            <TextView
+                android:id="@+id/health_widget_steps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autoSizeMaxTextSize="25sp"
+                android:autoSizeMinTextSize="15sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif-light"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="#8DDBA6"
+                android:textSize="25sp" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

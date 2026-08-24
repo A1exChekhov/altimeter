@@ -40,7 +40,6 @@ class HealthWidgetProvider : AppWidgetProvider() {
                 setTextViewText(R.id.health_widget_heart, content.heart)
                 setTextViewText(R.id.health_widget_oxygen, content.oxygen)
                 setTextViewText(R.id.health_widget_steps, content.steps)
-                setTextViewText(R.id.health_widget_updated, content.updated)
                 setOnClickPendingIntent(
                     R.id.health_widget_root,
                     PendingIntent.getActivity(

@@ -1,26 +1,38 @@
 package com.chelmodeev.altimeter.widget
 
 import android.content.Context
-import android.text.format.DateFormat
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
 import com.chelmodeev.altimeter.R
-import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.util.Fmt
-import java.util.Date
+import java.text.NumberFormat
+import java.util.Locale
 import kotlin.math.roundToInt
 
 internal data class WidgetContent(
-    val altitude: String,
+    val altitude: CharSequence,
     val track: String,
-    val health: String,
     val heart: String,
     val oxygen: String,
     val steps: String,
-    val source: String,
-    val updated: String,
+    val heartCompact: String,
+    val stepsCompact: String,
 ) {
     companion object {
         fun create(context: Context, data: AltimeterWidgetSnapshot): WidgetContent {
-            val altitude = data.altitudeM?.let { Fmt.altitude(context, it, data.unit) } ?: "—"
+            val altitude = data.altitudeM?.let { meters ->
+                val value = Fmt.altitudeValue(meters, data.unit)
+                val unit = Fmt.unitLabel(context, data.unit)
+                SpannableString("$value $unit").apply {
+                    setSpan(
+                        RelativeSizeSpan(0.46f),
+                        value.length + 1,
+                        length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                    )
+                }
+            } ?: "—"
             val track = when {
                 data.trackRecording -> context.getString(
                     R.string.widget_track_recording,
@@ -34,38 +46,17 @@ internal data class WidgetContent(
             }
             val heart = data.heartRateBpm?.toString() ?: "—"
             val oxygen = data.spo2Percent?.roundToInt()?.let { "$it%" } ?: "—"
-            val steps = data.stepsToday?.toString() ?: "—"
-            val health = context.getString(R.string.widget_health_values, heart, oxygen, steps)
-            val source = when {
-                data.heartRateSource == VitalsSource.BLUETOOTH ->
-                    context.getString(R.string.vitals_source_bluetooth)
-                data.heartRateSource == VitalsSource.HUAWEI_HEALTH ||
-                    data.spo2Source == VitalsSource.HUAWEI_HEALTH ||
-                    data.stepsSource == VitalsSource.HUAWEI_HEALTH ->
-                    context.getString(R.string.vitals_source_huawei)
-                data.heartRateSource == VitalsSource.HEALTH_CONNECT ||
-                    data.spo2Source == VitalsSource.HEALTH_CONNECT ||
-                    data.stepsSource == VitalsSource.HEALTH_CONNECT ->
-                    context.getString(R.string.vitals_source_health_connect)
-                else -> context.getString(R.string.widget_health_waiting)
-            }
-            val updated = if (data.updatedAtMs > 0L) {
-                context.getString(
-                    R.string.widget_updated,
-                    DateFormat.getTimeFormat(context).format(Date(data.updatedAtMs)),
-                )
-            } else {
-                context.getString(R.string.widget_open_to_update)
-            }
+            val steps = data.stepsToday?.let {
+                NumberFormat.getIntegerInstance(Locale.getDefault()).format(it)
+            } ?: "—"
             return WidgetContent(
                 altitude = altitude,
                 track = track,
-                health = health,
-                heart = "♥ $heart",
-                oxygen = "O₂ $oxygen",
-                steps = "👣 $steps",
-                source = source,
-                updated = updated,
+                heart = heart,
+                oxygen = oxygen,
+                steps = steps,
+                heartCompact = context.getString(R.string.widget_heart_compact, heart),
+                stepsCompact = context.getString(R.string.widget_steps_compact, steps),
             )
         }
     }
