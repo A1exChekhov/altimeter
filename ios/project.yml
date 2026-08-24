@@ -30,8 +30,6 @@ targets:
           - Resources
     resources:
       - path: Altimeter/Resources
-    info:
-      path: Altimeter/Supporting/Info.plist
     entitlements:
       path: Altimeter/Supporting/Altimeter.entitlements
     settings:
@@ -64,8 +62,6 @@ targets:
       - path: Altimeter/Shared/WidgetSnapshotStore.swift
     resources:
       - path: AltimeterWidget/PrivacyInfo.xcprivacy
-    info:
-      path: AltimeterWidget/Info.plist
     entitlements:
       path: AltimeterWidget/AltimeterWidget.entitlements
     settings:
