@@ -86,8 +86,8 @@ Git, но готовый APK отдельно опубликован как asse
 
 ### iPhone
 
-Готовая подписанная IPA 1.1.0 опубликована отдельным релизом для зарегистрированного
-iPhone: **[скачать Altimeter.ipa](https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.1.0-ad-hoc/Altimeter.ipa)**.
+Готовая подписанная IPA 1.2.0 опубликована отдельным релизом для зарегистрированного
+iPhone: **[скачать IPA](https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.2.0-ad-hoc/Errarium-Altimeter-iOS-1.2.0-AdHoc.ipa)**.
 Установить её напрямую через Safari можно со страницы
 **[a1exchekhov.github.io/altimeter/iphone/](https://a1exchekhov.github.io/altimeter/iphone/)**.
 IPA подписана вашей Apple Developer Team и не является универсальной для незарегистрированных устройств.

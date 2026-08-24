@@ -5,7 +5,7 @@ HealthKit и запись GPX. Runtime-зависимостей и платны�
 
 Контакт: [errarium.ai@gmail.com](mailto:errarium.ai@gmail.com)
 
-Готовая подписанная IPA: [релиз iOS 1.1.0](https://github.com/A1exChekhov/altimeter/releases/tag/ios-v1.1.0-ad-hoc).
+Готовая подписанная IPA: [релиз iOS 1.2.0](https://github.com/A1exChekhov/altimeter/releases/tag/ios-v1.2.0-ad-hoc).
 Установка через Safari: [a1exchekhov.github.io/altimeter/iphone/](https://a1exchekhov.github.io/altimeter/iphone/).
 
 ## Что уже реализовано
