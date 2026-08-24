@@ -85,6 +85,8 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 Git, но готовый APK отдельно публикуется как asset релиза `v1.5.11`. Локально он создаётся
 командой `:app:assembleDebug`.
 
+Готовый Android 1.5.11: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.11/Errarium-Altimeter-Android-1.5.11.apk)**.
+
 ### iPhone
 
 Готовая подписанная IPA 1.2.0 опубликована отдельным релизом для зарегистрированного

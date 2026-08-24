@@ -102,12 +102,12 @@ private struct AltitudeValue: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text(snapshot.altitudeValueText)
-                .font(.system(size: size, weight: .thin))
+                .font(.system(size: size, weight: .regular))
                 .monospacedDigit()
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
             Text(snapshot.altitudeUnitText)
-                .font(.system(size: size * 0.28, weight: .light))
+                .font(.system(size: size * 0.28, weight: .regular))
                 .foregroundStyle(.secondary)
         }
     }
@@ -117,14 +117,15 @@ private struct InlineMetric: View {
     let emoji: String
     let value: String
     var size: CGFloat = 18
+    var color: Color = .primary
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
             Text(emoji).font(.system(size: size * 0.82))
             Text(value)
-                .font(.system(size: size, weight: .light))
+                .font(.system(size: size, weight: .regular))
                 .monospacedDigit()
-                .foregroundStyle(.primary)
+                .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
@@ -149,13 +150,13 @@ struct AltitudeWidgetView: View {
                 AltitudeValue(snapshot: entry.snapshot, size: family == .systemSmall ? 43 : 48)
                 Spacer(minLength: 5)
                 Text(entry.snapshot.pressureText)
-                    .font(.system(size: 12, weight: .light))
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
             Text(entry.snapshot.coordinateText)
-                .font(.system(size: 11, weight: .light, design: .monospaced))
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -171,12 +172,12 @@ struct HealthWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 13) {
-                InlineMetric(emoji: "❤️", value: entry.snapshot.heartText, size: 22)
-                InlineMetric(emoji: "O₂", value: entry.snapshot.oxygenText, size: 22)
+                InlineMetric(emoji: "♥", value: entry.snapshot.heartText, size: 22, color: .red)
+                InlineMetric(emoji: "O₂", value: entry.snapshot.oxygenText, size: 22, color: .cyan)
             }
             HStack(spacing: 13) {
-                InlineMetric(emoji: "👣", value: entry.snapshot.stepsText, size: 19)
-                InlineMetric(emoji: "🔥", value: entry.snapshot.dailyCaloriesText, size: 19)
+                InlineMetric(emoji: "👣", value: entry.snapshot.stepsText, size: 19, color: .green)
+                InlineMetric(emoji: "🔥", value: entry.snapshot.dailyCaloriesText, size: 19, color: .orange)
             }
         }
         .privacySensitive()
@@ -190,13 +191,13 @@ struct TrackWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 12) {
-                InlineMetric(emoji: "⏱", value: entry.snapshot.movingTimeText, size: 19)
-                InlineMetric(emoji: "↔", value: entry.snapshot.distanceText, size: 19)
+                InlineMetric(emoji: "↔", value: entry.snapshot.distanceText, size: 22)
+                InlineMetric(emoji: "◷", value: entry.snapshot.movingTimeText, size: 17)
             }
             HStack(spacing: 10) {
-                InlineMetric(emoji: "↗", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 15)
-                InlineMetric(emoji: "↘", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 15)
-                InlineMetric(emoji: "🔥", value: entry.snapshot.trackCaloriesText, size: 15)
+                InlineMetric(emoji: "↑", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 15, color: .green)
+                InlineMetric(emoji: "↓", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 15, color: .cyan)
+                InlineMetric(emoji: "🔥", value: entry.snapshot.trackCaloriesText, size: 15, color: .orange)
             }
         }
         .neutralWidgetBackground()
@@ -212,14 +213,14 @@ struct ExpeditionWidgetView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 11) {
-                    InlineMetric(emoji: "❤️", value: entry.snapshot.heartText, size: 17)
-                    InlineMetric(emoji: "O₂", value: entry.snapshot.oxygenText, size: 17)
-                    InlineMetric(emoji: "👣", value: entry.snapshot.stepsText, size: 17)
+                    InlineMetric(emoji: "♥", value: entry.snapshot.heartText, size: 17, color: .red)
+                    InlineMetric(emoji: "O₂", value: entry.snapshot.oxygenText, size: 17, color: .cyan)
+                    InlineMetric(emoji: "👣", value: entry.snapshot.stepsText, size: 17, color: .green)
                 }
                 HStack(spacing: 11) {
                     InlineMetric(emoji: "↔", value: entry.snapshot.distanceText, size: 14)
-                    InlineMetric(emoji: "↗", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 14)
-                    InlineMetric(emoji: "↘", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 14)
+                    InlineMetric(emoji: "↑", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 14, color: .green)
+                    InlineMetric(emoji: "↓", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 14, color: .cyan)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
