@@ -208,7 +208,10 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 ) { Text(stringResource(R.string.minimize_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showMinimizeConfirm = false }) {
+                TextButton(
+                    onClick = { showMinimizeConfirm = false },
+                    modifier = Modifier.testTag("minimize_cancel"),
+                ) {
                     Text(stringResource(R.string.minimize_cancel))
                 }
             },

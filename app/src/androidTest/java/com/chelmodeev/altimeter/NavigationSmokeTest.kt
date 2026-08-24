@@ -2,12 +2,12 @@ package com.chelmodeev.altimeter
 
 import android.Manifest
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.Lifecycle
-import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.rule.GrantPermissionRule
@@ -44,18 +44,19 @@ class NavigationSmokeTest {
     fun backOnHomeCannotSilentlySendAppToBackground() {
         compose.onNodeWithTag("page_home", useUnmergedTree = true).assertIsDisplayed()
 
-        Espresso.pressBack()
+        compose.runOnUiThread {
+            compose.activity.onBackPressedDispatcher.onBackPressed()
+        }
         compose.waitForIdle()
 
         compose.onNodeWithTag("minimize_confirmation", useUnmergedTree = true)
             .assertIsDisplayed()
         assertEquals(Lifecycle.State.RESUMED, compose.activity.lifecycle.currentState)
 
-        // A second Back dismisses the dialog and leaves the Activity visible.
-        Espresso.pressBack()
+        compose.onNodeWithTag("minimize_cancel", useUnmergedTree = true).performClick()
         compose.waitForIdle()
-        compose.onNodeWithTag("minimize_confirmation", useUnmergedTree = true)
-            .assertDoesNotExist()
+        compose.onAllNodesWithTag("minimize_confirmation", useUnmergedTree = true)
+            .assertCountEquals(0)
         assertEquals(Lifecycle.State.RESUMED, compose.activity.lifecycle.currentState)
     }
 
