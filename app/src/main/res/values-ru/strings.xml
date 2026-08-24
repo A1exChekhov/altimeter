@@ -130,6 +130,9 @@
     <string name="track_calories_points">🔥 ≈%1$d ккал за трек · %2$d точек</string>
     <string name="track_saved">Сохранён: %1$s</string>
     <string name="track_share">Поделиться треком</string>
+    <string name="location_share">Поделиться</string>
+    <string name="location_share_photo">Добавить фото</string>
+    <string name="location_share_title">Поделиться местоположением</string>
     <string name="track_import">Импорт GPX с телефона или Диска</string>
     <string name="track_importing">Импортирую GPX…</string>
     <string name="track_view_on_map">Показать трек на карте</string>

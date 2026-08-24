@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -29,6 +30,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.io.File
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -75,6 +79,11 @@ class MainActivity : ComponentActivity() {
             if (uri != null) viewModel.importTrack(uri)
         }
 
+    private val locationPhotoLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) shareLocation(uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -108,6 +117,8 @@ class MainActivity : ComponentActivity() {
                         onStopTrack = { TrackingService.stop(this) },
                         onViewTrack = viewModel::viewTrack,
                         onShareTrack = ::shareTrack,
+                        onShareLocation = { shareLocation(null) },
+                        onShareLocationWithPhoto = { locationPhotoLauncher.launch("image/*") },
                         onImportTrack = {
                             trackImportLauncher.launch(
                                 arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*")
@@ -254,5 +265,35 @@ class MainActivity : ComponentActivity() {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             startActivity(Intent.createChooser(send, getString(R.string.track_share)))
         }
+    }
+
+    private fun shareLocation(photo: Uri?) {
+        val state = viewModel.ui.value
+        val latitude = state.latitude ?: return
+        val longitude = state.longitude ?: return
+        val coordinates = String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
+        val altitude = state.altitude?.let { String.format(Locale.getDefault(), "%.0f м", it) } ?: "—"
+        val pressure = state.pressureHpa?.let {
+            String.format(Locale.getDefault(), "%.1f гПа", it)
+        } ?: "—"
+        val time = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date())
+        val mapLink = "https://maps.google.com/?q=$latitude,$longitude"
+        val message = buildString {
+            appendLine("📍 $coordinates")
+            appendLine("Высота: $altitude · Давление: $pressure")
+            appendLine(time)
+            appendLine(mapLink)
+            appendLine()
+            appendLine("Errarium™ by Aleksey Hermes")
+            append("errarium.ai@gmail.com")
+        }
+        val send = Intent(Intent.ACTION_SEND)
+            .setType(if (photo == null) "text/plain" else "image/*")
+            .putExtra(Intent.EXTRA_TEXT, message)
+        if (photo != null) {
+            send.putExtra(Intent.EXTRA_STREAM, photo)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(send, getString(R.string.location_share_title)))
     }
 }

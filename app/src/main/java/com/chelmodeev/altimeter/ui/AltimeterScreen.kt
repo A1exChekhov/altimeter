@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MonitorHeart
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
@@ -132,6 +133,8 @@ data class ScreenActions(
     val onStopTrack: () -> Unit,
     val onViewTrack: (String) -> Unit,
     val onShareTrack: (String) -> Unit,
+    val onShareLocation: () -> Unit,
+    val onShareLocationWithPhoto: () -> Unit,
     val onImportTrack: () -> Unit,
     val onImportOfflineMap: () -> Unit,
     val onDownloadOfflineMap: (String) -> Unit,
@@ -205,6 +208,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                 AppSection.MAP -> MapPage(
                     state = state,
                     accent = accent,
+                    actions = actions,
                     onOpenSettings = { showSettings = true },
                 )
                 AppSection.TRACK -> TrackPage(
@@ -338,6 +342,7 @@ private fun HomePage(
 private fun MapPage(
     state: UiState,
     accent: Color,
+    actions: ScreenActions,
     onOpenSettings: () -> Unit,
 ) {
     Column(
@@ -368,6 +373,27 @@ private fun MapPage(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                 textAlign = TextAlign.Center,
             )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            ) {
+                Button(
+                    onClick = actions.onShareLocation,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.location_share), maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = actions.onShareLocationWithPhoto,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.size(6.dp))
+                    Text(stringResource(R.string.location_share_photo), maxLines = 1)
+                }
+            }
         } else {
             Spacer(Modifier.height(10.dp))
         }

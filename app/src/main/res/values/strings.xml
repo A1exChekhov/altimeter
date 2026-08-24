@@ -131,6 +131,9 @@
     <string name="track_calories_points">🔥 ≈%1$d kcal for track · %2$d points</string>
     <string name="track_saved">Saved: %1$s</string>
     <string name="track_share">Share track</string>
+    <string name="location_share">Share</string>
+    <string name="location_share_photo">Add photo</string>
+    <string name="location_share_title">Share location</string>
     <string name="track_import">Import GPX from device or Drive</string>
     <string name="track_importing">Importing GPX…</string>
     <string name="track_view_on_map">Show track on map</string>
