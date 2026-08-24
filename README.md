@@ -81,7 +81,7 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно опубликован как asset релиза `v1.5.8`. Локально он создаётся
+Git, но готовый APK отдельно опубликован как asset релиза `v1.5.9`. Локально он создаётся
 командой `:app:assembleDebug`.
 
 ### iPhone

@@ -4,6 +4,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val androidSigningStoreFile = System.getenv("ANDROID_SIGNING_STORE_FILE")
+val androidSigningStorePassword = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
+val androidSigningKeyAlias = System.getenv("ANDROID_SIGNING_KEY_ALIAS")
+val androidSigningKeyPassword = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
+
 android {
     namespace = "com.chelmodeev.altimeter"
     compileSdk = 36
@@ -12,8 +17,8 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.5.8"
+        versionCode = 15
+        versionName = "1.5.9"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
         val watchFp = (project.findProperty("WATCH_APP_FINGERPRINT") as? String).orEmpty()
@@ -24,6 +29,17 @@ android {
         manifestPlaceholders["huaweiAppId"] = huaweiAppId.ifBlank { "0" }
     }
 
+    signingConfigs {
+        if (!androidSigningStoreFile.isNullOrBlank()) {
+            create("stableRelease") {
+                storeFile = file(androidSigningStoreFile)
+                storePassword = androidSigningStorePassword
+                keyAlias = androidSigningKeyAlias
+                keyPassword = androidSigningKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -32,9 +48,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // Подписывается debug-ключом, чтобы APK можно было поставить сразу.
-            // Для публикации замените на собственный signingConfig.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (!androidSigningStoreFile.isNullOrBlank()) {
+                signingConfigs.getByName("stableRelease")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
