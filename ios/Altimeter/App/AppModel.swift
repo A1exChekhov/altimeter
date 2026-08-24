@@ -105,7 +105,15 @@ final class AppModel: ObservableObject {
         engine.start()
         updateWidget(force: true)
         updateHealthWidget()
-        if health.hasRequestedAccess { Task { await health.refresh() } }
+        if health.hasRequestedAccess {
+            Task {
+                if health.needsAuthorizationRefresh {
+                    await health.requestAccess()
+                } else {
+                    await health.refresh()
+                }
+            }
+        }
     }
 
     func calibrateManually(displayedValue: Double) {
@@ -144,6 +152,7 @@ final class AppModel: ObservableObject {
         WidgetSnapshotStore.updateVitals(
             heartRateBPM: sample.heartRateBPM,
             oxygenPercent: sample.oxygenPercent,
+            stepsToday: sample.stepsToday,
             heartRateSource: sample.heartRateSource,
             oxygenSource: sample.oxygenSource
         )

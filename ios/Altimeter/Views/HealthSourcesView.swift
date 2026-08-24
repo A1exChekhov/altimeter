@@ -11,7 +11,7 @@ struct HealthSourcesView: View {
                         icon: "applewatch",
                         color: .pink,
                         title: "Apple Watch",
-                        subtitle: "Пульс и SpO₂ читаются из Apple Health после синхронизации часов. Доступность SpO₂ зависит от модели часов и региона."
+                        subtitle: "Пульс, SpO₂ и шаги читаются из Apple Health после синхронизации часов. Доступность SpO₂ зависит от модели часов и региона."
                     )
                 } header: {
                     Text("Полная поддержка")
@@ -22,11 +22,11 @@ struct HealthSourcesView: View {
                         icon: "figure.run.circle.fill",
                         color: .blue,
                         title: "Garmin",
-                        subtitle: "Garmin Connect передаёт в Apple Health круглосуточный пульс. Pulse Ox в Apple Health не экспортируется."
+                        subtitle: "Garmin Connect передаёт в Apple Health пульс и шаги. Pulse Ox в Apple Health не экспортируется."
                     )
                     VStack(alignment: .leading, spacing: 8) {
                         instruction(1, "Откройте Garmin Connect → Ещё → Настройки → Подключённые приложения.")
-                        instruction(2, "Выберите Apple Health и разрешите передачу пульса.")
+                        instruction(2, "Выберите Apple Health и разрешите передачу пульса и шагов.")
                         instruction(3, "После синхронизации часов оставьте Garmin Connect открытым на переднем плане до завершения передачи.")
                     }
                     .padding(.vertical, 4)
@@ -41,7 +41,7 @@ struct HealthSourcesView: View {
                         icon: "heart.text.square.fill",
                         color: .green,
                         title: "Другие часы и датчики",
-                        subtitle: "Если приложение производителя записывает пульс или SpO₂ в Apple Health, Альтиметр прочитает их автоматически и покажет имя источника."
+                        subtitle: "Если приложение производителя записывает пульс, SpO₂ или шаги в Apple Health, Альтиметр прочитает их автоматически."
                     )
                     Text("Проверьте: Здоровье → профиль → Приложения и службы → приложение производителя → разрешённые категории.")
                         .font(.footnote)

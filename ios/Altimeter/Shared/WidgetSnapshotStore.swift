@@ -11,6 +11,7 @@ struct AltimeterWidgetSnapshot: Codable, Equatable {
     var trackPointCount = 0
     var heartRateBPM: Double?
     var oxygenPercent: Double?
+    var stepsToday: Double?
     var heartRateSource: String?
     var oxygenSource: String?
     var updatedAt = Date.distantPast
@@ -49,12 +50,14 @@ enum WidgetSnapshotStore {
     static func updateVitals(
         heartRateBPM: Double?,
         oxygenPercent: Double?,
+        stepsToday: Double?,
         heartRateSource: String?,
         oxygenSource: String?
     ) {
         var snapshot = read()
         snapshot.heartRateBPM = heartRateBPM
         snapshot.oxygenPercent = oxygenPercent
+        snapshot.stepsToday = stepsToday
         snapshot.heartRateSource = heartRateSource
         snapshot.oxygenSource = oxygenSource
         snapshot.updatedAt = Date()
@@ -69,7 +72,7 @@ enum WidgetSnapshotStore {
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults?.set(data, forKey: key)
         #if canImport(WidgetKit)
-        WidgetCenter.shared.reloadTimelines(ofKind: "AltimeterStatusWidget")
+        WidgetCenter.shared.reloadAllTimelines()
         #endif
     }
 }

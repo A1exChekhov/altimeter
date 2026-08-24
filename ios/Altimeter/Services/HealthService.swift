@@ -9,6 +9,10 @@ final class HealthService: ObservableObject {
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
+    var needsAuthorizationRefresh: Bool {
+        UserDefaults.standard.integer(forKey: "healthAccessSchemaVersion") < 2
+    }
+
     private let store = HKHealthStore()
 
     func requestAccess() async {
@@ -18,10 +22,12 @@ final class HealthService: ObservableObject {
         }
         guard let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate),
               let restingHeartRate = HKObjectType.quantityType(forIdentifier: .restingHeartRate),
-              let oxygen = HKObjectType.quantityType(forIdentifier: .oxygenSaturation) else { return }
+              let oxygen = HKObjectType.quantityType(forIdentifier: .oxygenSaturation),
+              let steps = HKObjectType.quantityType(forIdentifier: .stepCount) else { return }
         do {
-            try await store.requestAuthorization(toShare: [], read: [heartRate, restingHeartRate, oxygen])
+            try await store.requestAuthorization(toShare: [], read: [heartRate, restingHeartRate, oxygen, steps])
             UserDefaults.standard.set(true, forKey: "healthAccessRequested")
+            UserDefaults.standard.set(2, forKey: "healthAccessSchemaVersion")
             hasRequestedAccess = true
             await refresh()
         } catch {
@@ -36,7 +42,13 @@ final class HealthService: ObservableObject {
         async let heart = latestQuantity(.heartRate)
         async let restingHeart = latestQuantity(.restingHeartRate)
         async let oxygen = latestQuantity(.oxygenSaturation)
-        let (heartSample, restingHeartSample, oxygenSample) = await (heart, restingHeart, oxygen)
+        async let steps = stepsToday()
+        let (heartSample, restingHeartSample, oxygenSample, stepsValue) = await (
+            heart,
+            restingHeart,
+            oxygen,
+            steps
+        )
         let newestHeart = [heartSample, restingHeartSample]
             .compactMap { $0 }
             .max { $0.endDate < $1.endDate }
@@ -54,6 +66,10 @@ final class HealthService: ObservableObject {
             vitals.oxygenSource = Self.sourceName(for: oxygenSample)
             vitals.oxygenSourceBundle = oxygenSample.sourceRevision.source.bundleIdentifier
         }
+        if let stepsValue {
+            vitals.stepsToday = stepsValue
+            vitals.stepsDate = Date()
+        }
     }
 
     private func latestQuantity(_ identifier: HKQuantityTypeIdentifier) async -> HKQuantitySample? {
@@ -67,6 +83,28 @@ final class HealthService: ObservableObject {
                 sortDescriptors: [sort]
             ) { _, samples, _ in
                 continuation.resume(returning: samples?.first as? HKQuantitySample)
+            }
+            store.execute(query)
+        }
+    }
+
+    private func stepsToday() async -> Double? {
+        guard let type = HKObjectType.quantityType(forIdentifier: .stepCount) else { return nil }
+        let now = Date()
+        let start = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(
+            withStart: start,
+            end: now,
+            options: .strictStartDate
+        )
+        return await withCheckedContinuation { continuation in
+            let query = HKStatisticsQuery(
+                quantityType: type,
+                quantitySamplePredicate: predicate,
+                options: .cumulativeSum
+            ) { _, statistics, _ in
+                let value = statistics?.sumQuantity()?.doubleValue(for: .count())
+                continuation.resume(returning: value)
             }
             store.execute(query)
         }

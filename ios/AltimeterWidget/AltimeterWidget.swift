@@ -2,6 +2,12 @@ import Foundation
 import SwiftUI
 import WidgetKit
 
+private enum ErrariumWidgetKind {
+    static let altitude = "ErrariumAltitudeWidget"
+    static let health = "ErrariumHealthWidget"
+    static let combined = "AltimeterStatusWidget"
+}
+
 struct AltimeterWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: AltimeterWidgetSnapshot
@@ -18,6 +24,7 @@ struct AltimeterWidgetProvider: TimelineProvider {
                 trackPointCount: 814,
                 heartRateBPM: 92,
                 oxygenPercent: 96,
+                stepsToday: 8_640,
                 heartRateSource: "Apple Watch",
                 oxygenSource: "Apple Watch",
                 updatedAt: Date()
@@ -36,79 +43,126 @@ struct AltimeterWidgetProvider: TimelineProvider {
     }
 }
 
-struct AltimeterWidgetView: View {
-    @Environment(\.widgetFamily) private var family
-    let entry: AltimeterWidgetEntry
+private extension AltimeterWidgetSnapshot {
+    var altitudeValueText: String {
+        guard let altitudeMeters else { return "—" }
+        let value = usesFeet ? altitudeMeters * 3.280_839_9 : altitudeMeters
+        return Int(value.rounded()).formatted(.number.grouping(.automatic))
+    }
 
-    private var altitude: String {
-        guard let meters = entry.snapshot.altitudeMeters else { return "—" }
-        if entry.snapshot.usesFeet {
-            return "\(Int((meters * 3.280_839_9).rounded())) фт"
+    var altitudeUnitText: String {
+        guard altitudeMeters != nil else { return "" }
+        return usesFeet ? "фт" : "м"
+    }
+
+    var distanceText: String {
+        if trackDistanceMeters >= 1_000 {
+            return String(format: "%.1f км", trackDistanceMeters / 1_000)
         }
-        return "\(Int(meters.rounded())) м"
+        return "\(Int(trackDistanceMeters.rounded())) м"
     }
 
-    private var distance: String {
-        let meters = entry.snapshot.trackDistanceMeters
-        if meters >= 1_000 { return String(format: "%.1f км", meters / 1_000) }
-        return "\(Int(meters.rounded())) м"
+    var trackText: String {
+        trackIsRecording ? "Запись · \(distanceText)" : "Путь · \(distanceText)"
     }
 
-    private var healthSource: String {
-        entry.snapshot.oxygenSource ?? entry.snapshot.heartRateSource ?? "Здоровье"
+    var heartText: String {
+        heartRateBPM.map { Int($0.rounded()).formatted() } ?? "—"
     }
+
+    var oxygenText: String {
+        oxygenPercent.map { "\(Int($0.rounded()))%" } ?? "—"
+    }
+
+    var stepsText: String {
+        stepsToday.map { Int($0.rounded()).formatted(.number.grouping(.automatic)) } ?? "—"
+    }
+}
+
+private struct WidgetHeader: View {
+    let symbol: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
-            HStack {
-                Text("ERRARIUM™")
-                    .font(.caption2.weight(.semibold))
-                    .tracking(1.2)
+        HStack(spacing: 6) {
+            Text("ERRARIUM™")
+                .font(.system(size: 10, weight: .regular))
+                .tracking(1.45)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 4)
+            Image(systemName: symbol)
+                .font(.system(size: 12, weight: .regular))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.cyan)
+        }
+    }
+}
+
+private struct AltitudeValue: View {
+    let snapshot: AltimeterWidgetSnapshot
+    let size: CGFloat
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text(snapshot.altitudeValueText)
+                .font(.system(size: size, weight: .light))
+                .monospacedDigit()
+                .minimumScaleFactor(0.55)
+                .lineLimit(1)
+            if !snapshot.altitudeUnitText.isEmpty {
+                Text(snapshot.altitudeUnitText)
+                    .font(.system(size: size * 0.31, weight: .regular))
                     .foregroundStyle(.secondary)
-                Spacer()
-                Image(systemName: "mountain.2.fill")
-                    .foregroundStyle(.cyan)
-            }
-
-            Text(altitude)
-                .font(.system(size: family == .systemSmall ? 28 : 34, weight: .bold, design: .rounded))
-                .minimumScaleFactor(0.7)
-
-            Label(
-                entry.snapshot.trackIsRecording ? "Запись · \(distance)" : "Путь · \(distance)",
-                systemImage: entry.snapshot.trackIsRecording ? "record.circle.fill" : "point.topleft.down.to.point.bottomright.curvepath"
-            )
-            .font(.caption.weight(.medium))
-            .foregroundStyle(entry.snapshot.trackIsRecording ? .red : .secondary)
-
-            HStack(spacing: 12) {
-                Label(
-                    entry.snapshot.heartRateBPM.map { "\(Int($0.rounded()))" } ?? "—",
-                    systemImage: "heart.fill"
-                )
-                .foregroundStyle(.pink)
-                Label(
-                    entry.snapshot.oxygenPercent.map { "\(Int($0.rounded()))%" } ?? "—",
-                    systemImage: "lungs.fill"
-                )
-                .foregroundStyle(.blue)
-            }
-            .font(.caption.weight(.semibold))
-            .privacySensitive()
-
-            if family != .systemSmall {
-                HStack {
-                    Text(healthSource)
-                    Spacer()
-                    Text(entry.snapshot.updatedAt, style: .time)
-                }
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
             }
         }
-        .containerBackground(for: .widget) {
+    }
+}
+
+private struct MetricColumn: View {
+    let title: String
+    let value: String
+    let color: Color
+    var valueSize: CGFloat = 27
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 10, weight: .regular))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.system(size: valueSize, weight: .light))
+                .monospacedDigit()
+                .foregroundStyle(color)
+                .minimumScaleFactor(0.62)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct CompactMetric: View {
+    let symbol: String
+    let value: String
+    let color: Color
+
+    var body: some View {
+        Label(value, systemImage: symbol)
+            .font(.system(size: 13, weight: .regular))
+            .monospacedDigit()
+            .foregroundStyle(color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+    }
+}
+
+private extension View {
+    func errariumWidgetBackground() -> some View {
+        containerBackground(for: .widget) {
             LinearGradient(
-                colors: [Color(red: 0.07, green: 0.11, blue: 0.15), Color(red: 0.10, green: 0.16, blue: 0.21)],
+                colors: [
+                    Color(red: 0.055, green: 0.085, blue: 0.13),
+                    Color(red: 0.075, green: 0.13, blue: 0.19)
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -116,15 +170,154 @@ struct AltimeterWidgetView: View {
     }
 }
 
-struct AltimeterStatusWidget: Widget {
-    let kind = "AltimeterStatusWidget"
+struct AltitudeWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: AltimeterWidgetEntry
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            WidgetHeader(symbol: "mountain.2")
+            Spacer(minLength: 4)
+            AltitudeValue(
+                snapshot: entry.snapshot,
+                size: family == .systemSmall ? 48 : 52
+            )
+            Spacer(minLength: 5)
+            HStack(spacing: 10) {
+                if family == .systemMedium {
+                    Label(
+                        entry.snapshot.trackText,
+                        systemImage: entry.snapshot.trackIsRecording ? "record.circle.fill" : "figure.hiking"
+                    )
+                    .foregroundStyle(entry.snapshot.trackIsRecording ? .red : .secondary)
+                    Spacer(minLength: 4)
+                }
+                CompactMetric(symbol: "heart.fill", value: entry.snapshot.heartText, color: .pink)
+                CompactMetric(symbol: "figure.walk", value: entry.snapshot.stepsText, color: .green)
+            }
+            .font(.caption)
+            .privacySensitive()
+        }
+        .errariumWidgetBackground()
+    }
+}
+
+struct HealthWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: AltimeterWidgetEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            WidgetHeader(symbol: "waveform.path.ecg")
+            Spacer(minLength: 7)
+            if family == .systemSmall {
+                HStack(spacing: 12) {
+                    MetricColumn(title: "Пульс", value: entry.snapshot.heartText, color: .pink, valueSize: 28)
+                    MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 28)
+                }
+                Spacer(minLength: 5)
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "figure.walk")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(.green)
+                    Text(entry.snapshot.stepsText)
+                        .font(.system(size: 26, weight: .light))
+                        .monospacedDigit()
+                        .foregroundStyle(.green)
+                        .minimumScaleFactor(0.65)
+                        .lineLimit(1)
+                    Text("шагов")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                HStack(spacing: 18) {
+                    MetricColumn(title: "Пульс", value: entry.snapshot.heartText, color: .pink, valueSize: 32)
+                    MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 32)
+                    MetricColumn(title: "Шаги", value: entry.snapshot.stepsText, color: .green, valueSize: 29)
+                }
+                Spacer(minLength: 2)
+            }
+        }
+        .privacySensitive()
+        .errariumWidgetBackground()
+    }
+}
+
+struct CombinedWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: AltimeterWidgetEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            WidgetHeader(symbol: "figure.hiking")
+            Spacer(minLength: 5)
+            if family == .systemSmall {
+                AltitudeValue(snapshot: entry.snapshot, size: 43)
+                Spacer(minLength: 4)
+                Text(entry.snapshot.trackText)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(entry.snapshot.trackIsRecording ? .red : .secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                HStack(spacing: 9) {
+                    CompactMetric(symbol: "heart.fill", value: entry.snapshot.heartText, color: .pink)
+                    CompactMetric(symbol: "lungs.fill", value: entry.snapshot.oxygenText, color: .cyan)
+                }
+            } else {
+                HStack(alignment: .center, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        AltitudeValue(snapshot: entry.snapshot, size: 47)
+                        Text(entry.snapshot.trackText)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(entry.snapshot.trackIsRecording ? .red : .secondary)
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 13) {
+                        MetricColumn(title: "Пульс", value: entry.snapshot.heartText, color: .pink, valueSize: 23)
+                        MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 23)
+                        MetricColumn(title: "Шаги", value: entry.snapshot.stepsText, color: .green, valueSize: 21)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .privacySensitive()
+        .errariumWidgetBackground()
+    }
+}
+
+struct AltitudeStatusWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: AltimeterWidgetProvider()) { entry in
-            AltimeterWidgetView(entry: entry)
+        StaticConfiguration(kind: ErrariumWidgetKind.altitude, provider: AltimeterWidgetProvider()) { entry in
+            AltitudeWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Высота")
+        .description("Крупная высота, пульс и шаги.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct HealthStatusWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: ErrariumWidgetKind.health, provider: AltimeterWidgetProvider()) { entry in
+            HealthWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Здоровье")
+        .description("Пульс, SpO₂ и шаги из Apple Health.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct AltimeterStatusWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: ErrariumWidgetKind.combined, provider: AltimeterWidgetProvider()) { entry in
+            CombinedWidgetView(entry: entry)
         }
         .configurationDisplayName("Высота и здоровье")
-        .description("Высота, записанный путь, пульс и SpO₂.")
+        .description("Высота, путь и основные показатели здоровья.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -132,6 +325,8 @@ struct AltimeterStatusWidget: Widget {
 @main
 struct AltimeterWidgetBundle: WidgetBundle {
     var body: some Widget {
+        AltitudeStatusWidget()
+        HealthStatusWidget()
         AltimeterStatusWidget()
     }
 }

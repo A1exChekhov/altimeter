@@ -79,6 +79,8 @@ struct VitalSample: Equatable {
     var oxygenDate: Date?
     var oxygenSource: String?
     var oxygenSourceBundle: String?
+    var stepsToday: Double?
+    var stepsDate: Date?
 }
 
 struct TrackState: Equatable {
