@@ -32,15 +32,26 @@ class TrackWidgetProvider : AppWidgetProvider() {
         private fun views(context: Context, data: AltimeterWidgetSnapshot): RemoteViews =
             RemoteViews(context.packageName, R.layout.track_widget).apply {
                 val content = WidgetContent.create(context, data)
-                setTextViewText(R.id.track_widget_primary, content.trackPrimary)
-                setTextViewText(R.id.track_widget_secondary, content.trackSecondary)
+                setTextViewText(R.id.track_widget_distance, content.trackPrimary)
+                setTextViewText(R.id.track_widget_moving, content.moving)
+                setTextViewText(R.id.track_widget_ascent, content.ascent)
+                setTextViewText(R.id.track_widget_descent, content.descent)
+                setTextViewText(R.id.track_widget_calories, "🔥 ${content.calories}")
                 applyWidgetTheme(
                     context = context,
                     darkTheme = data.darkTheme,
                     rootId = R.id.track_widget_root,
-                    primaryTextIds = intArrayOf(R.id.track_widget_primary),
-                    secondaryTextIds = intArrayOf(R.id.track_widget_secondary),
+                    primaryTextIds = intArrayOf(R.id.track_widget_distance),
+                    secondaryTextIds = intArrayOf(
+                        R.id.track_widget_moving,
+                        R.id.track_widget_ascent,
+                        R.id.track_widget_descent,
+                        R.id.track_widget_calories,
+                    ),
                 )
+                setWidgetColor(context, R.id.track_widget_ascent, R.color.widget_ascent)
+                setWidgetColor(context, R.id.track_widget_descent, R.color.widget_descent)
+                setWidgetColor(context, R.id.track_widget_calories, R.color.widget_calories)
                 setOnClickPendingIntent(
                     R.id.track_widget_root,
                     PendingIntent.getActivity(

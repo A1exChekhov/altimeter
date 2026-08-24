@@ -7,41 +7,59 @@
     android:gravity="center_vertical"
     android:orientation="vertical"
     android:paddingLeft="11dp"
-    android:paddingTop="7dp"
+    android:paddingTop="4dp"
     android:paddingRight="11dp"
-    android:paddingBottom="7dp">
+    android:paddingBottom="4dp">
 
     <TextView
-        android:id="@+id/track_widget_primary"
+        android:id="@+id/track_widget_distance"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="0.60"
         android:autoSizeMaxTextSize="31sp"
-        android:autoSizeMinTextSize="19sp"
+        android:autoSizeMinTextSize="21sp"
         android:autoSizeStepGranularity="1sp"
         android:autoSizeTextType="uniform"
-        android:fontFamily="sans-serif-light"
-        android:gravity="center_vertical"
+        android:fontFamily="sans-serif"
+        android:gravity="center_vertical|start"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:text="↔ 0 м"
         android:textColor="@color/widget_text"
         android:textSize="31sp" />
 
-    <TextView
-        android:id="@+id/track_widget_secondary"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:autoSizeMaxTextSize="13sp"
-        android:autoSizeMinTextSize="9sp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
-        android:fontFamily="sans-serif-light"
+        android:layout_weight="0.40"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="⏱ 0 мин   ↑0 м   ↓0 м   🔥 ·"
-        android:textColor="@color/widget_secondary"
-        android:textSize="13sp" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/track_widget_moving"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.31"
+            android:gravity="center_vertical|start"
+            android:text="◷ 0 мин" />
+
+        <TextView
+            android:id="@+id/track_widget_ascent"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.23"
+            android:text="↑ 0 м" />
+
+        <TextView
+            android:id="@+id/track_widget_descent"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.23"
+            android:text="↓ 0 м" />
+
+        <TextView
+            android:id="@+id/track_widget_calories"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.23"
+            android:gravity="center_vertical|end"
+            android:text="🔥 —" />
+    </LinearLayout>
 </LinearLayout>

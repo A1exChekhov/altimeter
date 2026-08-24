@@ -6,42 +6,54 @@
     android:background="@drawable/widget_background"
     android:gravity="center_vertical"
     android:orientation="vertical"
-    android:paddingLeft="11dp"
-    android:paddingTop="7dp"
-    android:paddingRight="11dp"
-    android:paddingBottom="7dp">
+    android:paddingLeft="10dp"
+    android:paddingTop="4dp"
+    android:paddingRight="10dp"
+    android:paddingBottom="4dp">
 
-    <TextView
-        android:id="@+id/health_widget_top"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="23sp"
-        android:autoSizeMinTextSize="15sp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
-        android:fontFamily="sans-serif-light"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="♥ —    O₂ —"
-        android:textColor="@color/widget_text"
-        android:textSize="23sp" />
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/health_widget_bottom"
+        <TextView
+            android:id="@+id/health_widget_heart"
+            style="@style/WidgetHealthValue"
+            android:layout_weight="1"
+            android:gravity="center_vertical|start"
+            android:text="♥ —" />
+
+        <TextView
+            android:id="@+id/health_widget_oxygen"
+            style="@style/WidgetHealthValue"
+            android:layout_weight="1"
+            android:gravity="center_vertical|end"
+            android:text="O₂ —" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="21sp"
-        android:autoSizeMinTextSize="14sp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
-        android:fontFamily="sans-serif-light"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="👣 —    🔥 —"
-        android:textColor="@color/widget_text"
-        android:textSize="21sp" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/health_widget_steps"
+            style="@style/WidgetHealthValue"
+            android:layout_weight="1.15"
+            android:gravity="center_vertical|start"
+            android:text="👣 —" />
+
+        <TextView
+            android:id="@+id/health_widget_calories"
+            style="@style/WidgetHealthValue"
+            android:layout_weight="0.85"
+            android:gravity="center_vertical|end"
+            android:text="🔥 —" />
+    </LinearLayout>
 </LinearLayout>

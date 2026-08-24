@@ -37,17 +37,25 @@ class HealthWidgetProvider : AppWidgetProvider() {
         private fun views(context: Context, data: AltimeterWidgetSnapshot): RemoteViews {
             val content = WidgetContent.create(context, data)
             return RemoteViews(context.packageName, R.layout.health_widget).apply {
-                setTextViewText(R.id.health_widget_top, content.healthTop)
-                setTextViewText(R.id.health_widget_bottom, content.healthBottom)
+                setTextViewText(R.id.health_widget_heart, "♥ ${content.heart}")
+                setTextViewText(R.id.health_widget_oxygen, "O₂ ${content.oxygen}")
+                setTextViewText(R.id.health_widget_steps, "👣 ${content.steps}")
+                setTextViewText(R.id.health_widget_calories, "🔥 ${content.calories}")
                 applyWidgetTheme(
                     context = context,
                     darkTheme = data.darkTheme,
                     rootId = R.id.health_widget_root,
                     primaryTextIds = intArrayOf(
-                        R.id.health_widget_top,
-                        R.id.health_widget_bottom,
+                        R.id.health_widget_heart,
+                        R.id.health_widget_oxygen,
+                        R.id.health_widget_steps,
+                        R.id.health_widget_calories,
                     ),
                 )
+                setWidgetColor(context, R.id.health_widget_heart, R.color.widget_heart)
+                setWidgetColor(context, R.id.health_widget_oxygen, R.color.widget_oxygen)
+                setWidgetColor(context, R.id.health_widget_steps, R.color.widget_steps)
+                setWidgetColor(context, R.id.health_widget_calories, R.color.widget_calories)
                 setOnClickPendingIntent(
                     R.id.health_widget_root,
                     PendingIntent.getActivity(

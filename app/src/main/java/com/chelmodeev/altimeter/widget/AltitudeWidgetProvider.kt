@@ -39,6 +39,7 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
             val content = WidgetContent.create(context, data)
             return RemoteViews(context.packageName, R.layout.altitude_widget).apply {
                 setTextViewText(R.id.altitude_widget_altitude, content.altitude)
+                setTextViewText(R.id.altitude_widget_unit, content.altitudeUnit)
                 setTextViewText(R.id.altitude_widget_pressure, content.pressure)
                 setTextViewText(R.id.altitude_widget_coordinates, content.coordinates)
                 applyWidgetTheme(
@@ -47,6 +48,7 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
                     rootId = R.id.altitude_widget_root,
                     primaryTextIds = intArrayOf(R.id.altitude_widget_altitude),
                     secondaryTextIds = intArrayOf(
+                        R.id.altitude_widget_unit,
                         R.id.altitude_widget_pressure,
                         R.id.altitude_widget_coordinates,
                     ),

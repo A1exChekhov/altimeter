@@ -71,13 +71,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -145,6 +148,12 @@ data class ScreenActions(
 
 private enum class AppSection { HOME, MAP, TRACK, ANALYTICS }
 
+private data class MapPlacement(
+    val expanded: Boolean,
+    val onToggleExpanded: () -> Unit,
+    val modifier: Modifier,
+)
+
 @Composable
 fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
@@ -155,6 +164,27 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val trackScroll = rememberScrollState()
     val analyticsScroll = rememberScrollState()
     val mapSession = rememberTouristMapSession()
+    val currentState = rememberUpdatedState(state)
+    val currentAccent = rememberUpdatedState(accent)
+    val mapContent = remember(mapSession) {
+        movableContentOf<MapPlacement> { placement ->
+            val liveState = currentState.value
+            MapCard(
+                session = mapSession,
+                latitude = liveState.latitude,
+                longitude = liveState.longitude,
+                accuracyMeters = liveState.gpsAccuracy,
+                topo = liveState.topoMap,
+                accent = currentAccent.value,
+                trackPoints = liveState.mapTrack,
+                trackRecording = liveState.tracking.recording,
+                offlineMapPath = liveState.offlineMaps.activePath,
+                expanded = placement.expanded,
+                onToggleExpanded = placement.onToggleExpanded,
+                modifier = placement.modifier,
+            )
+        }
+    }
     val scope = rememberCoroutineScope()
 
     fun select(target: AppSection) {
@@ -197,7 +227,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
 
             when (section) {
                 AppSection.HOME -> HomePage(
-                    mapSession = mapSession,
+                    mapContent = mapContent,
                     state = state,
                     accent = accent,
                     actions = actions,
@@ -208,7 +238,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                     onOpenHealth = { showHealthDetails = true },
                 )
                 AppSection.MAP -> MapPage(
-                    mapSession = mapSession,
+                    mapContent = mapContent,
                     state = state,
                     accent = accent,
                     actions = actions,
@@ -228,6 +258,21 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                     scrollState = analyticsScroll,
                     onOpenSettings = { showSettings = true },
                     onOpenHealth = { showHealthDetails = true },
+                )
+            }
+
+            // MapLibre остаётся в том же Compose-узле и на экранах без карты.
+            // Это не даёт нативному MapView потерять Activity при смене раздела.
+            if (section == AppSection.TRACK || section == AppSection.ANALYTICS) {
+                mapContent(
+                    MapPlacement(
+                        expanded = false,
+                        onToggleExpanded = {},
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .size(2.dp)
+                            .alpha(0f),
+                    )
                 )
             }
 
@@ -288,7 +333,7 @@ private fun AppBottomBar(
 
 @Composable
 private fun HomePage(
-    mapSession: TouristMapSession,
+    mapContent: @Composable (MapPlacement) -> Unit,
     state: UiState,
     accent: Color,
     actions: ScreenActions,
@@ -319,19 +364,12 @@ private fun HomePage(
         Spacer(Modifier.height(12.dp))
         HomeStatusRow(state)
         Spacer(Modifier.height(12.dp))
-        MapCard(
-            session = mapSession,
-            latitude = state.latitude,
-            longitude = state.longitude,
-            accuracyMeters = state.gpsAccuracy,
-            topo = state.topoMap,
-            accent = accent,
-            trackPoints = state.mapTrack,
-            trackRecording = state.tracking.recording,
-            offlineMapPath = state.offlineMaps.activePath,
-            expanded = false,
-            onToggleExpanded = onOpenMap,
-            modifier = Modifier.fillMaxWidth().height(230.dp),
+        mapContent(
+            MapPlacement(
+                expanded = false,
+                onToggleExpanded = onOpenMap,
+                modifier = Modifier.fillMaxWidth().height(230.dp),
+            )
         )
         Spacer(Modifier.height(14.dp))
         VitalsCard(state, actions, onDetails = onOpenHealth)
@@ -345,7 +383,7 @@ private fun HomePage(
 
 @Composable
 private fun MapPage(
-    mapSession: TouristMapSession,
+    mapContent: @Composable (MapPlacement) -> Unit,
     state: UiState,
     accent: Color,
     actions: ScreenActions,
@@ -358,19 +396,12 @@ private fun MapPage(
             .padding(horizontal = 12.dp)
     ) {
         PageHeader(R.string.nav_map, Icons.Rounded.Map, onOpenSettings)
-        MapCard(
-            session = mapSession,
-            latitude = state.latitude,
-            longitude = state.longitude,
-            accuracyMeters = state.gpsAccuracy,
-            topo = state.topoMap,
-            accent = accent,
-            trackPoints = state.mapTrack,
-            trackRecording = state.tracking.recording,
-            offlineMapPath = state.offlineMaps.activePath,
-            expanded = true,
-            onToggleExpanded = {},
-            modifier = Modifier.fillMaxWidth().weight(1f),
+        mapContent(
+            MapPlacement(
+                expanded = true,
+                onToggleExpanded = {},
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            )
         )
         if (state.latitude != null && state.longitude != null) {
             Text(

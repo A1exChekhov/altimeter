@@ -7,67 +7,143 @@
     android:gravity="center_vertical"
     android:orientation="vertical"
     android:paddingLeft="12dp"
-    android:paddingTop="6dp"
+    android:paddingTop="4dp"
     android:paddingRight="12dp"
-    android:paddingBottom="6dp">
+    android:paddingBottom="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.67"
+        android:layout_weight="0.62"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.43"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_altitude"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="39sp"
+                android:autoSizeMinTextSize="25sp"
+                android:autoSizeStepGranularity="1sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical|start"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="—"
+                android:textColor="@color/widget_text"
+                android:textSize="39sp" />
+
+            <TextView
+                android:id="@+id/widget_altitude_unit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingLeft="2dp"
+                android:text="м"
+                android:textColor="@color/widget_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="8dp"
+            android:layout_weight="0.57"
+            android:baselineAligned="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_heart"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.31"
+                android:autoSizeMaxTextSize="17sp"
+                android:autoSizeMinTextSize="13sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="♥ —"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/widget_oxygen"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.31"
+                android:autoSizeMaxTextSize="17sp"
+                android:autoSizeMinTextSize="13sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="O₂ —"
+                android:textSize="17sp" />
+
+            <TextView
+                android:id="@+id/widget_steps"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.38"
+                android:autoSizeMaxTextSize="17sp"
+                android:autoSizeMinTextSize="12sp"
+                android:autoSizeTextType="uniform"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:text="👣 —"
+                android:textSize="17sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.38"
+        android:baselineAligned="false"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/widget_altitude"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.40"
-            android:autoSizeMaxTextSize="43sp"
-            android:autoSizeMinTextSize="23sp"
-            android:autoSizeStepGranularity="1sp"
-            android:autoSizeTextType="uniform"
-            android:fontFamily="sans-serif-light"
-            android:gravity="center_vertical"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:text="—"
-            android:textColor="@color/widget_text"
-            android:textSize="43sp" />
+            android:id="@+id/widget_distance"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.29"
+            android:gravity="center_vertical|start"
+            android:text="↔ 0 м" />
 
         <TextView
-            android:id="@+id/widget_vitals"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_weight="0.60"
-            android:autoSizeMaxTextSize="18sp"
-            android:autoSizeMinTextSize="11sp"
-            android:autoSizeStepGranularity="1sp"
-            android:autoSizeTextType="uniform"
-            android:fontFamily="sans-serif-light"
-            android:gravity="center_vertical"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:text="♥ —    O₂ —    👣 —"
-            android:textColor="@color/widget_text"
-            android:textSize="17sp" />
-    </LinearLayout>
+            android:id="@+id/widget_moving"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.27"
+            android:text="◷ 0 мин" />
 
-    <TextView
-        android:id="@+id/widget_track"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.33"
-        android:autoSizeMaxTextSize="14sp"
-        android:autoSizeMinTextSize="10sp"
-        android:autoSizeStepGranularity="1sp"
-        android:autoSizeTextType="uniform"
-        android:fontFamily="sans-serif-light"
-        android:gravity="center_vertical"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:text="↔ 0 м   ⏱ 0 мин   ↑0 м   ↓0 м"
-        android:textColor="@color/widget_secondary"
-        android:textSize="14sp" />
+        <TextView
+            android:id="@+id/widget_ascent"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.22"
+            android:text="↑ 0 м" />
+
+        <TextView
+            android:id="@+id/widget_descent"
+            style="@style/WidgetCompactStat"
+            android:layout_weight="0.22"
+            android:text="↓ 0 м" />
+    </LinearLayout>
 </LinearLayout>

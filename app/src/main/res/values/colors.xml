@@ -3,8 +3,14 @@
     <color name="ink">#FF0B1220</color>
     <color name="widget_text">#FF171A1E</color>
     <color name="widget_secondary">#FF59616A</color>
-    <color name="widget_dark_text">#FFF2F4F6</color>
-    <color name="widget_dark_secondary">#FFAAB2BB</color>
-    <color name="widget_light_text">#FF171A1E</color>
-    <color name="widget_light_secondary">#FF59616A</color>
+    <color name="widget_dark_text">#FFFFFFFF</color>
+    <color name="widget_dark_secondary">#FFD3DAE2</color>
+    <color name="widget_light_text">#FF101317</color>
+    <color name="widget_light_secondary">#FF404851</color>
+    <color name="widget_heart">#FFFF6575</color>
+    <color name="widget_oxygen">#FF59C7F2</color>
+    <color name="widget_steps">#FF67D69A</color>
+    <color name="widget_calories">#FFFFAE57</color>
+    <color name="widget_ascent">#FF67D69A</color>
+    <color name="widget_descent">#FF59C7F2</color>
 </resources>

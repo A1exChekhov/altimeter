@@ -2,6 +2,7 @@ package com.chelmodeev.altimeter.widget
 
 import android.content.Context
 import android.widget.RemoteViews
+import androidx.annotation.ColorRes
 import com.chelmodeev.altimeter.R
 
 internal fun RemoteViews.applyWidgetTheme(
@@ -24,4 +25,12 @@ internal fun RemoteViews.applyWidgetTheme(
     )
     primaryTextIds.forEach { setTextColor(it, primary) }
     secondaryTextIds.forEach { setTextColor(it, secondary) }
+}
+
+internal fun RemoteViews.setWidgetColor(
+    context: Context,
+    viewId: Int,
+    @ColorRes colorId: Int,
+) {
+    setTextColor(viewId, context.getColor(colorId))
 }

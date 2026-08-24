@@ -38,15 +38,32 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
             val content = WidgetContent.create(context, data)
 
             views.setTextViewText(R.id.widget_altitude, content.altitude)
-            views.setTextViewText(R.id.widget_vitals, content.expeditionVitals)
-            views.setTextViewText(R.id.widget_track, content.expeditionTrack)
+            views.setTextViewText(R.id.widget_altitude_unit, content.altitudeUnit)
+            views.setTextViewText(R.id.widget_heart, "♥ ${content.heart}")
+            views.setTextViewText(R.id.widget_oxygen, "O₂ ${content.oxygen}")
+            views.setTextViewText(R.id.widget_steps, "👣 ${content.steps}")
+            views.setTextViewText(R.id.widget_distance, content.trackPrimary)
+            views.setTextViewText(R.id.widget_moving, content.moving)
+            views.setTextViewText(R.id.widget_ascent, content.ascent)
+            views.setTextViewText(R.id.widget_descent, content.descent)
             views.applyWidgetTheme(
                 context = context,
                 darkTheme = data.darkTheme,
                 rootId = R.id.widget_root,
-                primaryTextIds = intArrayOf(R.id.widget_altitude, R.id.widget_vitals),
-                secondaryTextIds = intArrayOf(R.id.widget_track),
+                primaryTextIds = intArrayOf(R.id.widget_altitude),
+                secondaryTextIds = intArrayOf(
+                    R.id.widget_altitude_unit,
+                    R.id.widget_distance,
+                    R.id.widget_moving,
+                    R.id.widget_ascent,
+                    R.id.widget_descent,
+                ),
             )
+            views.setWidgetColor(context, R.id.widget_heart, R.color.widget_heart)
+            views.setWidgetColor(context, R.id.widget_oxygen, R.color.widget_oxygen)
+            views.setWidgetColor(context, R.id.widget_steps, R.color.widget_steps)
+            views.setWidgetColor(context, R.id.widget_ascent, R.color.widget_ascent)
+            views.setWidgetColor(context, R.id.widget_descent, R.color.widget_descent)
 
             val openApp = PendingIntent.getActivity(
                 context,
