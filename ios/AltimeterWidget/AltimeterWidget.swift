@@ -25,6 +25,7 @@ struct AltimeterWidgetProvider: TimelineProvider {
                 heartRateBPM: 92,
                 oxygenPercent: 96,
                 stepsToday: 8_640,
+                activeCaloriesToday: 610,
                 heartRateSource: "Apple Watch",
                 oxygenSource: "Apple Watch",
                 updatedAt: Date()
@@ -76,6 +77,10 @@ private extension AltimeterWidgetSnapshot {
 
     var stepsText: String {
         stepsToday.map { Int($0.rounded()).formatted(.number.grouping(.automatic)) } ?? "—"
+    }
+
+    var caloriesText: String {
+        activeCaloriesToday.map { Int($0.rounded()).formatted(.number.grouping(.automatic)) } ?? "—"
     }
 }
 
@@ -216,25 +221,16 @@ struct HealthWidgetView: View {
                     MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 28)
                 }
                 Spacer(minLength: 5)
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: "figure.walk")
-                        .font(.system(size: 16, weight: .regular))
-                        .foregroundStyle(.green)
-                    Text(entry.snapshot.stepsText)
-                        .font(.system(size: 26, weight: .light))
-                        .monospacedDigit()
-                        .foregroundStyle(.green)
-                        .minimumScaleFactor(0.65)
-                        .lineLimit(1)
-                    Text("шагов")
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    MetricColumn(title: "Шаги", value: entry.snapshot.stepsText, color: .green, valueSize: 22)
+                    MetricColumn(title: "Ккал", value: entry.snapshot.caloriesText, color: .orange, valueSize: 22)
                 }
             } else {
-                HStack(spacing: 18) {
-                    MetricColumn(title: "Пульс", value: entry.snapshot.heartText, color: .pink, valueSize: 32)
-                    MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 32)
-                    MetricColumn(title: "Шаги", value: entry.snapshot.stepsText, color: .green, valueSize: 29)
+                HStack(spacing: 13) {
+                    MetricColumn(title: "Пульс", value: entry.snapshot.heartText, color: .pink, valueSize: 29)
+                    MetricColumn(title: "SpO₂", value: entry.snapshot.oxygenText, color: .cyan, valueSize: 29)
+                    MetricColumn(title: "Шаги", value: entry.snapshot.stepsText, color: .green, valueSize: 25)
+                    MetricColumn(title: "Ккал", value: entry.snapshot.caloriesText, color: .orange, valueSize: 25)
                 }
                 Spacer(minLength: 2)
             }
@@ -306,7 +302,7 @@ struct HealthStatusWidget: Widget {
             HealthWidgetView(entry: entry)
         }
         .configurationDisplayName("Здоровье")
-        .description("Пульс, SpO₂ и шаги из Apple Health.")
+        .description("Пульс, SpO₂, шаги и активные калории из Apple Health.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -153,6 +153,7 @@ final class AppModel: ObservableObject {
             heartRateBPM: sample.heartRateBPM,
             oxygenPercent: sample.oxygenPercent,
             stepsToday: sample.stepsToday,
+            activeCaloriesToday: sample.activeCaloriesToday,
             heartRateSource: sample.heartRateSource,
             oxygenSource: sample.oxygenSource
         )

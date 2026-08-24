@@ -23,9 +23,13 @@ final class HealthService: ObservableObject {
         guard let heartRate = HKObjectType.quantityType(forIdentifier: .heartRate),
               let restingHeartRate = HKObjectType.quantityType(forIdentifier: .restingHeartRate),
               let oxygen = HKObjectType.quantityType(forIdentifier: .oxygenSaturation),
-              let steps = HKObjectType.quantityType(forIdentifier: .stepCount) else { return }
+              let steps = HKObjectType.quantityType(forIdentifier: .stepCount),
+              let activeEnergy = HKObjectType.quantityType(forIdentifier: .activeEnergyBurned) else { return }
         do {
-            try await store.requestAuthorization(toShare: [], read: [heartRate, restingHeartRate, oxygen, steps])
+            try await store.requestAuthorization(
+                toShare: [],
+                read: [heartRate, restingHeartRate, oxygen, steps, activeEnergy]
+            )
             UserDefaults.standard.set(true, forKey: "healthAccessRequested")
             UserDefaults.standard.set(2, forKey: "healthAccessSchemaVersion")
             hasRequestedAccess = true
@@ -43,11 +47,13 @@ final class HealthService: ObservableObject {
         async let restingHeart = latestQuantity(.restingHeartRate)
         async let oxygen = latestQuantity(.oxygenSaturation)
         async let steps = stepsToday()
-        let (heartSample, restingHeartSample, oxygenSample, stepsValue) = await (
+        async let calories = activeCaloriesToday()
+        let (heartSample, restingHeartSample, oxygenSample, stepsValue, caloriesValue) = await (
             heart,
             restingHeart,
             oxygen,
-            steps
+            steps,
+            calories
         )
         let newestHeart = [heartSample, restingHeartSample]
             .compactMap { $0 }
@@ -70,6 +76,10 @@ final class HealthService: ObservableObject {
             vitals.stepsToday = stepsValue
             vitals.stepsDate = Date()
         }
+        if let caloriesValue {
+            vitals.activeCaloriesToday = caloriesValue
+            vitals.activeCaloriesDate = Date()
+        }
     }
 
     private func latestQuantity(_ identifier: HKQuantityTypeIdentifier) async -> HKQuantitySample? {
@@ -89,7 +99,18 @@ final class HealthService: ObservableObject {
     }
 
     private func stepsToday() async -> Double? {
-        guard let type = HKObjectType.quantityType(forIdentifier: .stepCount) else { return nil }
+        await cumulativeValueToday(.stepCount, unit: .count())
+    }
+
+    private func activeCaloriesToday() async -> Double? {
+        await cumulativeValueToday(.activeEnergyBurned, unit: .kilocalorie())
+    }
+
+    private func cumulativeValueToday(
+        _ identifier: HKQuantityTypeIdentifier,
+        unit: HKUnit
+    ) async -> Double? {
+        guard let type = HKObjectType.quantityType(forIdentifier: identifier) else { return nil }
         let now = Date()
         let start = Calendar.current.startOfDay(for: now)
         let predicate = HKQuery.predicateForSamples(
@@ -103,7 +124,7 @@ final class HealthService: ObservableObject {
                 quantitySamplePredicate: predicate,
                 options: .cumulativeSum
             ) { _, statistics, _ in
-                let value = statistics?.sumQuantity()?.doubleValue(for: .count())
+                let value = statistics?.sumQuantity()?.doubleValue(for: unit)
                 continuation.resume(returning: value)
             }
             store.execute(query)

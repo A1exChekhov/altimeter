@@ -276,10 +276,18 @@ struct AltimeterScreen: View {
                         value: model.vitals.oxygenPercent.map { "\(Int($0.rounded()))" } ?? "—",
                         unit: "%"
                     )
+                }
+
+                HStack(spacing: 10) {
                     MetricCell(
                         title: "Шаги",
                         value: model.vitals.stepsToday.map { "\(Int($0.rounded()).formatted())" } ?? "—",
                         unit: ""
+                    )
+                    MetricCell(
+                        title: "Активность",
+                        value: model.vitals.activeCaloriesToday.map { "\(Int($0.rounded()).formatted())" } ?? "—",
+                        unit: "ккал"
                     )
                 }
 
@@ -298,7 +306,7 @@ struct AltimeterScreen: View {
                     .buttonStyle(.bordered)
                 }
 
-                Text("Пульс, насыщение кислорода и шаги читаются из Apple Health; поддерживаются Apple Watch и данные совместимых приложений, включая Garmin Connect.")
+                Text("Пульс, насыщение кислорода, шаги и активные калории читаются из Apple Health; поддерживаются Apple Watch и данные совместимых приложений.")
                     .font(.caption).foregroundStyle(.secondary)
                 if model.vitals.heartRateSource?.localizedCaseInsensitiveContains("Garmin") == true && model.vitals.oxygenPercent == nil {
                     Text("Garmin передаёт в Apple Health пульс, но не экспортирует Pulse Ox. Для SpO₂ нужен Garmin Health API/SDK.")

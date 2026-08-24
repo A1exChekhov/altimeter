@@ -12,6 +12,7 @@ struct AltimeterWidgetSnapshot: Codable, Equatable {
     var heartRateBPM: Double?
     var oxygenPercent: Double?
     var stepsToday: Double?
+    var activeCaloriesToday: Double?
     var heartRateSource: String?
     var oxygenSource: String?
     var updatedAt = Date.distantPast
@@ -51,6 +52,7 @@ enum WidgetSnapshotStore {
         heartRateBPM: Double?,
         oxygenPercent: Double?,
         stepsToday: Double?,
+        activeCaloriesToday: Double?,
         heartRateSource: String?,
         oxygenSource: String?
     ) {
@@ -58,6 +60,7 @@ enum WidgetSnapshotStore {
         snapshot.heartRateBPM = heartRateBPM
         snapshot.oxygenPercent = oxygenPercent
         snapshot.stepsToday = stepsToday
+        snapshot.activeCaloriesToday = activeCaloriesToday
         snapshot.heartRateSource = heartRateSource
         snapshot.oxygenSource = oxygenSource
         snapshot.updatedAt = Date()

@@ -61,12 +61,12 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Altimeter-v1.5.5.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.5/Altimeter-v1.5.5.apk)**.
+**[скачать Altimeter-v1.5.6.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.6/Altimeter-v1.5.6.apk)**.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
-`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk` и т. д.; новая сборка не
+`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk` и т. д.; новая сборка не
 перезаписывает предыдущую.
 
 ## Где находятся устанавливаемые файлы
@@ -81,14 +81,16 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно опубликован как asset релиза `v1.5.5`. Локально он создаётся
+Git, но готовый APK отдельно опубликован как asset релиза `v1.5.6`. Локально он создаётся
 командой `:app:assembleDebug`.
 
 ### iPhone
 
-Готового универсального `.ipa` в репозитории нет: iOS-приложение должно быть собрано
-и подписано вашей Apple Developer Team на Mac. Обычная кнопка Run в Xcode сразу
-устанавливает приложение на подключённый iPhone, без отдельного IPA.
+Готовая подписанная IPA 1.1.0 опубликована отдельным релизом для зарегистрированного
+iPhone: **[скачать Altimeter.ipa](https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.1.0-ad-hoc/Altimeter.ipa)**.
+Установить её напрямую через Safari можно со страницы
+**[a1exchekhov.github.io/altimeter/iphone/](https://a1exchekhov.github.io/altimeter/iphone/)**.
+IPA подписана вашей Apple Developer Team и не является универсальной для незарегистрированных устройств.
 
 После Build файл приложения обычно находится в:
 
