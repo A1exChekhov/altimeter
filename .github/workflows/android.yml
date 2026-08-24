@@ -41,7 +41,7 @@ jobs:
         run: ./gradlew test assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: Errarium-Altimeter-Android-1.5.11
+          name: Errarium-Altimeter-Android-1.5.12
           path: app/build/outputs/apk/release/app-release.apk
 
   navigation-smoke:
