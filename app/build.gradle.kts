@@ -19,6 +19,7 @@ android {
         targetSdk = 35
         versionCode = 17
         versionName = "1.5.11"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
         val watchFp = (project.findProperty("WATCH_APP_FINGERPRINT") as? String).orEmpty()
@@ -94,4 +95,9 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }
