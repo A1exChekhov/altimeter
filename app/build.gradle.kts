@@ -12,8 +12,8 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 12
-        versionName = "1.5.6"
+        versionCode = 13
+        versionName = "1.5.7"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
         val watchFp = (project.findProperty("WATCH_APP_FINGERPRINT") as? String).orEmpty()
