@@ -39,13 +39,25 @@ jobs:
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
         run: ./gradlew test assembleRelease
+      - name: Verify version and stable signing certificate
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          BADGING="$("$TOOLS/aapt" dump badging "$APK" | head -1)"
+          CERTIFICATES="$("$TOOLS/apksigner" verify --print-certs "$APK")"
+          printf '%s\n' "$BADGING"
+          printf '%s\n' "$CERTIFICATES"
+          printf '%s' "$BADGING" | grep -F "versionCode='18' versionName='1.5.12'"
+          printf '%s' "$CERTIFICATES" | tr '[:lower:]' '[:upper:]' \
+            | grep -F "16554CC9CDA37C649AF0D9B291255A3EB0DF5A1DD1FD0C9EDA5E48F661B9CAC2"
+          cp "$APK" "app/build/outputs/apk/release/Errarium-Altimeter-Android-1.5.12.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: Errarium-Altimeter-Android-1.5.12
-          path: app/build/outputs/apk/release/app-release.apk
+          path: app/build/outputs/apk/release/Errarium-Altimeter-Android-1.5.12.apk
 
   navigation-smoke:
-    name: Navigation — 5 full cycles
+    name: Navigation + precise track — 5 full cycles
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -64,7 +76,7 @@ jobs:
             | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run five navigation cycles in Android emulator
+      - name: Run navigation and precise-track tests in Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
