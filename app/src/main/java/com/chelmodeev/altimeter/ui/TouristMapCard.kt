@@ -389,7 +389,7 @@ private fun updateRoute(style: Style, track: List<TrackMapPoint>, color: Int) {
     val source = style.getSourceAs<GeoJsonSource>(ROUTE_SOURCE) ?: return
     val segments = mutableListOf<MutableList<Point>>()
     for (point in track) {
-        if (segments.isEmpty() || point.startsNewSegment) segments += mutableListOf()
+        if (segments.isEmpty() || point.startsNewSegment) segments.add(mutableListOf())
         segments.last() += Point.fromLngLat(point.longitude, point.latitude)
     }
     val features = segments
