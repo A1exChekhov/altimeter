@@ -159,19 +159,72 @@ fun MapCard(
     }
 
     DisposableEffect(lifecycleOwner) {
+        var started = false
+        var resumed = false
+        var destroyed = false
+
+        fun startMap() {
+            if (!started && !destroyed) {
+                mapView.onStart()
+                started = true
+            }
+        }
+
+        fun resumeMap() {
+            if (!resumed && !destroyed) {
+                startMap()
+                mapView.onResume()
+                resumed = true
+            }
+        }
+
+        fun pauseMap() {
+            if (resumed && !destroyed) {
+                mapView.onPause()
+                resumed = false
+            }
+        }
+
+        fun stopMap() {
+            if (started && !destroyed) {
+                pauseMap()
+                mapView.onStop()
+                started = false
+            }
+        }
+
+        fun destroyMap() {
+            if (!destroyed) {
+                stopMap()
+                mapView.onDestroy()
+                destroyed = true
+            }
+        }
+
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> mapView.onStart()
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
-                Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                Lifecycle.Event.ON_STOP -> mapView.onStop()
+                Lifecycle.Event.ON_START -> startMap()
+                Lifecycle.Event.ON_RESUME -> resumeMap()
+                Lifecycle.Event.ON_PAUSE -> pauseMap()
+                Lifecycle.Event.ON_STOP -> stopMap()
+                Lifecycle.Event.ON_DESTROY -> destroyMap()
                 else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+
+        // Новая вкладка может создать MapView, когда Activity уже запущена.
+        // В таком случае события ON_START/ON_RESUME повторно не придут.
+        when {
+            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) -> resumeMap()
+            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) -> startMap()
+        }
+
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            mapView.onDestroy()
+            // При переключении вкладки Activity остаётся RESUMED. MapLibre требует
+            // закрыть активную карту строго в порядке pause -> stop -> destroy.
+            destroyMap()
         }
     }
 
