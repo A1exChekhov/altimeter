@@ -44,10 +44,20 @@ data class TrendScale(
 )
 
 fun trendScales(lines: List<TrendLine>, windowMs: Long): List<TrendScale> {
-    val latest = lines.maxOfOrNull { line -> line.points.maxOfOrNull { it.first } ?: Long.MIN_VALUE }
+    val cleanLines = lines.mapNotNull { line ->
+        val points = line.points.asSequence()
+            .filter { (time, value) -> time > 0L && value.isFinite() }
+            .sortedBy { it.first }
+            .toList()
+        if (points.isEmpty()) null else line.copy(points = points)
+    }
+    val safeWindowMs = windowMs.coerceAtLeast(1L)
+    val latest = cleanLines.maxOfOrNull { line ->
+        line.points.maxOfOrNull { it.first } ?: Long.MIN_VALUE
+    }
         ?.takeUnless { it == Long.MIN_VALUE } ?: return emptyList()
-    val cutoff = latest - windowMs
-    return lines.mapNotNull { line ->
+    val cutoff = latest - safeWindowMs
+    return cleanLines.mapNotNull { line ->
         val values = line.points.asSequence()
             .filter { it.first >= cutoff && it.first <= latest }
             .map { it.second }
@@ -99,6 +109,9 @@ fun CombinedTrendChart(
         }
     ) {
         if (scales.isEmpty()) return@Canvas
+        if (!size.width.isFinite() || !size.height.isFinite() ||
+            size.width <= 8f || size.height <= 32f
+        ) return@Canvas
 
         val left = 4.dp.toPx()
         val right = size.width - 4.dp.toPx()
@@ -193,7 +206,7 @@ fun CombinedTrendChart(
             }
         }
 
-        cursorX?.coerceIn(left, right)?.let { x ->
+        cursorX?.takeIf { it.isFinite() }?.coerceIn(left, right)?.let { x ->
             val cursorTime = startTime + (((x - left) / plotWidth) * span).toLong()
             drawLine(
                 color = axisColor.copy(alpha = 0.72f),
@@ -252,4 +265,6 @@ private fun Color.toArgb(): Int = android.graphics.Color.argb(
 )
 
 fun formatTrendValue(value: Double, decimals: Int): String =
-    if (decimals <= 0) value.toInt().toString() else String.format(Locale.getDefault(), "%.${decimals}f", value)
+    if (!value.isFinite()) "—"
+    else if (decimals <= 0) value.toInt().toString()
+    else String.format(Locale.getDefault(), "%.${decimals}f", value)

@@ -154,6 +154,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val homeScroll = rememberScrollState()
     val trackScroll = rememberScrollState()
     val analyticsScroll = rememberScrollState()
+    val mapSession = rememberTouristMapSession()
     val scope = rememberCoroutineScope()
 
     fun select(target: AppSection) {
@@ -196,6 +197,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
 
             when (section) {
                 AppSection.HOME -> HomePage(
+                    mapSession = mapSession,
                     state = state,
                     accent = accent,
                     actions = actions,
@@ -206,6 +208,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
                     onOpenHealth = { showHealthDetails = true },
                 )
                 AppSection.MAP -> MapPage(
+                    mapSession = mapSession,
                     state = state,
                     accent = accent,
                     actions = actions,
@@ -285,6 +288,7 @@ private fun AppBottomBar(
 
 @Composable
 private fun HomePage(
+    mapSession: TouristMapSession,
     state: UiState,
     accent: Color,
     actions: ScreenActions,
@@ -316,6 +320,7 @@ private fun HomePage(
         HomeStatusRow(state)
         Spacer(Modifier.height(12.dp))
         MapCard(
+            session = mapSession,
             latitude = state.latitude,
             longitude = state.longitude,
             accuracyMeters = state.gpsAccuracy,
@@ -340,6 +345,7 @@ private fun HomePage(
 
 @Composable
 private fun MapPage(
+    mapSession: TouristMapSession,
     state: UiState,
     accent: Color,
     actions: ScreenActions,
@@ -353,6 +359,7 @@ private fun MapPage(
     ) {
         PageHeader(R.string.nav_map, Icons.Rounded.Map, onOpenSettings)
         MapCard(
+            session = mapSession,
             latitude = state.latitude,
             longitude = state.longitude,
             accuracyMeters = state.gpsAccuracy,

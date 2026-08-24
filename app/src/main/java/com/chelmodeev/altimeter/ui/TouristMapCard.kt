@@ -2,6 +2,7 @@ package com.chelmodeev.altimeter.ui
 
 import android.graphics.Color as AndroidColor
 import android.view.MotionEvent
+import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,12 +65,122 @@ import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.io.File
 
+class TouristMapSession(context: android.content.Context) {
+    val mapView = MapView(context)
+    var map by mutableStateOf<MapLibreMap?>(null)
+    var styleRevision by mutableIntStateOf(0)
+    var follow by mutableStateOf(true)
+    var hadFirstFix by mutableStateOf(false)
+    var requestedStyleKey: String? = null
+
+    private var attached = false
+    private var hostStarted = false
+    private var hostResumed = false
+    private var viewStarted = false
+    private var viewResumed = false
+    private var destroyed = false
+
+    init {
+        mapView.onCreate(null)
+        mapView.setOnTouchListener { view, event ->
+            view.parent?.requestDisallowInterceptTouchEvent(true)
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) follow = false
+            false
+        }
+        mapView.getMapAsync { readyMap ->
+            map = readyMap
+            readyMap.uiSettings.isRotateGesturesEnabled = true
+            readyMap.uiSettings.isTiltGesturesEnabled = true
+            readyMap.uiSettings.isCompassEnabled = true
+            readyMap.cameraPosition = CameraPosition.Builder().zoom(4.5).build()
+        }
+    }
+
+    fun updateHostState(state: Lifecycle.State) {
+        hostStarted = state.isAtLeast(Lifecycle.State.STARTED)
+        hostResumed = state.isAtLeast(Lifecycle.State.RESUMED)
+        syncLifecycle()
+    }
+
+    fun attach() {
+        attached = true
+        syncLifecycle()
+    }
+
+    fun detach() {
+        attached = false
+        syncLifecycle()
+    }
+
+    fun destroy() {
+        if (destroyed) return
+        attached = false
+        hostResumed = false
+        hostStarted = false
+        syncLifecycle()
+        mapView.onDestroy()
+        destroyed = true
+    }
+
+    private fun syncLifecycle() {
+        if (destroyed) return
+        val shouldStart = attached && hostStarted
+        val shouldResume = attached && hostResumed
+        if (shouldStart && !viewStarted) {
+            mapView.onStart()
+            viewStarted = true
+        }
+        if (shouldResume && !viewResumed) {
+            if (!viewStarted) {
+                mapView.onStart()
+                viewStarted = true
+            }
+            mapView.onResume()
+            viewResumed = true
+        }
+        if (!shouldResume && viewResumed) {
+            mapView.onPause()
+            viewResumed = false
+        }
+        if (!shouldStart && viewStarted) {
+            if (viewResumed) {
+                mapView.onPause()
+                viewResumed = false
+            }
+            mapView.onStop()
+            viewStarted = false
+        }
+    }
+}
+
+@Composable
+fun rememberTouristMapSession(): TouristMapSession {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val session = remember(context) { TouristMapSession(context) }
+
+    DisposableEffect(session, lifecycleOwner) {
+        val lifecycle = lifecycleOwner.lifecycle
+        val observer = LifecycleEventObserver { _, _ ->
+            session.updateHostState(lifecycle.currentState)
+        }
+        lifecycle.addObserver(observer)
+        session.updateHostState(lifecycle.currentState)
+        onDispose {
+            lifecycle.removeObserver(observer)
+            session.destroy()
+        }
+    }
+    return session
+}
+
 /**
  * Векторная карта MapLibre. Онлайн используется только как фон; региональные
  * PMTiles подключаются тем же движком и полностью работают с локального файла.
  */
 @Composable
 fun MapCard(
+    session: TouristMapSession,
     latitude: Double?,
     longitude: Double?,
     accuracyMeters: Float?,
@@ -83,33 +194,21 @@ fun MapCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    var map by remember { mutableStateOf<MapLibreMap?>(null) }
-    var styleRevision by remember { mutableIntStateOf(0) }
-    var follow by remember { mutableStateOf(true) }
-    var hadFirstFix by remember { mutableStateOf(false) }
+    val map = session.map
+    val styleRevision = session.styleRevision
+    val mapView = session.mapView
 
-    val mapView = remember {
-        MapView(context).apply {
-            onCreate(null)
-            setOnTouchListener { view, event ->
-                view.parent?.requestDisallowInterceptTouchEvent(true)
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) follow = false
-                false
-            }
-            getMapAsync { readyMap ->
-                map = readyMap
-                readyMap.uiSettings.isRotateGesturesEnabled = true
-                readyMap.uiSettings.isTiltGesturesEnabled = true
-                readyMap.uiSettings.isCompassEnabled = true
-                readyMap.cameraPosition = CameraPosition.Builder().zoom(4.5).build()
-            }
-        }
+    DisposableEffect(session) {
+        session.attach()
+        onDispose { session.detach() }
     }
 
     LaunchedEffect(map, offlineMapPath, topo) {
         val readyMap = map ?: return@LaunchedEffect
         val localPath = offlineMapPath?.takeIf { File(it).isFile }
+        val styleKey = localPath ?: ONLINE_OUTDOOR_STYLE
+        if (session.requestedStyleKey == styleKey) return@LaunchedEffect
+        session.requestedStyleKey = styleKey
         val styleBuilder = if (localPath != null) {
             Style.Builder().fromJson(offlineMapStyle(localPath))
         } else {
@@ -117,7 +216,7 @@ fun MapCard(
         }
         readyMap.setStyle(styleBuilder) { style ->
             installOverlayLayers(style)
-            styleRevision++
+            session.styleRevision++
         }
     }
 
@@ -127,12 +226,12 @@ fun MapCard(
         updateLocation(style, latitude, longitude, accent.toArgb())
         if (latitude != null && longitude != null) {
             val target = LatLng(latitude, longitude)
-            if (!hadFirstFix) {
-                hadFirstFix = true
+            if (!session.hadFirstFix) {
+                session.hadFirstFix = true
                 if (trackRecording || trackPoints.isEmpty()) {
                     readyMap.animateCamera(CameraUpdateFactory.newLatLngZoom(target, 15.0))
                 }
-            } else if (follow) {
+            } else if (session.follow) {
                 readyMap.animateCamera(CameraUpdateFactory.newLatLng(target))
             }
         }
@@ -143,7 +242,7 @@ fun MapCard(
         val style = readyMap.style ?: return@LaunchedEffect
         updateRoute(style, trackPoints, accent.toArgb())
         if (!trackRecording && trackPoints.size >= 2) {
-            follow = false
+            session.follow = false
             val points = trackPoints.map { LatLng(it.latitude, it.longitude) }
             mapView.post {
                 runCatching {
@@ -158,82 +257,18 @@ fun MapCard(
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
-        var started = false
-        var resumed = false
-        var destroyed = false
-
-        fun startMap() {
-            if (!started && !destroyed) {
-                mapView.onStart()
-                started = true
-            }
-        }
-
-        fun resumeMap() {
-            if (!resumed && !destroyed) {
-                startMap()
-                mapView.onResume()
-                resumed = true
-            }
-        }
-
-        fun pauseMap() {
-            if (resumed && !destroyed) {
-                mapView.onPause()
-                resumed = false
-            }
-        }
-
-        fun stopMap() {
-            if (started && !destroyed) {
-                pauseMap()
-                mapView.onStop()
-                started = false
-            }
-        }
-
-        fun destroyMap() {
-            if (!destroyed) {
-                stopMap()
-                mapView.onDestroy()
-                destroyed = true
-            }
-        }
-
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_START -> startMap()
-                Lifecycle.Event.ON_RESUME -> resumeMap()
-                Lifecycle.Event.ON_PAUSE -> pauseMap()
-                Lifecycle.Event.ON_STOP -> stopMap()
-                Lifecycle.Event.ON_DESTROY -> destroyMap()
-                else -> Unit
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        // Новая вкладка может создать MapView, когда Activity уже запущена.
-        // В таком случае события ON_START/ON_RESUME повторно не придут.
-        when {
-            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) -> resumeMap()
-            lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) -> startMap()
-        }
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            // При переключении вкладки Activity остаётся RESUMED. MapLibre требует
-            // закрыть активную карту строго в порядке pause -> stop -> destroy.
-            destroyMap()
-        }
-    }
-
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(22.dp))
             .background(Color(0xFF10192B))
     ) {
-        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+        AndroidView(
+            factory = {
+                (mapView.parent as? ViewGroup)?.removeView(mapView)
+                mapView
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
 
         Surface(
             shape = RoundedCornerShape(50),
@@ -273,14 +308,14 @@ fun MapCard(
                 Icon(
                     Icons.Rounded.MyLocation,
                     contentDescription = stringResource(R.string.cd_center_map),
-                    tint = if (follow) accent else Color.White,
+                    tint = if (session.follow) accent else Color.White,
                     modifier = Modifier.size(18.dp),
                 )
             },
             onClick = {
-                follow = true
+                session.follow = true
                 if (latitude != null && longitude != null) {
-                    map?.animateCamera(
+                    session.map?.animateCamera(
                         CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), 15.0)
                     )
                 }
