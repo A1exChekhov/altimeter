@@ -50,6 +50,12 @@ final class AppModel: ObservableObject {
             engine.setAutoTrackEnabled(autoTrackEnabled)
         }
     }
+    @Published var trackSamplingMode: TrackSamplingMode {
+        didSet {
+            defaults.set(trackSamplingMode.rawValue, forKey: Keys.trackSamplingMode)
+            engine.setTrackSamplingMode(trackSamplingMode)
+        }
+    }
 
     private let defaults = UserDefaults.standard
     private var subscriptions: Set<AnyCancellable> = []
@@ -65,6 +71,9 @@ final class AppModel: ObservableObject {
         keepScreenAwake = store.object(forKey: Keys.keepScreenAwake) as? Bool ?? true
         darkTheme = store.object(forKey: Keys.darkTheme) as? Bool ?? true
         autoTrackEnabled = store.object(forKey: Keys.autoTrackEnabled) as? Bool ?? false
+        trackSamplingMode = TrackSamplingMode(
+            rawValue: store.string(forKey: Keys.trackSamplingMode) ?? ""
+        ) ?? .everySecond
 
         engine.objectWillChange
             .sink { [weak self] _ in
@@ -90,6 +99,7 @@ final class AppModel: ObservableObject {
 
         applyCalibration()
         engine.setAutoTrackEnabled(autoTrackEnabled)
+        engine.setTrackSamplingMode(trackSamplingMode)
         UIApplication.shared.isIdleTimerDisabled = keepScreenAwake
     }
 
@@ -187,5 +197,6 @@ final class AppModel: ObservableObject {
         static let keepScreenAwake = "keepScreenAwake"
         static let darkTheme = "darkTheme"
         static let autoTrackEnabled = "autoTrackEnabled"
+        static let trackSamplingMode = "trackSamplingMode"
     }
 }

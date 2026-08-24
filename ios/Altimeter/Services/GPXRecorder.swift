@@ -6,6 +6,7 @@ final class GPXRecorder {
         let coordinate: CLLocationCoordinate2D
         let elevation: Double?
         let date: Date
+        let startsNewSegment: Bool
     }
 
     private(set) var points: [Point] = []
@@ -16,6 +17,8 @@ final class GPXRecorder {
     private(set) var stoppedTime: TimeInterval = 0
 
     private var lastAcceptedElevation: Double?
+    private var lastBearing: Double?
+    private var samplingMode: TrackSamplingMode = .everySecond
     private(set) var startedAt = Date()
 
     var lastPointDate: Date? { points.last?.date }
@@ -28,26 +31,51 @@ final class GPXRecorder {
         movingTime = 0
         stoppedTime = 0
         lastAcceptedElevation = nil
+        lastBearing = nil
         startedAt = date
+    }
+
+    func setSamplingMode(_ mode: TrackSamplingMode) {
+        samplingMode = mode
     }
 
     @discardableResult
     func offer(location: CLLocation, elevation: Double?, date: Date = Date()) -> Bool {
-        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 50 else { return false }
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 35 else { return false }
+
+        var startsNewSegment = points.isEmpty
+        var acceptedBearing: Double?
 
         if let last = points.last {
             let elapsed = date.timeIntervalSince(last.date)
-            guard elapsed >= 2 else { return false }
             let previousLocation = CLLocation(
                 latitude: last.coordinate.latitude,
                 longitude: last.coordinate.longitude
             )
             let moved = location.distance(from: previousLocation)
-            if moved < 2, elapsed < 15 { return false }
-            if moved < 10_000 {
+            let speed = moved / max(elapsed, 0.001)
+            let bearing = Self.bearing(from: last.coordinate, to: location.coordinate)
+            acceptedBearing = bearing
+            let minimumMovement = min(2.5, max(0.8, location.horizontalAccuracy * 0.10))
+            let isSharpTurn = lastBearing.map {
+                Self.angularDifference($0, bearing) >= 15 && moved >= minimumMovement
+            } ?? false
+            let interval: TimeInterval
+            switch samplingMode {
+            case .everySecond: interval = 1
+            case .everyTwoSeconds: interval = 2
+            case .everyFourSeconds: interval = 4
+            case .automatic:
+                interval = speed >= 7 ? 1 : (speed >= 2 ? 2 : 4)
+            }
+            guard elapsed >= interval || isSharpTurn else { return false }
+            guard elapsed >= 0.75 else { return false }
+            if moved < minimumMovement, elapsed < 10 { return false }
+
+            startsNewSegment = (elapsed > 30 && moved > 10) || (moved > 250 && speed > 12)
+            if !startsNewSegment, moved < 10_000 {
                 distanceMeters += moved
                 if elapsed <= 120 {
-                    let speed = moved / max(elapsed, 0.001)
                     if speed >= 0.35 { movingTime += elapsed } else { stoppedTime += elapsed }
                 }
             }
@@ -63,7 +91,15 @@ final class GPXRecorder {
             }
         }
 
-        points.append(Point(coordinate: location.coordinate, elevation: elevation, date: date))
+        points.append(
+            Point(
+                coordinate: location.coordinate,
+                elevation: elevation,
+                date: date,
+                startsNewSegment: startsNewSegment
+            )
+        )
+        lastBearing = startsNewSegment ? nil : acceptedBearing
         return true
     }
 
@@ -83,7 +119,10 @@ final class GPXRecorder {
           <trk><name>Altimeter track</name><trkseg>
 
         """
-        for point in points {
+        for (index, point) in points.enumerated() {
+            if index > 0, point.startsNewSegment {
+                xml += "  </trkseg><trkseg>\n"
+            }
             xml += String(
                 format: "    <trkpt lat=\"%.7f\" lon=\"%.7f\">",
                 locale: Locale(identifier: "en_US_POSIX"),
@@ -97,6 +136,23 @@ final class GPXRecorder {
         }
         xml += "  </trkseg></trk>\n</gpx>\n"
         return Data(xml.utf8)
+    }
+
+    private static func bearing(
+        from start: CLLocationCoordinate2D,
+        to end: CLLocationCoordinate2D
+    ) -> Double {
+        let lat1 = start.latitude * .pi / 180
+        let lat2 = end.latitude * .pi / 180
+        let deltaLongitude = (end.longitude - start.longitude) * .pi / 180
+        let y = sin(deltaLongitude) * cos(lat2)
+        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLongitude)
+        return atan2(y, x) * 180 / .pi
+    }
+
+    private static func angularDifference(_ first: Double, _ second: Double) -> Double {
+        let raw = abs(first - second).truncatingRemainder(dividingBy: 360)
+        return raw > 180 ? 360 - raw : raw
     }
 
     private static let iso8601: ISO8601DateFormatter = {

@@ -40,6 +40,23 @@ struct ChartPoint: Identifiable, Equatable {
     let altitude: Double
 }
 
+enum TrackSamplingMode: String, CaseIterable, Identifiable {
+    case automatic
+    case everySecond
+    case everyTwoSeconds
+    case everyFourSeconds
+
+    var id: Self { self }
+    var title: String {
+        switch self {
+        case .automatic: "Авто"
+        case .everySecond: "1 с"
+        case .everyTwoSeconds: "2 с"
+        case .everyFourSeconds: "4 с"
+        }
+    }
+}
+
 struct VitalPoint: Identifiable, Equatable {
     let id = UUID()
     let date: Date

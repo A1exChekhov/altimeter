@@ -83,7 +83,19 @@ struct SettingsView: View {
 
                 Section("Умный авторек") {
                     Toggle("Автоматическая запись", isOn: $model.autoTrackEnabled)
-                    Text("Запуск после 90 секунд и 120 м ходьбы. Автопауза после 5 минут без движения, возобновление после 60 м.")
+                    Text("Запуск после 90 секунд и 120 м ходьбы. После запуска запись идёт непрерывно до явной остановки.")
+                        .font(.footnote.weight(.light))
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Расширенные настройки трека") {
+                    Picker("Частота GPS", selection: $model.trackSamplingMode) {
+                        ForEach(TrackSamplingMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Text("По умолчанию 1 с. Резкий поворот сохраняется сразу даже при интервале 2 или 4 с.")
                         .font(.footnote.weight(.light))
                         .foregroundStyle(.secondary)
                 }

@@ -37,5 +37,58 @@ final class GPXRecorderTests: XCTestCase {
         XCTAssertFalse(recorder.offer(location: location, elevation: nil))
         XCTAssertEqual(recorder.points.count, 0)
     }
+
+    func testOneSecondDefaultKeepsEveryTurn() {
+        let recorder = GPXRecorder()
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        recorder.begin(at: start)
+        var locations: [CLLocation] = []
+        for index in 0...10 {
+            locations.append(location(55 + Double(index) * 0.00001, 37, start, index))
+        }
+        for index in 0..<10 {
+            locations.append(location(55.00010, 37 + Double(index + 1) * 0.00002, start, index + 11))
+        }
+        for index in 0..<10 {
+            locations.append(location(55.00010 - Double(index + 1) * 0.00001, 37.00020, start, index + 21))
+        }
+
+        for location in locations {
+            XCTAssertTrue(recorder.offer(location: location, elevation: 300, date: location.timestamp))
+        }
+        XCTAssertEqual(recorder.points.count, locations.count)
+    }
+
+    func testFourSecondModeStillKeepsImmediateTurnAndGPSGapIsSegmented() {
+        let recorder = GPXRecorder()
+        recorder.setSamplingMode(.everyFourSeconds)
+        let start = Date(timeIntervalSince1970: 1_800_000_100)
+        recorder.begin(at: start)
+
+        XCTAssertTrue(recorder.offer(location: location(55, 37, start, 0), elevation: 300, date: start))
+        XCTAssertFalse(recorder.offer(location: location(55.00001, 37, start, 1), elevation: 300, date: start.addingTimeInterval(1)))
+        XCTAssertTrue(recorder.offer(location: location(55.00004, 37, start, 4), elevation: 300, date: start.addingTimeInterval(4)))
+        XCTAssertTrue(recorder.offer(location: location(55.00004, 37.00002, start, 5), elevation: 300, date: start.addingTimeInterval(5)))
+        XCTAssertTrue(recorder.offer(location: location(55.001, 37.001, start, 45), elevation: 300, date: start.addingTimeInterval(45)))
+
+        let xml = String(decoding: recorder.data(), as: UTF8.self)
+        XCTAssertEqual(xml.components(separatedBy: "<trkseg>").count - 1, 2)
+        XCTAssertEqual(xml.components(separatedBy: "<trkpt ").count - 1, 4)
+    }
+
+    private func location(
+        _ latitude: Double,
+        _ longitude: Double,
+        _ start: Date,
+        _ second: Int
+    ) -> CLLocation {
+        CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+            altitude: 300,
+            horizontalAccuracy: 3,
+            verticalAccuracy: 3,
+            timestamp: start.addingTimeInterval(Double(second))
+        )
+    }
 }
 
