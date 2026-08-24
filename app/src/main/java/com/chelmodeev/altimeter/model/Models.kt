@@ -4,12 +4,19 @@ enum class AltUnit { METERS, FEET }
 
 enum class CalibrationMode { AUTO_GPS, MANUAL_ALTITUDE, QNH }
 
+enum class TrackSamplingMode { AUTO, EVERY_1S, EVERY_2S, EVERY_4S }
+
 /** Откуда взята высота над уровнем моря (MSL) из GPS. */
 enum class MslSource { NONE, API34, NMEA_MSL, GEOID_CORRECTED, ELLIPSOID }
 
 data class ChartPoint(val timeMs: Long, val altitude: Double)
 
-data class TrackMapPoint(val latitude: Double, val longitude: Double)
+/** startsNewSegment запрещает карте рисовать вымышленную прямую через потерю GPS. */
+data class TrackMapPoint(
+    val latitude: Double,
+    val longitude: Double,
+    val startsNewSegment: Boolean = false,
+)
 
 enum class AdviceSeverity { INFO, CAUTION, WARNING }
 
@@ -150,6 +157,7 @@ data class VitalsState(
 data class UiState(
     val darkTheme: Boolean = true,
     val autoTrackEnabled: Boolean = false,
+    val trackSamplingMode: TrackSamplingMode = TrackSamplingMode.EVERY_1S,
     val hasBarometer: Boolean = false,
     val locationPermissionGranted: Boolean = false,
 

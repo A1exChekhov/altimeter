@@ -22,6 +22,7 @@ import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.TrackMapPoint
+import com.chelmodeev.altimeter.model.TrackSamplingMode
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.model.WatchState
@@ -81,6 +82,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(
                         darkTheme = s.darkTheme,
                         autoTrackEnabled = s.autoTrackEnabled,
+                        trackSamplingMode = s.trackSamplingMode,
                         unit = s.unit,
                         calibrationMode = s.calibrationMode,
                         manualAltitude = s.manualAltitude,
@@ -211,6 +213,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setAutoSend(v: Boolean) = launchIo { settingsRepo.setAutoSend(v) }
     fun setDarkTheme(v: Boolean) = launchIo { settingsRepo.setDarkTheme(v) }
     fun setAutoTrack(v: Boolean) = launchIo { settingsRepo.setAutoTrack(v) }
+    fun setTrackSampling(v: TrackSamplingMode) = launchIo { settingsRepo.setTrackSampling(v) }
 
     fun calibrateManual(text: String) {
         val v = text.replace(',', '.').trim().toDoubleOrNull() ?: return
@@ -515,12 +518,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         File(path).inputStream().buffered().use { input ->
             val parser = Xml.newPullParser().apply { setInput(input, null) }
             val route = mutableListOf<TrackMapPoint>()
+            var startsNewSegment = true
             while (parser.eventType != XmlPullParser.END_DOCUMENT) {
-                if (parser.eventType == XmlPullParser.START_TAG && parser.name == "trkpt") {
-                    val latitude = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
-                    val longitude = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
-                    if (latitude != null && longitude != null) {
-                        route += TrackMapPoint(latitude, longitude)
+                if (parser.eventType == XmlPullParser.START_TAG) {
+                    if (parser.name == "trkseg") startsNewSegment = true
+                    if (parser.name == "trkpt") {
+                        val latitude = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                        val longitude = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                        if (latitude != null && longitude != null) {
+                            route += TrackMapPoint(latitude, longitude, startsNewSegment)
+                            startsNewSegment = false
+                        }
                     }
                 }
                 parser.next()

@@ -387,12 +387,15 @@ private fun updateLocation(style: Style, latitude: Double?, longitude: Double?, 
 
 private fun updateRoute(style: Style, track: List<TrackMapPoint>, color: Int) {
     val source = style.getSourceAs<GeoJsonSource>(ROUTE_SOURCE) ?: return
-    val features = if (track.size >= 2) {
-        val line = LineString.fromLngLats(track.map { Point.fromLngLat(it.longitude, it.latitude) })
-        arrayOf(Feature.fromGeometry(line))
-    } else {
-        emptyArray<Feature>()
+    val segments = mutableListOf<MutableList<Point>>()
+    for (point in track) {
+        if (segments.isEmpty() || point.startsNewSegment) segments += mutableListOf()
+        segments.last() += Point.fromLngLat(point.longitude, point.latitude)
     }
+    val features = segments
+        .filter { it.size >= 2 }
+        .map { Feature.fromGeometry(LineString.fromLngLats(it)) }
+        .toTypedArray()
     source.setGeoJson(FeatureCollection.fromFeatures(features))
     style.getLayerAs<LineLayer>(ROUTE_LAYER)?.setProperties(lineColor(color))
 }

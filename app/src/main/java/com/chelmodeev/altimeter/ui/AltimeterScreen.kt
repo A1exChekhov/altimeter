@@ -102,6 +102,7 @@ import com.chelmodeev.altimeter.model.AdviceSeverity
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.CalibrationMode
+import com.chelmodeev.altimeter.model.TrackSamplingMode
 import com.chelmodeev.altimeter.model.MslSource
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
@@ -130,6 +131,7 @@ data class ScreenActions(
     val onToggleAutoSend: (Boolean) -> Unit,
     val onToggleDarkTheme: (Boolean) -> Unit,
     val onToggleAutoTrack: (Boolean) -> Unit,
+    val onSetTrackSampling: (TrackSamplingMode) -> Unit,
     val onResetStats: () -> Unit,
     val onStartTrack: () -> Unit,
     val onStopTrack: () -> Unit,

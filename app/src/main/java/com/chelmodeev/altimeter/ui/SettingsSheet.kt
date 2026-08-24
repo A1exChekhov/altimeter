@@ -46,6 +46,7 @@ import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.UiState
+import com.chelmodeev.altimeter.model.TrackSamplingMode
 import com.chelmodeev.altimeter.util.Fmt
 import kotlin.math.roundToInt
 
@@ -112,6 +113,36 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                 lineHeight = 15.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+            )
+
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = stringResource(R.string.track_sampling_title),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            val samplingModes = listOf(
+                TrackSamplingMode.AUTO to R.string.track_sampling_auto,
+                TrackSamplingMode.EVERY_1S to R.string.track_sampling_1s,
+                TrackSamplingMode.EVERY_2S to R.string.track_sampling_2s,
+                TrackSamplingMode.EVERY_4S to R.string.track_sampling_4s,
+            )
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                samplingModes.forEachIndexed { index, (mode, label) ->
+                    SegmentedButton(
+                        selected = state.trackSamplingMode == mode,
+                        onClick = { actions.onSetTrackSampling(mode) },
+                        shape = SegmentedButtonDefaults.itemShape(index, samplingModes.size),
+                    ) { Text(stringResource(label)) }
+                }
+            }
+            Text(
+                text = stringResource(R.string.track_sampling_hint),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 2.dp, vertical = 4.dp),
             )
 
             Spacer(Modifier.height(18.dp))

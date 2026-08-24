@@ -111,6 +111,12 @@
     <string name="notif_channel_tracking">Track recording</string>
     <string name="auto_track_title">Smart auto track</string>
     <string name="auto_track_setting">Automatic track recording</string>
+    <string name="track_sampling_title">Advanced · GPS sampling</string>
+    <string name="track_sampling_auto">Auto</string>
+    <string name="track_sampling_1s">1 s</string>
+    <string name="track_sampling_2s">2 s</string>
+    <string name="track_sampling_4s">4 s</string>
+    <string name="track_sampling_hint">Default is 1 s. Sharp turns are saved immediately at every sampling rate.</string>
     <string name="auto_track_hint">Starts after 90 seconds and 120 m of confirmed walking. Pauses after 5 minutes without steps.</string>
     <string name="auto_track_ready">Waiting for walking · 90 s · 120 m</string>
     <string name="auto_track_started">Track started automatically</string>

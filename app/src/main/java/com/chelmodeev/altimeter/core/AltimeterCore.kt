@@ -51,6 +51,8 @@ class AltimeterCore private constructor(private val appContext: Context) {
         val longitude: Double? = null,
         val gpsAccuracy: Float? = null,
         val gpsVertAccuracy: Float? = null,
+        /** Время последнего нового GPS-фикса. Не меняется на тиках UI. */
+        val gpsFixTimeMs: Long = 0L,
         val satellitesUsed: Int = 0,
         val satellitesTotal: Int = 0,
         val hasFix: Boolean = false,
@@ -165,6 +167,7 @@ class AltimeterCore private constructor(private val appContext: Context) {
                 longitude = sample.longitude,
                 gpsAccuracy = sample.horizontalAccuracy,
                 gpsVertAccuracy = sample.verticalAccuracy,
+                gpsFixTimeMs = if (sample.isPrecise) sample.fixTimeMs else it.gpsFixTimeMs,
                 mslSource = if (sample.mslAltitude != null) sample.mslSource else it.mslSource,
             )
         }

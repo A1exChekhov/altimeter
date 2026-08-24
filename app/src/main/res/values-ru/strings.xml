@@ -110,6 +110,12 @@
     <string name="notif_channel_tracking">Запись трека</string>
     <string name="auto_track_title">Умный авторек</string>
     <string name="auto_track_setting">Автоматическая запись трека</string>
+    <string name="track_sampling_title">Расширенные настройки · частота GPS</string>
+    <string name="track_sampling_auto">Авто</string>
+    <string name="track_sampling_1s">1 с</string>
+    <string name="track_sampling_2s">2 с</string>
+    <string name="track_sampling_4s">4 с</string>
+    <string name="track_sampling_hint">По умолчанию 1 с. Резкие повороты сохраняются сразу при любой выбранной частоте.</string>
     <string name="auto_track_hint">Запуск после 90 секунд и 120 м подтверждённой ходьбы. Автопауза после 5 минут без шагов.</string>
     <string name="auto_track_ready">Жду ходьбу · 90 с · 120 м</string>
     <string name="auto_track_started">Трек начат автоматически</string>

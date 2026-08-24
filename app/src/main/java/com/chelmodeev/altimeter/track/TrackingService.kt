@@ -1,5 +1,6 @@
 package com.chelmodeev.altimeter.track
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,9 +8,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
@@ -17,6 +20,7 @@ import androidx.core.content.ContextCompat
 import com.chelmodeev.altimeter.MainActivity
 import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.core.AltimeterCore
+import com.chelmodeev.altimeter.data.SettingsRepository
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.TrackRecState
 import com.chelmodeev.altimeter.util.Fmt
@@ -29,6 +33,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -50,6 +56,10 @@ class TrackingService : Service() {
         private const val EXTRA_AUTOMATIC = "automatic"
         private const val CHANNEL_ID = "tracking"
         private const val NOTIFICATION_ID = 7
+        private const val SESSION_PREFS = "tracking_session"
+        private const val KEY_ACTIVE = "active"
+        private const val KEY_AUTOMATIC = "automatic"
+        private const val KEY_FILE = "file"
 
         private val _state = MutableStateFlow(TrackRecState())
         val state: StateFlow<TrackRecState> = _state.asStateFlow()
@@ -90,6 +100,7 @@ class TrackingService : Service() {
     private var lastNotifyAt = 0L
     private var lastAutosaveAt = 0L
     private var lastAltitude: Double? = null
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -99,25 +110,63 @@ class TrackingService : Service() {
             ACTION_STOP -> stopTracking()
             ACTION_PAUSE -> setPaused(true)
             ACTION_RESUME -> setPaused(false)
-            else -> if (!_state.value.recording) stopSelf()
+            else -> if (!_state.value.recording) restoreTracking()
         }
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun startTracking(automatic: Boolean) {
         if (_state.value.recording) return
-        ensureChannel()
-        val c = AltimeterCore.get(this)
-        core = c
-        c.acquire()
         recorder.begin()
         currentFile = null
+        val file = trackFile()
+        sessionPrefs().edit()
+            .putBoolean(KEY_ACTIVE, true)
+            .putBoolean(KEY_AUTOMATIC, automatic)
+            .putString(KEY_FILE, file.absolutePath)
+            .apply()
+        launchTracking(automatic)
+    }
+
+    private fun restoreTracking() {
+        val prefs = sessionPrefs()
+        if (!prefs.getBoolean(KEY_ACTIVE, false)) {
+            stopSelf()
+            return
+        }
+        val file = prefs.getString(KEY_FILE, null)?.let(::File)
+        if (file == null || !recorder.restoreFrom(file)) {
+            // Сессия существовала, но ещё не успела получить первую точку.
+            recorder.begin()
+        }
+        currentFile = file ?: trackFile()
+        launchTracking(prefs.getBoolean(KEY_AUTOMATIC, false))
+    }
+
+    private fun launchTracking(automatic: Boolean) {
+        ensureChannel()
+        acquireWakeLock()
+        val c = AltimeterCore.get(this)
+        core = c
+        c.onLocationPermission(
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+        c.acquire()
         _state.update {
             TrackRecState(
                 recording = true,
                 paused = false,
                 automatic = automatic,
-                startedAtMs = System.currentTimeMillis(),
+                startedAtMs = recorder.startedAtMs.takeIf { started -> started > 0L }
+                    ?: System.currentTimeMillis(),
+                points = recorder.pointCount,
+                distanceM = recorder.distanceM,
+                ascentM = recorder.ascentM,
+                descentM = recorder.descentM,
+                movingTimeMs = recorder.movingTimeMs,
+                stoppedTimeMs = recorder.stoppedTimeMs,
+                route = recorder.mapPoints(),
                 lastSavedName = it.lastSavedName,
                 lastSavedPath = it.lastSavedPath,
             )
@@ -139,6 +188,12 @@ class TrackingService : Service() {
         }
         collectJob = scope.launch {
             c.state.collect { s -> onCoreState(s) }
+        }
+        scope.launch {
+            SettingsRepository(this@TrackingService).flow
+                .map { it.trackSamplingMode }
+                .distinctUntilChanged()
+                .collect(recorder::setSamplingMode)
         }
     }
 
@@ -170,7 +225,7 @@ class TrackingService : Service() {
                 _state.value,
             )
         }
-        if (now - lastAutosaveAt > 60_000 && recorder.pointCount > 0) {
+        if (now - lastAutosaveAt > 30_000 && recorder.pointCount > 0) {
             lastAutosaveAt = now
             val file = trackFile()
             scope.launch(Dispatchers.IO) { runCatching { recorder.saveTo(file) } }
@@ -192,6 +247,7 @@ class TrackingService : Service() {
                     lastSavedPath = if (saved) file.absolutePath else it.lastSavedPath,
                 )
             }
+            sessionPrefs().edit().putBoolean(KEY_ACTIVE, false).apply()
             AltimeterWidgetStore.updateAltitudeAndTrack(
                 this,
                 lastAltitude,
@@ -200,6 +256,7 @@ class TrackingService : Service() {
             )
             core?.release()
             core = null
+            releaseWakeLock()
         }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -234,6 +291,7 @@ class TrackingService : Service() {
             )
             core?.release()
             core = null
+            releaseWakeLock()
         }
         scope.cancel()
         super.onDestroy()
@@ -245,6 +303,22 @@ class TrackingService : Service() {
         val name = "Altimeter_" +
             SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US).format(Date()) + ".gpx"
         return File(dir, name).also { currentFile = it }
+    }
+
+    private fun sessionPrefs() = getSharedPreferences(SESSION_PREFS, Context.MODE_PRIVATE)
+
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        val manager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = manager.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "ErrariumAltimeter:continuousTrack",
+        ).apply { acquire() }
+    }
+
+    private fun releaseWakeLock() {
+        wakeLock?.let { lock -> if (lock.isHeld) lock.release() }
+        wakeLock = null
     }
 
     private fun buildNotification(): Notification {

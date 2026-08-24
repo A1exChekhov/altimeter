@@ -25,6 +25,8 @@ data class LocationSample(
     val mslSource: MslSource,
     /** true — точный GPS-фикс; false — грубая позиция (сеть/кэш) только для карты. */
     val isPrecise: Boolean,
+    /** Время именно этого GPS-фикса, а не очередного обновления интерфейса. */
+    val fixTimeMs: Long,
 )
 
 /**
@@ -156,6 +158,7 @@ class LocationEngine(
                 mslAltitude = msl,
                 mslSource = source,
                 isPrecise = precise,
+                fixTimeMs = location.time.takeIf { it > 0L } ?: System.currentTimeMillis(),
             )
         )
     }

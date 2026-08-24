@@ -112,6 +112,7 @@ class MainActivity : ComponentActivity() {
                         onToggleAutoSend = viewModel::setAutoSend,
                         onToggleDarkTheme = viewModel::setDarkTheme,
                         onToggleAutoTrack = ::setAutoTrackEnabled,
+                        onSetTrackSampling = viewModel::setTrackSampling,
                         onResetStats = viewModel::resetStats,
                         onStartTrack = { TrackingService.start(this) },
                         onStopTrack = { TrackingService.stop(this) },

@@ -48,9 +48,6 @@ class AutoTrackService : Service(), SensorEventListener {
         private const val START_DISTANCE_M = 120.0
         private const val START_STEPS = 60
         private const val CANDIDATE_GAP_MS = 45_000L
-        private const val PAUSE_AFTER_MS = 5 * 60_000L
-        private const val RESUME_DISTANCE_M = 60.0
-        private const val RESUME_STEPS = 15
 
         fun setEnabled(context: Context, enabled: Boolean) {
             val intent = Intent(context, AutoTrackService::class.java)
@@ -118,15 +115,6 @@ class AutoTrackService : Service(), SensorEventListener {
         val now = System.currentTimeMillis()
         val track = TrackingService.state.value
 
-        if (stepDetector != null && track.recording && !track.paused &&
-            lastStepAt > 0L && now - lastStepAt >= PAUSE_AFTER_MS
-        ) {
-            TrackingService.pause(this)
-            resetCandidate()
-            notifyStatus(R.string.auto_track_paused)
-            return
-        }
-
         if (!hasFix || lat == null || lon == null || candidateStartedAt == 0L) return
         val prevLat = candidateLastLat
         val prevLon = candidateLastLon
@@ -139,15 +127,6 @@ class AutoTrackService : Service(), SensorEventListener {
 
         if (now - lastStepAt > CANDIDATE_GAP_MS) {
             resetCandidate()
-            return
-        }
-
-        if (track.recording && track.paused) {
-            if (candidateSteps >= RESUME_STEPS && candidateDistanceM >= RESUME_DISTANCE_M) {
-                TrackingService.resume(this)
-                resetCandidate()
-                notifyStatus(R.string.auto_track_resumed)
-            }
             return
         }
 

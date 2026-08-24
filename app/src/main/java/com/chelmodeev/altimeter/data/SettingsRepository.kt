@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.CalibrationMode
+import com.chelmodeev.altimeter.model.TrackSamplingMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -20,6 +21,7 @@ class SettingsRepository(private val context: Context) {
     data class Settings(
         val darkTheme: Boolean,
         val autoTrackEnabled: Boolean,
+        val trackSamplingMode: TrackSamplingMode,
         val unit: AltUnit,
         val calibrationMode: CalibrationMode,
         val manualOffset: Double?,
@@ -41,12 +43,17 @@ class SettingsRepository(private val context: Context) {
         val AUTO_SEND = booleanPreferencesKey("auto_send")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
         val AUTO_TRACK = booleanPreferencesKey("auto_track")
+        val TRACK_SAMPLING = stringPreferencesKey("track_sampling")
     }
 
     val flow: Flow<Settings> = context.dataStore.data.map { p ->
         Settings(
             darkTheme = p[K.DARK_THEME] ?: true,
             autoTrackEnabled = p[K.AUTO_TRACK] ?: false,
+            trackSamplingMode = enumOrDefault(
+                p[K.TRACK_SAMPLING],
+                TrackSamplingMode.EVERY_1S,
+            ),
             unit = enumOrDefault(p[K.UNIT], AltUnit.METERS),
             calibrationMode = enumOrDefault(p[K.CALIB], CalibrationMode.AUTO_GPS),
             manualOffset = p[K.MANUAL_OFFSET],
@@ -83,4 +90,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAutoSend(v: Boolean) = context.dataStore.edit { it[K.AUTO_SEND] = v }
     suspend fun setDarkTheme(v: Boolean) = context.dataStore.edit { it[K.DARK_THEME] = v }
     suspend fun setAutoTrack(v: Boolean) = context.dataStore.edit { it[K.AUTO_TRACK] = v }
+    suspend fun setTrackSampling(v: TrackSamplingMode) =
+        context.dataStore.edit { it[K.TRACK_SAMPLING] = v.name }
 }
