@@ -9,6 +9,11 @@ captures/
 .externalNativeBuild/
 .cxx/
 .release-artifacts/
+.release-ios-*/
+.map-inspect/
+.tools/
+*.apk
+*.ipa
 
 # iOS/XcodeGen (проект генерируется из ios/project.yml)
 ios/*.xcodeproj/
