@@ -5,7 +5,7 @@ HealthKit и запись GPX. Runtime-зависимостей и платны�
 
 Контакт: [errarium.ai@gmail.com](mailto:errarium.ai@gmail.com)
 
-Готовая подписанная IPA: [релиз iOS 1.2.0](https://github.com/A1exChekhov/altimeter/releases/tag/ios-v1.2.0-ad-hoc).
+Готовая подписанная IPA: [релиз iOS 1.2.2](https://github.com/A1exChekhov/altimeter/releases/tag/ios-v1.2.2-ad-hoc).
 Установка через Safari: [a1exchekhov.github.io/altimeter/iphone/](https://a1exchekhov.github.io/altimeter/iphone/).
 
 ## Что уже реализовано
@@ -14,7 +14,9 @@ HealthKit и запись GPX. Runtime-зависимостей и платны�
 - режимы калибровки «Авто», известная высота и QNH;
 - вертикальная скорость, минимум/максимум, набор/спуск, график за час;
 - OpenTopoMap и системная карта Apple;
-- фоновая запись GPX, автосохранение, постоянный архив маршрутов и системный Share Sheet;
+- непрерывная фоновая запись GPX до явной остановки: 1 с по умолчанию, режимы
+  Авто/1/2/4 с, немедленная фиксация поворотов, сегменты вместо ложных прямых,
+  автосохранение, постоянный архив маршрутов и системный Share Sheet;
 - название места через системный геокодер;
 - пульс, SpO₂, шаги и активные калории через HealthKit с отображением реального источника (Apple Watch,
   Garmin Connect и совместимые приложения);

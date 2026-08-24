@@ -11,7 +11,7 @@
           <key>kind</key>
           <string>software-package</string>
           <key>url</key>
-          <string>https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.2.2-ad-hoc/Errarium-Altimeter-iOS-1.2.2-AdHoc.ipa</string>
+          <string>https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.2.1-ad-hoc/Errarium-Altimeter-iOS-1.2.1-AdHoc.ipa</string>
         </dict>
       </array>
       <key>metadata</key>
@@ -19,11 +19,11 @@
         <key>bundle-identifier</key>
         <string>ai.errarium.altimeter</string>
         <key>bundle-version</key>
-        <string>5</string>
+        <string>4</string>
         <key>kind</key>
         <string>software</string>
         <key>title</key>
-        <string>Errarium Altimeter 1.2.2</string>
+        <string>Errarium Altimeter 1.2.1</string>
       </dict>
     </dict>
   </array>

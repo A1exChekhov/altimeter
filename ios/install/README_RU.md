@@ -10,4 +10,4 @@ IPA подписан методом Ad Hoc и содержит профиль з
 3. Включите «Режим разработчика» в «Настройки → Конфиденциальность и безопасность», если iOS запросит это.
 
 Если OTA-установка заблокирована политикой устройства или сети, установите
-`Errarium-Altimeter-iOS-1.2.0-AdHoc.ipa` через Xcode или Apple Configurator на Mac.
+`Errarium-Altimeter-iOS-1.2.2-AdHoc.ipa` через Xcode или Apple Configurator на Mac.

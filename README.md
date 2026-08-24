@@ -33,11 +33,16 @@
 - Общий цветной график высоты, пульса, SpO₂ и шагов с диапазонами 15 минут,
   1, 3 и 6 часов; мин/макс, суммарный подъём/спуск, вертикальная скорость,
   давление, единицы м/футы, тёмная «приборная» тема с цветом по высотной зоне.
-- **Запись GPX-трека в фоне**: foreground-сервис пишет трек (координаты + точная
-  высота фьюжн-фильтра + время) при выключенном экране; счётчики точек/дистанции/
-  набора, автосохранение раз в минуту, кнопка «Поделиться» (GPX 1.1 — открывается
-  в Locus, OsmAnd, Strava и т.д.). В карточке записи есть архив всех GPX и экспорт
-  каждого файла, импорт с телефона/Google Drive и кнопка показа маршрута на карте. Файлы:
+- **Непрерывная запись GPX-трека в фоне**: foreground-сервис пишет каждый новый
+  качественный GPS-фикс (координаты + высота фьюжн-фильтра + время) при выключенном
+  экране до явной остановки. По умолчанию используется интервал 1 с; в расширенных
+  настройках доступны Авто, 1, 2 и 4 с, а резкие повороты сохраняются сразу.
+  Геометрия не упрощается; после длительной потери GPS начинается новый сегмент
+  вместо ложной прямой. Есть счётчики точек/дистанции/набора, автосохранение раз в
+  30 секунд и кнопка «Поделиться» (GPX 1.1 — открывается
+  в Locus, OsmAnd, Strava и т.д.). В карточке записи есть архив всех GPX с группировкой
+  по дню и региону, безопасное удаление с подтверждением, экспорт каждого файла,
+  импорт с телефона/Google Drive и кнопка показа маршрута на карте. Файлы:
   `Android/data/com.chelmodeev.altimeter/files/tracks/`.
   Управление записью и архив вынесены с главного экрана в отдельную панель по
   кнопке маршрута в заголовке.
@@ -62,13 +67,13 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Altimeter-v1.5.6.apk](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.6/Altimeter-v1.5.6.apk)**.
+**[скачать Errarium Altimeter Android 1.5.13](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.13/Errarium-Altimeter-Android-1.5.13.apk)**.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
-`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk` и т. д.; новая сборка не
-перезаписывает предыдущую.
+`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk` и т. д.
+Стабильная резервная 1.5.12 сохранена на GitHub; новая сборка не перезаписывает её.
 
 ## Где находятся устанавливаемые файлы
 
@@ -82,15 +87,15 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно публикуется как asset релиза `v1.5.11`. Локально он создаётся
+Git, но готовый APK отдельно публикуется как asset релиза `v1.5.13`. Локально он создаётся
 командой `:app:assembleDebug`.
 
-Готовый Android 1.5.11: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.11/Errarium-Altimeter-Android-1.5.11.apk)**.
+Готовый Android 1.5.13: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.13/Errarium-Altimeter-Android-1.5.13.apk)**.
 
 ### iPhone
 
-Готовая подписанная IPA 1.2.0 опубликована отдельным релизом для зарегистрированного
-iPhone: **[скачать IPA](https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.2.0-ad-hoc/Errarium-Altimeter-iOS-1.2.0-AdHoc.ipa)**.
+Готовая подписанная IPA 1.2.2 опубликована отдельным релизом для зарегистрированного
+iPhone: **[скачать IPA](https://github.com/A1exChekhov/altimeter/releases/download/ios-v1.2.2-ad-hoc/Errarium-Altimeter-iOS-1.2.2-AdHoc.ipa)**.
 Установить её напрямую через Safari можно со страницы
 **[a1exchekhov.github.io/altimeter/iphone/](https://a1exchekhov.github.io/altimeter/iphone/)**.
 IPA подписана вашей Apple Developer Team и не является универсальной для незарегистрированных устройств.
