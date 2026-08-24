@@ -23,6 +23,7 @@
     <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_OXYGEN_SATURATION" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
 
     <uses-feature
         android:name="android.hardware.location.gps"
@@ -117,6 +118,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/health_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.TrackWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_track_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/track_widget_info" />
         </receiver>
 
         <!-- Шаринг GPX-файлов -->

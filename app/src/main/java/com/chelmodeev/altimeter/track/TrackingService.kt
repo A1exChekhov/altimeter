@@ -151,6 +151,9 @@ class TrackingService : Service() {
                     points = recorder.pointCount,
                     distanceM = recorder.distanceM,
                     ascentM = recorder.ascentM,
+                    descentM = recorder.descentM,
+                    movingTimeMs = recorder.movingTimeMs,
+                    stoppedTimeMs = recorder.stoppedTimeMs,
                     route = recorder.mapPoints(),
                 )
             }

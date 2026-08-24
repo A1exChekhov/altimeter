@@ -102,6 +102,9 @@ struct TrackState: Equatable {
     var pointCount = 0
     var distanceMeters = 0.0
     var ascentMeters = 0.0
+    var descentMeters = 0.0
+    var movingTime: TimeInterval = 0
+    var stoppedTime: TimeInterval = 0
     var lastSavedURL: URL?
 }
 

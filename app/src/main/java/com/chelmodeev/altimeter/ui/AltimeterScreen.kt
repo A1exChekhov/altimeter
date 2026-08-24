@@ -1923,8 +1923,8 @@ private fun TrackCard(
         if (t.recording) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 TrackMiniStat(
-                    label = stringResource(R.string.track_points),
-                    value = "${t.points}",
+                    label = stringResource(R.string.track_moving_time),
+                    value = Fmt.duration(t.movingTimeMs),
                     modifier = Modifier.weight(1f),
                 )
                 TrackMiniStat(
@@ -1933,11 +1933,43 @@ private fun TrackCard(
                     modifier = Modifier.weight(1f),
                 )
                 TrackMiniStat(
+                    label = stringResource(R.string.track_moving_speed),
+                    value = if (t.movingTimeMs > 0) String.format(
+                        java.util.Locale.getDefault(),
+                        "%.1f км/ч",
+                        t.distanceM / (t.movingTimeMs / 3_600_000.0),
+                    ) else "—",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TrackMiniStat(
+                    label = stringResource(R.string.track_stopped_time),
+                    value = Fmt.duration(t.stoppedTimeMs),
+                    modifier = Modifier.weight(1f),
+                )
+                TrackMiniStat(
                     label = stringResource(R.string.detail_ascent),
                     value = Fmt.altitude(context, t.ascentM, state.unit),
                     modifier = Modifier.weight(1f),
                 )
+                TrackMiniStat(
+                    label = stringResource(R.string.detail_descent),
+                    value = Fmt.altitude(context, t.descentM, state.unit),
+                    modifier = Modifier.weight(1f),
+                )
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(
+                    R.string.track_calories_points,
+                    (t.distanceM / 1_000.0 * 50.0 + t.ascentM * 0.1).roundToInt(),
+                    t.points,
+                ),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = actions.onStopTrack,

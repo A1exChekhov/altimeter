@@ -11,6 +11,9 @@ final class GPXRecorder {
     private(set) var points: [Point] = []
     private(set) var distanceMeters = 0.0
     private(set) var ascentMeters = 0.0
+    private(set) var descentMeters = 0.0
+    private(set) var movingTime: TimeInterval = 0
+    private(set) var stoppedTime: TimeInterval = 0
 
     private var lastAcceptedElevation: Double?
     private(set) var startedAt = Date()
@@ -21,6 +24,9 @@ final class GPXRecorder {
         points.removeAll(keepingCapacity: true)
         distanceMeters = 0
         ascentMeters = 0
+        descentMeters = 0
+        movingTime = 0
+        stoppedTime = 0
         lastAcceptedElevation = nil
         startedAt = date
     }
@@ -38,12 +44,19 @@ final class GPXRecorder {
             )
             let moved = location.distance(from: previousLocation)
             if moved < 2, elapsed < 15 { return false }
-            if moved < 10_000 { distanceMeters += moved }
+            if moved < 10_000 {
+                distanceMeters += moved
+                if elapsed <= 120 {
+                    let speed = moved / max(elapsed, 0.001)
+                    if speed >= 0.35 { movingTime += elapsed } else { stoppedTime += elapsed }
+                }
+            }
         }
 
         if let elevation {
             if let lastAcceptedElevation, abs(elevation - lastAcceptedElevation) >= 2 {
                 if elevation > lastAcceptedElevation { ascentMeters += elevation - lastAcceptedElevation }
+                else { descentMeters += lastAcceptedElevation - elevation }
                 self.lastAcceptedElevation = elevation
             } else if lastAcceptedElevation == nil {
                 lastAcceptedElevation = elevation

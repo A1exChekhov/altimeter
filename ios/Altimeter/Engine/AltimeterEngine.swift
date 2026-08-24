@@ -240,6 +240,9 @@ final class AltimeterEngine: NSObject, ObservableObject {
                 state.track.pointCount = recorder.points.count
                 state.track.distanceMeters = recorder.distanceMeters
                 state.track.ascentMeters = recorder.ascentMeters
+                state.track.descentMeters = recorder.descentMeters
+                state.track.movingTime = recorder.movingTime
+                state.track.stoppedTime = recorder.stoppedTime
             }
             if Date().timeIntervalSince(lastAutosaveAt) >= 60, !recorder.points.isEmpty {
                 lastAutosaveAt = Date()

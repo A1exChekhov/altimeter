@@ -42,6 +42,9 @@ data class TrackRecState(
     val points: Int = 0,
     val distanceM: Double = 0.0,
     val ascentM: Double = 0.0,
+    val descentM: Double = 0.0,
+    val movingTimeMs: Long = 0L,
+    val stoppedTimeMs: Long = 0L,
     val route: List<TrackMapPoint> = emptyList(),
     val lastSavedName: String? = null,
     val lastSavedPath: String? = null,
@@ -110,6 +113,7 @@ data class VitalsState(
     val restingHeartRatePermissionGranted: Boolean = false,
     val spo2PermissionGranted: Boolean = false,
     val stepsPermissionGranted: Boolean = false,
+    val activeCaloriesPermissionGranted: Boolean = false,
     val healthConnectError: String? = null,
 
     /** Состояние прямого источника Huawei Health Kit. */
@@ -135,6 +139,7 @@ data class VitalsState(
     val stepsAtMs: Long? = null,
     val stepsSource: VitalsSource? = null,
     val stepsOrigin: String? = null,
+    val activeCaloriesToday: Double? = null,
     val hrSeries: List<Pair<Long, Long>> = emptyList(),
     val spo2Series: List<Pair<Long, Double>> = emptyList(),
     /** Накопительные шаги внутри окна графика: (epochMs, count). */

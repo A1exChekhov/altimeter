@@ -188,13 +188,29 @@ struct AltimeterScreen: View {
     }
 
     private var trackCard: some View {
-        InstrumentCard {
+        let track = state.track
+        let movingSpeed = track.movingTime > 0
+            ? track.distanceMeters / track.movingTime * 3.6
+            : nil
+        let estimatedCalories = track.distanceMeters / 1_000 * 50 + track.ascentMeters * 0.1
+        return InstrumentCard {
             VStack(alignment: .leading, spacing: 13) {
                 SectionHeading(icon: "figure.hiking", title: "Запись маршрута · GPX")
-                HStack(spacing: 10) {
-                    MetricCell(title: "Точки", value: "\(state.track.pointCount)", unit: "")
-                    MetricCell(title: "Дистанция", value: AltimeterFormat.distance(state.track.distanceMeters), unit: "")
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
+                    MetricCell(title: "Дистанция", value: AltimeterFormat.distance(track.distanceMeters), unit: "")
+                    MetricCell(title: "В движении", value: AltimeterFormat.duration(track.movingTime), unit: "")
+                    MetricCell(title: "Остановки", value: AltimeterFormat.duration(track.stoppedTime), unit: "")
+                    MetricCell(
+                        title: "Средняя в движении",
+                        value: movingSpeed.map { String(format: "%.1f", $0) } ?? "—",
+                        unit: "км/ч"
+                    )
+                    MetricCell(title: "Подъём", value: "\(Int(track.ascentMeters.rounded()))", unit: "м")
+                    MetricCell(title: "Спуск", value: "\(Int(track.descentMeters.rounded()))", unit: "м")
                 }
+                Text("🔥 ≈\(Int(estimatedCalories.rounded())) ккал за трек · \(track.pointCount) точек")
+                    .font(.caption.weight(.regular))
+                    .foregroundStyle(.secondary)
 
                 if model.vitals.heartRateSource != nil || model.vitals.oxygenSource != nil {
                     VStack(alignment: .leading, spacing: 4) {

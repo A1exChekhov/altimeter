@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.widget.RemoteViews
 import com.chelmodeev.altimeter.MainActivity
 import com.chelmodeev.altimeter.R
@@ -38,8 +39,8 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
             val content = WidgetContent.create(context, data)
             return RemoteViews(context.packageName, R.layout.altitude_widget).apply {
                 setTextViewText(R.id.altitude_widget_altitude, content.altitude)
-                setTextViewText(R.id.altitude_widget_heart, content.heartCompact)
-                setTextViewText(R.id.altitude_widget_steps, content.stepsCompact)
+                setTextViewText(R.id.altitude_widget_pressure, content.pressure)
+                setTextViewText(R.id.altitude_widget_coordinates, content.coordinates)
                 setOnClickPendingIntent(
                     R.id.altitude_widget_root,
                     PendingIntent.getActivity(
@@ -49,6 +50,18 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                     ),
                 )
+                if (data.latitude != null && data.longitude != null) {
+                    val uri = Uri.parse("geo:${data.latitude},${data.longitude}?q=${data.latitude},${data.longitude}")
+                    setOnClickPendingIntent(
+                        R.id.altitude_widget_coordinates,
+                        PendingIntent.getActivity(
+                            context,
+                            31,
+                            Intent(Intent.ACTION_VIEW, uri),
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                        ),
+                    )
+                }
             }
         }
     }

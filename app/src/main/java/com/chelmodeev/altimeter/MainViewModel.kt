@@ -179,6 +179,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             AltimeterWidgetStore.updateAltitude(
                 getApplication(),
                 s.altitude,
+                s.pressureHpa,
+                s.latitude,
+                s.longitude,
                 _ui.value.unit,
             )
         }
@@ -354,6 +357,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     restingHeartRatePermissionGranted = granted.restingHeartRate,
                     spo2PermissionGranted = granted.oxygenSaturation,
                     stepsPermissionGranted = granted.steps,
+                    activeCaloriesPermissionGranted = granted.activeCalories,
                     huaweiHealthInstalled = huaweiInstalled,
                     huaweiHealthConfigured = huaweiConfigured,
                     huaweiHealthAuthorized = huaweiAuthorized,
@@ -581,6 +585,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         restingHeartRate = before.restingHeartRatePermissionGranted,
                         oxygenSaturation = before.spo2PermissionGranted,
                         steps = before.stepsPermissionGranted,
+                        activeCalories = before.activeCaloriesPermissionGranted,
                     )
                 )
             } else {
@@ -632,6 +637,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         stepsAtMs = steps?.atMs,
                         stepsSource = steps?.source,
                         stepsOrigin = steps?.origin,
+                        activeCaloriesToday = healthConnectSnapshot?.activeCaloriesToday
+                            ?: v.activeCaloriesToday,
                         hrSeries = hrSeries,
                         spo2Series = spo2Series,
                         stepsSeries = stepsSeries,

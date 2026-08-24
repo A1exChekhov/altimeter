@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.StepsRecord
@@ -21,10 +22,11 @@ data class HealthPermissionState(
     val restingHeartRate: Boolean = false,
     val oxygenSaturation: Boolean = false,
     val steps: Boolean = false,
+    val activeCalories: Boolean = false,
 ) {
     val anyHeartRateGranted: Boolean get() = heartRate || restingHeartRate
-    val anyGranted: Boolean get() = anyHeartRateGranted || oxygenSaturation || steps
-    val allGranted: Boolean get() = anyHeartRateGranted && oxygenSaturation && steps
+    val anyGranted: Boolean get() = anyHeartRateGranted || oxygenSaturation || steps || activeCalories
+    val allGranted: Boolean get() = anyHeartRateGranted && oxygenSaturation && steps && activeCalories
 }
 
 data class VitalsSnapshot(
@@ -38,6 +40,7 @@ data class VitalsSnapshot(
     val stepsToday: Long? = null,
     val stepsAt: Instant? = null,
     val stepsOrigin: String? = null,
+    val activeCaloriesToday: Double? = null,
     /** Пульс за последние 3 часа для мини-графика: (epochMs, bpm). */
     val hrSeries: List<Pair<Long, Long>>,
     val spo2Series: List<Pair<Long, Double>> = emptyList(),
@@ -60,12 +63,15 @@ class HealthReader(private val context: Context) {
             HealthPermission.getReadPermission(OxygenSaturationRecord::class)
         val STEPS_PERMISSION: String =
             HealthPermission.getReadPermission(StepsRecord::class)
+        val ACTIVE_CALORIES_PERMISSION: String =
+            HealthPermission.getReadPermission(ActiveCaloriesBurnedRecord::class)
 
         val PERMISSIONS: Set<String> = setOf(
             HEART_RATE_PERMISSION,
             RESTING_HEART_RATE_PERMISSION,
             OXYGEN_PERMISSION,
             STEPS_PERMISSION,
+            ACTIVE_CALORIES_PERMISSION,
         )
         private const val GRAPH_WINDOW_HOURS = 6L
     }
@@ -88,6 +94,7 @@ class HealthReader(private val context: Context) {
             restingHeartRate = RESTING_HEART_RATE_PERMISSION in granted,
             oxygenSaturation = OXYGEN_PERMISSION in granted,
             steps = STEPS_PERMISSION in granted,
+            activeCalories = ACTIVE_CALORIES_PERMISSION in granted,
         )
     }
 
@@ -226,6 +233,20 @@ class HealthReader(private val context: Context) {
             }
         }.onFailure { errors += it.readError("steps") }
 
+        var activeCaloriesToday: Double? = null
+        if (permissions.activeCalories) runCatching {
+            val zone = ZoneId.systemDefault()
+            val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant()
+            val aggregate = client.aggregate(
+                AggregateRequest(
+                    metrics = setOf(ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL),
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, now),
+                )
+            )
+            activeCaloriesToday = aggregate[ActiveCaloriesBurnedRecord.ACTIVE_CALORIES_TOTAL]
+                ?.inKilocalories
+        }.onFailure { errors += it.readError("active_calories") }
+
         series.sortBy { it.first }
         spo2Series.sortBy { it.first }
         return VitalsSnapshot(
@@ -239,6 +260,7 @@ class HealthReader(private val context: Context) {
             stepsToday = stepsToday,
             stepsAt = stepsAt,
             stepsOrigin = stepsOrigin,
+            activeCaloriesToday = activeCaloriesToday,
             hrSeries = series.distinctBy { it.first },
             spo2Series = spo2Series.distinctBy { it.first },
             stepsSeries = stepsSeries.distinctBy { it.first },

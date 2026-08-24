@@ -6,172 +6,68 @@
     android:background="@drawable/widget_background"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingLeft="14dp"
-    android:paddingTop="9dp"
-    android:paddingRight="14dp"
-    android:paddingBottom="9dp">
+    android:paddingLeft="13dp"
+    android:paddingTop="7dp"
+    android:paddingRight="13dp"
+    android:paddingBottom="7dp">
+
+    <TextView
+        android:id="@+id/widget_altitude"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.40"
+        android:autoSizeMaxTextSize="41sp"
+        android:autoSizeMinTextSize="25sp"
+        android:autoSizeStepGranularity="1sp"
+        android:autoSizeTextType="uniform"
+        android:fontFamily="sans-serif-light"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:text="—"
+        android:textColor="@color/widget_text"
+        android:textSize="41sp" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="0.42"
-        android:gravity="top"
+        android:layout_marginStart="12dp"
+        android:layout_weight="0.60"
+        android:gravity="center_vertical"
         android:orientation="vertical">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
-            android:includeFontPadding="false"
-            android:letterSpacing="0.16"
-            android:maxLines="1"
-            android:text="ERRARIUM™"
-            android:textColor="#8794A5"
-            android:textSize="7sp" />
-
-        <TextView
-            android:id="@+id/widget_altitude"
+            android:id="@+id/widget_vitals"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:autoSizeMaxTextSize="41sp"
-            android:autoSizeMinTextSize="26sp"
+            android:autoSizeMaxTextSize="17sp"
+            android:autoSizeMinTextSize="11sp"
             android:autoSizeStepGranularity="1sp"
             android:autoSizeTextType="uniform"
             android:fontFamily="sans-serif-light"
             android:gravity="center_vertical"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="—"
-            android:textColor="#F4F7FA"
-            android:textSize="41sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_marginStart="14dp"
-        android:layout_weight="0.58"
-        android:gravity="center_vertical"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:baselineAligned="false"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="@string/widget_label_heart"
-                    android:textColor="#C9D0DA"
-                    android:textSize="7sp" />
-
-                <TextView
-                    android:id="@+id/widget_heart"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autoSizeMaxTextSize="21sp"
-                    android:autoSizeMinTextSize="14sp"
-                    android:autoSizeStepGranularity="1sp"
-                    android:autoSizeTextType="uniform"
-                    android:fontFamily="sans-serif-light"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="—"
-                    android:textColor="#FF7D8A"
-                    android:textSize="21sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="@string/widget_label_oxygen"
-                    android:textColor="#C9D0DA"
-                    android:textSize="7sp" />
-
-                <TextView
-                    android:id="@+id/widget_oxygen"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autoSizeMaxTextSize="21sp"
-                    android:autoSizeMinTextSize="14sp"
-                    android:autoSizeStepGranularity="1sp"
-                    android:autoSizeTextType="uniform"
-                    android:fontFamily="sans-serif-light"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="—"
-                    android:textColor="#6BCBFF"
-                    android:textSize="21sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center_vertical"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="@string/widget_label_steps"
-                    android:textColor="#C9D0DA"
-                    android:textSize="7sp" />
-
-                <TextView
-                    android:id="@+id/widget_steps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:autoSizeMaxTextSize="20sp"
-                    android:autoSizeMinTextSize="12sp"
-                    android:autoSizeStepGranularity="1sp"
-                    android:autoSizeTextType="uniform"
-                    android:fontFamily="sans-serif-light"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:text="—"
-                    android:textColor="#8DDBA6"
-                    android:textSize="20sp" />
-            </LinearLayout>
-        </LinearLayout>
+            android:text="♥ —    O₂ —    👣 —"
+            android:textColor="@color/widget_text"
+            android:textSize="17sp" />
 
         <TextView
             android:id="@+id/widget_track"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:autoSizeMaxTextSize="14sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="1sp"
+            android:autoSizeTextType="uniform"
+            android:fontFamily="sans-serif-light"
+            android:gravity="center_vertical"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="@string/widget_track_empty"
-            android:textColor="#8E9AAB"
-            android:textSize="10sp" />
+            android:text="↔ —   ↗ —   ↘ —"
+            android:textColor="@color/widget_secondary"
+            android:textSize="14sp" />
     </LinearLayout>
 </LinearLayout>

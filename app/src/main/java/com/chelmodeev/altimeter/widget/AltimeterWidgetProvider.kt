@@ -38,10 +38,8 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
             val content = WidgetContent.create(context, data)
 
             views.setTextViewText(R.id.widget_altitude, content.altitude)
-            views.setTextViewText(R.id.widget_track, content.track)
-            views.setTextViewText(R.id.widget_heart, content.heart)
-            views.setTextViewText(R.id.widget_oxygen, content.oxygen)
-            views.setTextViewText(R.id.widget_steps, content.steps)
+            views.setTextViewText(R.id.widget_vitals, content.expeditionVitals)
+            views.setTextViewText(R.id.widget_track, content.expeditionTrack)
 
             val openApp = PendingIntent.getActivity(
                 context,

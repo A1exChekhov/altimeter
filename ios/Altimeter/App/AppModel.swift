@@ -152,10 +152,17 @@ final class AppModel: ObservableObject {
         let state = engine.state
         WidgetSnapshotStore.updateAltitudeAndTrack(
             altitudeMeters: state.altitude,
+            pressureHPA: state.pressureHPA,
+            latitude: state.coordinate?.latitude,
+            longitude: state.coordinate?.longitude,
             usesFeet: unit == .feet,
             trackIsRecording: state.track.isRecording,
             trackDistanceMeters: state.track.distanceMeters,
-            trackPointCount: state.track.pointCount
+            trackPointCount: state.track.pointCount,
+            trackAscentMeters: state.track.ascentMeters,
+            trackDescentMeters: state.track.descentMeters,
+            trackMovingTime: state.track.movingTime,
+            trackStoppedTime: state.track.stoppedTime
         )
     }
 

@@ -125,6 +125,10 @@
     <string name="track_hero_stop">Stop track · %1$s</string>
     <string name="track_points">points</string>
     <string name="track_distance">distance</string>
+    <string name="track_moving_time">moving</string>
+    <string name="track_stopped_time">stopped</string>
+    <string name="track_moving_speed">moving average</string>
+    <string name="track_calories_points">🔥 ≈%1$d kcal for track · %2$d points</string>
     <string name="track_saved">Saved: %1$s</string>
     <string name="track_share">Share track</string>
     <string name="track_import">Import GPX from device or Drive</string>
@@ -195,9 +199,11 @@
     <string name="widget_combined_name">Altimeter · all</string>
     <string name="widget_altitude_name">Altimeter · altitude</string>
     <string name="widget_health_name">Altimeter · health</string>
+    <string name="widget_track_name">Altimeter · hike</string>
     <string name="widget_description">Altitude, track, heart rate, SpO₂ and steps (4×1)</string>
-    <string name="widget_altitude_description">Altitude and track status (2×1)</string>
-    <string name="widget_health_description">Heart rate, SpO₂ and steps (2×1)</string>
+    <string name="widget_altitude_description">Altitude, pressure and coordinates (2×1)</string>
+    <string name="widget_health_description">Heart rate, SpO₂, steps and calories (2×1)</string>
+    <string name="widget_track_description">Moving time, distance, ascent and descent (2×1)</string>
     <string name="widget_track_recording">● Track %1$s</string>
     <string name="widget_track_saved">Track %1$s</string>
     <string name="widget_track_empty">Track —</string>

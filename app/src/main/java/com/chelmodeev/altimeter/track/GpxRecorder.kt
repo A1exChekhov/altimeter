@@ -27,6 +27,12 @@ class GpxRecorder {
         private set
     var ascentM = 0.0
         private set
+    var descentM = 0.0
+        private set
+    var movingTimeMs = 0L
+        private set
+    var stoppedTimeMs = 0L
+        private set
     val pointCount: Int
         @Synchronized get() = points.size
 
@@ -42,6 +48,9 @@ class GpxRecorder {
         lastEleAccepted = null
         distanceM = 0.0
         ascentM = 0.0
+        descentM = 0.0
+        movingTimeMs = 0L
+        stoppedTimeMs = 0L
         startedAtMs = System.currentTimeMillis()
     }
 
@@ -61,7 +70,14 @@ class GpxRecorder {
         val moved = if (prev == null) Double.MAX_VALUE else distanceBetween(prev.lat, prev.lon, lat, lon)
         if (moved < 2.0 && now - lastAcceptAt < 15_000) return false
 
-        if (prev != null && moved < 10_000) distanceM += moved
+        if (prev != null && moved < 10_000) {
+            distanceM += moved
+            val elapsed = (now - prev.timeMs).coerceAtLeast(0L)
+            if (elapsed in 1..120_000) {
+                val speedMps = moved / (elapsed / 1_000.0)
+                if (speedMps >= 0.35) movingTimeMs += elapsed else stoppedTimeMs += elapsed
+            }
+        }
 
         val ele = s.altitude
         if (ele != null) {
@@ -70,6 +86,7 @@ class GpxRecorder {
                 lastEleAccepted = ele
             } else if (abs(ele - lastEle) >= 2.0) {
                 if (ele > lastEle) ascentM += ele - lastEle
+                else descentM += lastEle - ele
                 lastEleAccepted = ele
             }
         }

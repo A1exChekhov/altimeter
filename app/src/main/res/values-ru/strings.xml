@@ -124,6 +124,10 @@
     <string name="track_hero_stop">Остановить трек · %1$s</string>
     <string name="track_points">точек</string>
     <string name="track_distance">дистанция</string>
+    <string name="track_moving_time">в движении</string>
+    <string name="track_stopped_time">остановки</string>
+    <string name="track_moving_speed">средняя в движении</string>
+    <string name="track_calories_points">🔥 ≈%1$d ккал за трек · %2$d точек</string>
     <string name="track_saved">Сохранён: %1$s</string>
     <string name="track_share">Поделиться треком</string>
     <string name="track_import">Импорт GPX с телефона или Диска</string>
@@ -194,9 +198,11 @@
     <string name="widget_combined_name">Альтиметр · всё</string>
     <string name="widget_altitude_name">Альтиметр · высота</string>
     <string name="widget_health_name">Альтиметр · здоровье</string>
+    <string name="widget_track_name">Альтиметр · поход</string>
     <string name="widget_description">Высота, трек, пульс, SpO₂ и шаги (4×1)</string>
-    <string name="widget_altitude_description">Высота и состояние трека (2×1)</string>
-    <string name="widget_health_description">Пульс, SpO₂ и шаги (2×1)</string>
+    <string name="widget_altitude_description">Высота, давление и координаты (2×1)</string>
+    <string name="widget_health_description">Пульс, SpO₂, шаги и калории (2×1)</string>
+    <string name="widget_track_description">Время движения, путь, подъём и спуск (2×1)</string>
     <string name="widget_track_recording">● Трек %1$s</string>
     <string name="widget_track_saved">Трек %1$s</string>
     <string name="widget_track_empty">Трек —</string>

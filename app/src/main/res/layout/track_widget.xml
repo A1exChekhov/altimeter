@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/health_widget_root"
+    android:id="@+id/track_widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
@@ -12,36 +12,36 @@
     android:paddingBottom="7dp">
 
     <TextView
-        android:id="@+id/health_widget_top"
+        android:id="@+id/track_widget_primary"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="23sp"
-        android:autoSizeMinTextSize="15sp"
+        android:autoSizeMaxTextSize="20sp"
+        android:autoSizeMinTextSize="13sp"
         android:autoSizeStepGranularity="1sp"
         android:autoSizeTextType="uniform"
         android:fontFamily="sans-serif-light"
         android:gravity="center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="♥ —    O₂ —"
+        android:text="⏱ —   ↔ —"
         android:textColor="@color/widget_text"
-        android:textSize="23sp" />
+        android:textSize="20sp" />
 
     <TextView
-        android:id="@+id/health_widget_bottom"
+        android:id="@+id/track_widget_secondary"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="21sp"
-        android:autoSizeMinTextSize="14sp"
+        android:autoSizeMaxTextSize="16sp"
+        android:autoSizeMinTextSize="11sp"
         android:autoSizeStepGranularity="1sp"
         android:autoSizeTextType="uniform"
         android:fontFamily="sans-serif-light"
         android:gravity="center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="👣 —    🔥 —"
-        android:textColor="@color/widget_text"
-        android:textSize="21sp" />
+        android:text="↗ —   ↘ —   🔥 —"
+        android:textColor="@color/widget_secondary"
+        android:textSize="16sp" />
 </LinearLayout>
