@@ -60,8 +60,11 @@ data class TrackRecState(
 data class SavedTrack(
     val name: String,
     val path: String,
+    val startedAtMs: Long,
     val modifiedAtMs: Long,
     val sizeBytes: Long,
+    /** Human-readable place saved when possible; coordinates are used offline. */
+    val region: String? = null,
 )
 
 /** Один локальный регион в контейнере PMTiles. */
@@ -200,5 +203,6 @@ data class UiState(
     val trackImportError: String? = null,
     /** Текущий либо выбранный из архива маршрут, отображаемый на карте. */
     val mapTrack: List<TrackMapPoint> = emptyList(),
+    val selectedTrackPath: String? = null,
     val offlineMaps: OfflineMapsState = OfflineMapsState(),
 )

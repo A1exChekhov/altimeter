@@ -148,6 +148,17 @@
     <string name="track_archive_empty">Пока нет сохранённых треков.</string>
     <string name="track_file_meta">%1$s · %2$d КБ</string>
     <string name="track_archive_more">Ещё файлов: %1$d. Все находятся в Android/data/com.chelmodeev.altimeter/files/tracks</string>
+    <string name="track_day_today">Сегодня</string>
+    <string name="track_day_yesterday">Вчера</string>
+    <string name="track_region_unknown">Регион не определён</string>
+    <string name="track_delete_title">Удалить трек</string>
+    <string name="track_delete_message">Удалить «%1$s» с устройства? Это действие нельзя отменить.</string>
+    <string name="track_delete_confirm">Удалить</string>
+    <string name="track_delete_cancel">Отмена</string>
+    <string name="minimize_title">Свернуть приложение?</string>
+    <string name="minimize_message">Запись трека продолжится в фоне. Интерфейс останется открытым, если нажать «Остаться».</string>
+    <string name="minimize_confirm">Свернуть</string>
+    <string name="minimize_cancel">Остаться</string>
 
     <string name="vitals_title">Пульс, SpO₂ и шаги</string>
     <string name="vitals_hr">Пульс</string>

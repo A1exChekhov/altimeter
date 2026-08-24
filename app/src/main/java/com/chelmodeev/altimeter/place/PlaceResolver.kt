@@ -25,10 +25,12 @@ class PlaceResolver(private val context: Context) {
     suspend fun resolve(lat: Double, lon: Double): String? = withContext(Dispatchers.IO) {
         val now = SystemClock.elapsedRealtime()
         val cached = lastName
+        var isNearCachedPlace = false
         if (cached != null) {
             val results = FloatArray(1)
             Location.distanceBetween(lastLat, lastLon, lat, lon, results)
-            if (now - lastAt < 60_000 || results[0] < 300f) return@withContext cached
+            isNearCachedPlace = results[0] < 300f
+            if (isNearCachedPlace && now - lastAt < 10 * 60_000) return@withContext cached
         }
         val name = fromGeocoder(lat, lon)?.takeIf(::isReadableName)
             ?: fromNominatim(lat, lon)?.takeIf(::isReadableName)
@@ -38,7 +40,8 @@ class PlaceResolver(private val context: Context) {
             lastLon = lon
             lastAt = now
         }
-        name ?: cached
+        // A failed lookup for a distant point must never inherit another region's name.
+        name ?: cached?.takeIf { isNearCachedPlace }
     }
 
     private fun fromGeocoder(lat: Double, lon: Double): String? = runCatching {

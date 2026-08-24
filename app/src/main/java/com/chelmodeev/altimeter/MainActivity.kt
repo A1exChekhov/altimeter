@@ -118,6 +118,8 @@ class MainActivity : ComponentActivity() {
                         onStopTrack = { TrackingService.stop(this) },
                         onViewTrack = viewModel::viewTrack,
                         onShareTrack = ::shareTrack,
+                        onDeleteTrack = viewModel::deleteTrack,
+                        onMinimizeApp = { moveTaskToBack(true) },
                         onShareLocation = { shareLocation(null) },
                         onShareLocationWithPhoto = { locationPhotoLauncher.launch("image/*") },
                         onImportTrack = {

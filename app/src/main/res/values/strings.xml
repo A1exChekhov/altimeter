@@ -149,6 +149,17 @@
     <string name="track_archive_empty">No saved tracks yet.</string>
     <string name="track_file_meta">%1$s · %2$d KB</string>
     <string name="track_archive_more">More files: %1$d. All are stored in Android/data/com.chelmodeev.altimeter/files/tracks</string>
+    <string name="track_day_today">Today</string>
+    <string name="track_day_yesterday">Yesterday</string>
+    <string name="track_region_unknown">Unknown region</string>
+    <string name="track_delete_title">Delete track</string>
+    <string name="track_delete_message">Delete “%1$s” from this device? This cannot be undone.</string>
+    <string name="track_delete_confirm">Delete</string>
+    <string name="track_delete_cancel">Cancel</string>
+    <string name="minimize_title">Minimize the app?</string>
+    <string name="minimize_message">Track recording will continue in the background. Tap “Stay” to keep the interface open.</string>
+    <string name="minimize_confirm">Minimize</string>
+    <string name="minimize_cancel">Stay</string>
 
     <string name="vitals_title">Heart rate, SpO₂ &amp; steps</string>
     <string name="vitals_hr">Heart rate</string>

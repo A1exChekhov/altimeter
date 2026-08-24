@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.FiberManualRecord
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Insights
@@ -53,6 +54,7 @@ import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.Watch
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -103,12 +105,18 @@ import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.TrackSamplingMode
+import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.MslSource
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.ui.theme.zoneAccent
 import com.chelmodeev.altimeter.util.Fmt
 import kotlinx.coroutines.launch
+import java.text.DateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Date
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -137,6 +145,8 @@ data class ScreenActions(
     val onStopTrack: () -> Unit,
     val onViewTrack: (String) -> Unit,
     val onShareTrack: (String) -> Unit,
+    val onDeleteTrack: (String) -> Unit,
+    val onMinimizeApp: () -> Unit,
     val onShareLocation: () -> Unit,
     val onShareLocationWithPhoto: () -> Unit,
     val onImportTrack: () -> Unit,
@@ -154,6 +164,7 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
     var showSettings by remember { mutableStateOf(false) }
     var showHealthDetails by remember { mutableStateOf(false) }
+    var showMinimizeConfirm by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf(AppSection.HOME) }
     val homeScroll = rememberScrollState()
     val trackScroll = rememberScrollState()
@@ -177,7 +188,32 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
         }
     }
 
-    BackHandler(enabled = section != AppSection.HOME) { section = AppSection.HOME }
+    BackHandler(enabled = true) {
+        if (section != AppSection.HOME) section = AppSection.HOME
+        else showMinimizeConfirm = true
+    }
+
+    if (showMinimizeConfirm) {
+        AlertDialog(
+            modifier = Modifier.testTag("minimize_confirmation"),
+            onDismissRequest = { showMinimizeConfirm = false },
+            title = { Text(stringResource(R.string.minimize_title)) },
+            text = { Text(stringResource(R.string.minimize_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showMinimizeConfirm = false
+                        actions.onMinimizeApp()
+                    },
+                ) { Text(stringResource(R.string.minimize_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMinimizeConfirm = false }) {
+                    Text(stringResource(R.string.minimize_cancel))
+                }
+            },
+        )
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -1937,6 +1973,29 @@ private fun TrackCard(
 ) {
     val context = LocalContext.current
     val t = state.tracking
+    var pendingDelete by remember { mutableStateOf<SavedTrack?>(null) }
+
+    pendingDelete?.let { track ->
+        AlertDialog(
+            modifier = Modifier.testTag("track_delete_confirmation"),
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.track_delete_title)) },
+            text = { Text(stringResource(R.string.track_delete_message, track.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        actions.onDeleteTrack(track.path)
+                        pendingDelete = null
+                    },
+                ) { Text(stringResource(R.string.track_delete_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) {
+                    Text(stringResource(R.string.track_delete_cancel))
+                }
+            },
+        )
+    }
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (t.recording) {
@@ -2100,59 +2159,83 @@ private fun TrackCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                state.savedTracks.take(12).forEach { saved ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 6.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = saved.name,
-                                fontSize = 11.5.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = stringResource(
-                                    R.string.track_file_meta,
-                                    Fmt.timeShort(context, saved.modifiedAtMs),
-                                    (saved.sizeBytes + 1023L) / 1024L,
-                                ),
-                                fontSize = 9.5.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        IconButton(
-                            onClick = { onViewTrack(saved.path) },
-                            modifier = Modifier.size(30.dp),
-                        ) {
-                            Icon(
-                                Icons.Rounded.Visibility,
-                                contentDescription = stringResource(R.string.track_view_on_map),
-                                tint = Color(0xFF4DD0C4),
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = { actions.onShareTrack(saved.path) },
-                            modifier = Modifier.size(30.dp),
-                        ) {
-                            Icon(
-                                Icons.Rounded.Share,
-                                contentDescription = stringResource(R.string.track_share),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp),
-                            )
+                val byDay = state.savedTracks.groupBy { trackDay(it.startedAtMs) }
+                    .toSortedMap(compareByDescending { it })
+                byDay.forEach { (day, dayTracks) ->
+                    Text(
+                        text = trackDayLabel(context, day),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp),
+                    )
+                    val unknownRegion = stringResource(R.string.track_region_unknown)
+                    dayTracks.groupBy { it.region ?: unknownRegion }.forEach { (region, tracks) ->
+                        Text(
+                            text = region,
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                        tracks.forEach { saved ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = saved.name,
+                                        fontSize = 11.5.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        text = stringResource(
+                                            R.string.track_file_meta,
+                                            Fmt.timeShort(context, saved.startedAtMs),
+                                            (saved.sizeBytes + 1023L) / 1024L,
+                                        ),
+                                        fontSize = 9.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { onViewTrack(saved.path) },
+                                    modifier = Modifier.size(30.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Visibility,
+                                        contentDescription = stringResource(R.string.track_view_on_map),
+                                        tint = Color(0xFF4DD0C4),
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { actions.onShareTrack(saved.path) },
+                                    modifier = Modifier.size(30.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Share,
+                                        contentDescription = stringResource(R.string.track_share),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { pendingDelete = saved },
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .testTag("delete_track_${saved.name}"),
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Delete,
+                                        contentDescription = stringResource(R.string.track_delete_title),
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-                if (state.savedTracks.size > 12) {
-                    Text(
-                        text = stringResource(R.string.track_archive_more, state.savedTracks.size - 12),
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 5.dp),
-                    )
                 }
             }
             Spacer(Modifier.height(6.dp))
@@ -2163,6 +2246,20 @@ private fun TrackCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+private fun trackDay(timestampMs: Long): LocalDate =
+    Instant.ofEpochMilli(timestampMs).atZone(ZoneId.systemDefault()).toLocalDate()
+
+private fun trackDayLabel(context: android.content.Context, day: LocalDate): String {
+    val today = LocalDate.now()
+    return when (day) {
+        today -> context.getString(R.string.track_day_today)
+        today.minusDays(1) -> context.getString(R.string.track_day_yesterday)
+        else -> DateFormat.getDateInstance(DateFormat.LONG).format(
+            Date(day.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+        )
     }
 }
 

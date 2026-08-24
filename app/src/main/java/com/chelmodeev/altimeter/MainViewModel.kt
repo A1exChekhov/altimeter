@@ -42,6 +42,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.time.Instant
+import java.util.Locale
 import org.xmlpull.v1.XmlPullParser
 import kotlin.math.roundToLong
 
@@ -60,10 +62,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val healthReader = HealthReader(app)
     private val huaweiHealthReader = HuaweiHealthReader(app)
     private val bluetoothHeartRateReader = BluetoothHeartRateReader(app)
+    private val trackRegionPrefs = app.getSharedPreferences("track_regions", Context.MODE_PRIVATE)
 
     private var lastAutoSendAt = 0L
     private var placeJob: Job? = null
     private var vitalsJob: Job? = null
+    private var trackRegionJob: Job? = null
     private var lastWidgetUpdateAt = 0L
     @Volatile private var appInForeground = false
 
@@ -98,20 +102,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             var wasRecording = false
             TrackingService.state.collect { track ->
-                val shouldReload = (!track.recording && wasRecording) ||
+                val justStopped = !track.recording && wasRecording
+                if (justStopped) {
+                    track.lastSavedPath?.let { rememberTrackRegion(it, _ui.value.placeName) }
+                }
+                val shouldReload = justStopped ||
                     (!track.recording && _ui.value.savedTracks.isEmpty())
                 wasRecording = track.recording
                 val savedTracks = if (shouldReload) loadSavedTracks() else _ui.value.savedTracks
+                if (shouldReload) resolveMissingTrackRegions(savedTracks)
                 val visibleRoute = when {
                     track.route.isNotEmpty() -> track.route
                     _ui.value.mapTrack.isNotEmpty() -> _ui.value.mapTrack
                     else -> savedTracks.firstOrNull()?.let { loadGpxTrack(it.path) }.orEmpty()
+                }
+                val selectedPath = when {
+                    track.recording -> null
+                    justStopped && track.lastSavedPath != null -> track.lastSavedPath
+                    _ui.value.selectedTrackPath != null -> _ui.value.selectedTrackPath
+                    else -> savedTracks.firstOrNull()?.path
                 }
                 _ui.update {
                     it.copy(
                         tracking = track,
                         savedTracks = savedTracks,
                         mapTrack = visibleRoute,
+                        selectedTrackPath = selectedPath,
                     )
                 }
             }
@@ -372,24 +388,56 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun loadSavedTracks(): List<SavedTrack> {
-        val directory = File(getApplication<Application>().getExternalFilesDir(null), "tracks")
+        val directory = trackDirectory()
         return directory.listFiles { file ->
             file.isFile && file.extension.equals("gpx", ignoreCase = true)
         }.orEmpty()
             .sortedByDescending(File::lastModified)
             .map { file ->
+                val header = readTrackHeader(file)
                 SavedTrack(
                     name = file.name,
                     path = file.absolutePath,
+                    startedAtMs = header.startedAtMs ?: file.lastModified(),
                     modifiedAtMs = file.lastModified(),
                     sizeBytes = file.length(),
+                    region = trackRegionPrefs.getString(file.name, null)
+                        ?: header.firstPoint?.let(::coordinateRegion),
                 )
             }
     }
 
     fun viewTrack(path: String) {
         val route = loadGpxTrack(path)
-        if (route.isNotEmpty()) _ui.update { it.copy(mapTrack = route) }
+        if (route.isNotEmpty()) {
+            _ui.update { it.copy(mapTrack = route, selectedTrackPath = path) }
+        }
+    }
+
+    fun deleteTrack(path: String) {
+        viewModelScope.launch {
+            val deleted = withContext(Dispatchers.IO) {
+                val file = safeTrackFile(path) ?: return@withContext false
+                if (!file.isFile || !file.delete()) return@withContext false
+                trackRegionPrefs.edit().remove(file.name).apply()
+                true
+            }
+            if (!deleted) return@launch
+            val tracks = loadSavedTracks()
+            _ui.update { state ->
+                if (state.selectedTrackPath == path) {
+                    val replacement = tracks.firstOrNull()
+                    state.copy(
+                        savedTracks = tracks,
+                        selectedTrackPath = replacement?.path,
+                        mapTrack = replacement?.let { loadGpxTrack(it.path) }.orEmpty(),
+                    )
+                } else {
+                    state.copy(savedTracks = tracks)
+                }
+            }
+            resolveMissingTrackRegions(tracks)
+        }
     }
 
     fun importTrack(uri: Uri) {
@@ -407,6 +455,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             trackImportError = null,
                             savedTracks = loadSavedTracks(),
                             mapTrack = loadGpxTrack(imported.absolutePath),
+                            selectedTrackPath = imported.absolutePath,
                         )
                     },
                     onFailure = { error ->
@@ -419,6 +468,83 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    private data class TrackHeader(
+        val startedAtMs: Long?,
+        val firstPoint: TrackMapPoint?,
+    )
+
+    private fun trackDirectory(): File =
+        File(getApplication<Application>().getExternalFilesDir(null), "tracks").apply { mkdirs() }
+
+    private fun safeTrackFile(path: String): File? = runCatching {
+        val directory = trackDirectory().canonicalFile
+        val file = File(path).canonicalFile
+        file.takeIf { it.parentFile == directory && it.extension.equals("gpx", ignoreCase = true) }
+    }.getOrNull()
+
+    private fun rememberTrackRegion(path: String, region: String?) {
+        val file = safeTrackFile(path) ?: return
+        val value = region?.trim().orEmpty()
+        if (value.isNotEmpty()) trackRegionPrefs.edit().putString(file.name, value).apply()
+    }
+
+    private fun coordinateRegion(point: TrackMapPoint): String = String.format(
+        Locale.getDefault(),
+        "%.1f°, %.1f°",
+        point.latitude,
+        point.longitude,
+    )
+
+    private fun resolveMissingTrackRegions(tracks: List<SavedTrack>) {
+        if (trackRegionJob?.isActive == true) return
+        val unresolved = tracks.filter { trackRegionPrefs.getString(it.name, null).isNullOrBlank() }
+            .take(12)
+        if (unresolved.isEmpty()) return
+        trackRegionJob = viewModelScope.launch {
+            for (track in unresolved) {
+                val point = withContext(Dispatchers.IO) { readTrackHeader(File(track.path)).firstPoint }
+                    ?: continue
+                val place = placeResolver.resolve(point.latitude, point.longitude)
+                if (!place.isNullOrBlank()) {
+                    trackRegionPrefs.edit().putString(track.name, place).apply()
+                    _ui.update { state ->
+                        state.copy(
+                            savedTracks = state.savedTracks.map {
+                                if (it.path == track.path) it.copy(region = place) else it
+                            }
+                        )
+                    }
+                }
+                delay(1_100)
+            }
+        }
+    }
+
+    private fun readTrackHeader(file: File): TrackHeader = runCatching {
+        var startedAtMs: Long? = null
+        var firstPoint: TrackMapPoint? = null
+        file.inputStream().buffered().use { input ->
+            val parser = Xml.newPullParser().apply { setInput(input, null) }
+            while (parser.eventType != XmlPullParser.END_DOCUMENT && firstPoint == null) {
+                if (parser.eventType == XmlPullParser.START_TAG) {
+                    when (parser.name) {
+                        "time" -> if (startedAtMs == null) {
+                            startedAtMs = runCatching { Instant.parse(parser.nextText()).toEpochMilli() }
+                                .getOrNull()
+                        }
+                        "trkpt" -> {
+                            val lat = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                            val lon = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                            if (lat != null && lon != null) firstPoint = TrackMapPoint(lat, lon, true)
+                        }
+                    }
+                }
+                parser.next()
+            }
+        }
+        TrackHeader(startedAtMs, firstPoint)
+    }.getOrDefault(TrackHeader(null, null))
 
     private fun copyTrackFromUri(uri: Uri): File {
         val app = getApplication<Application>()

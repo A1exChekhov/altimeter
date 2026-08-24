@@ -1,6 +1,10 @@
 package com.chelmodeev.altimeter.ui
 
+import android.content.Context
 import android.graphics.Color as AndroidColor
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.compose.foundation.background
@@ -21,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,6 +77,10 @@ class TouristMapSession(context: android.content.Context) {
     var follow by mutableStateOf(true)
     var hadFirstFix by mutableStateOf(false)
     var requestedStyleKey: String? = null
+    var latestTrackPoints: List<TrackMapPoint> = emptyList()
+    var latestTrackColor: Int = AndroidColor.CYAN
+    var latestLatitude: Double? = null
+    var latestLongitude: Double? = null
 
     private var attached = false
     private var hostStarted = false
@@ -194,20 +203,35 @@ fun MapCard(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val networkAvailable = rememberNetworkAvailable()
     val map = session.map
     val styleRevision = session.styleRevision
     val mapView = session.mapView
+
+    // Keep overlays independently of the network-backed basemap. If an online
+    // style finishes loading later, its callback restores the current local GPX
+    // immediately instead of briefly replacing it with an empty style.
+    SideEffect {
+        session.latestTrackPoints = trackPoints
+        session.latestTrackColor = accent.toArgb()
+        session.latestLatitude = latitude
+        session.latestLongitude = longitude
+    }
 
     DisposableEffect(session) {
         session.attach()
         onDispose { session.detach() }
     }
 
-    LaunchedEffect(map, offlineMapPath, topo) {
+    LaunchedEffect(map, offlineMapPath, topo, networkAvailable) {
         val readyMap = map ?: return@LaunchedEffect
         val localPath = offlineMapPath?.takeIf { File(it).isFile }
         val styleKey = localPath ?: ONLINE_OUTDOOR_STYLE
-        if (session.requestedStyleKey == styleKey) return@LaunchedEffect
+        // Retry an online style exactly when connectivity returns. Offline PMTiles
+        // never depend on this flag and are not needlessly reloaded.
+        if (session.requestedStyleKey == styleKey && (localPath != null || !networkAvailable)) {
+            return@LaunchedEffect
+        }
         session.requestedStyleKey = styleKey
         val styleBuilder = if (localPath != null) {
             Style.Builder().fromJson(offlineMapStyle(localPath))
@@ -216,6 +240,13 @@ fun MapCard(
         }
         readyMap.setStyle(styleBuilder) { style ->
             installOverlayLayers(style)
+            updateRoute(style, session.latestTrackPoints, session.latestTrackColor)
+            updateLocation(
+                style,
+                session.latestLatitude,
+                session.latestLongitude,
+                session.latestTrackColor,
+            )
             session.styleRevision++
         }
     }
@@ -338,6 +369,35 @@ fun MapCard(
             }
         }
     }
+}
+
+@Composable
+private fun rememberNetworkAvailable(): Boolean {
+    val context = LocalContext.current.applicationContext
+    val manager = remember(context) {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
+    var available by remember(manager) {
+        mutableStateOf(
+            manager.activeNetwork?.let(manager::getNetworkCapabilities)
+                ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        )
+    }
+    DisposableEffect(manager) {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                available = true
+            }
+
+            override fun onLost(network: Network) {
+                available = manager.activeNetwork?.let(manager::getNetworkCapabilities)
+                    ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            }
+        }
+        runCatching { manager.registerDefaultNetworkCallback(callback) }
+        onDispose { runCatching { manager.unregisterNetworkCallback(callback) } }
+    }
+    return available
 }
 
 private fun installOverlayLayers(style: Style) {
