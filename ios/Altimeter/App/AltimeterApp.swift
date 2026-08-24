@@ -7,8 +7,9 @@ struct AltimeterApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AltimeterScreen()
+            AltimeterRootView()
                 .environmentObject(model)
+                .preferredColorScheme(model.darkTheme ? .dark : .light)
         }
     }
 }

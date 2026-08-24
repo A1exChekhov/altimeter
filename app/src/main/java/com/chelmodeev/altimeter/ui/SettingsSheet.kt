@@ -80,6 +80,42 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
             )
             Spacer(Modifier.height(16.dp))
 
+            Text(
+                text = stringResource(R.string.settings_appearance),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = !state.darkTheme,
+                    onClick = { actions.onToggleDarkTheme(false) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) { Text(stringResource(R.string.theme_light)) }
+                SegmentedButton(
+                    selected = state.darkTheme,
+                    onClick = { actions.onToggleDarkTheme(true) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) { Text(stringResource(R.string.theme_dark)) }
+            }
+
+            Spacer(Modifier.height(18.dp))
+
+            SettingSwitch(
+                label = stringResource(R.string.auto_track_setting),
+                checked = state.autoTrackEnabled,
+                onChecked = actions.onToggleAutoTrack,
+            )
+            Text(
+                text = stringResource(R.string.auto_track_hint),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 2.dp, vertical = 2.dp),
+            )
+
+            Spacer(Modifier.height(18.dp))
+
             // Единицы
             Text(
                 text = stringResource(R.string.settings_units),

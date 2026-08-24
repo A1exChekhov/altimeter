@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct AltimeterScreen: View {
+    let page: AppTab
     @EnvironmentObject private var model: AppModel
     @State private var showsSettings = false
     @State private var showsTracks = false
     @State private var showsHealthSources = false
 
     private var state: AltimeterState { model.state }
-    private var accent: Color { AltimeterFormat.altitudeColor(state.altitude) }
+    private var accent: Color { .primary }
 
     var body: some View {
         NavigationStack {
@@ -15,16 +16,7 @@ struct AltimeterScreen: View {
                 background
                 ScrollView {
                     LazyVStack(spacing: 14) {
-                        hero
-                        permissionCard
-                        statisticsCard
-                        AltitudeChartView(points: state.history, unit: model.unit, accent: accent)
-                        MapCardView(state: state, topographic: $model.useTopographicMap)
-                        trackCard
-                        healthCard
-                        watchCard
-                        adviceSection
-                        footer
+                        pageContent
                     }
                     .padding(.horizontal, 14)
                     .padding(.bottom, 30)
@@ -33,15 +25,8 @@ struct AltimeterScreen: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("ALTIMETER")
-                            .font(.caption.weight(.heavy))
-                            .tracking(1.8)
-                        Text("ERRARIUM™ BY ALEKSEY HERMES")
-                            .font(.caption2.weight(.semibold))
-                            .tracking(1.2)
-                            .foregroundStyle(accent)
-                    }
+                    Text(page.title)
+                        .font(.headline.weight(.regular))
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showsSettings = true } label: {
@@ -54,7 +39,6 @@ struct AltimeterScreen: View {
             }
             .toolbarBackground(.hidden, for: .navigationBar)
         }
-        .preferredColorScheme(.dark)
         .sheet(isPresented: $showsSettings) { SettingsView() }
         .sheet(isPresented: $showsTracks) { SavedTracksView() }
         .sheet(isPresented: $showsHealthSources) { HealthSourcesView() }
@@ -64,19 +48,34 @@ struct AltimeterScreen: View {
         }
     }
 
+    @ViewBuilder
+    private var pageContent: some View {
+        switch page {
+        case .home:
+            hero
+            permissionCard
+            MapCardView(state: state, topographic: $model.useTopographicMap)
+            healthCard
+            adviceSection
+        case .track:
+            trackCard
+        case .data:
+            healthCard
+            AltitudeChartView(points: state.history, vitals: model.vitals, unit: model.unit)
+            statisticsCard
+            adviceSection
+            watchCard
+            footer
+        case .map:
+            EmptyView()
+        }
+    }
+
     private var background: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.025, green: 0.055, blue: 0.075),
-                Color(red: 0.035, green: 0.035, blue: 0.055),
-                Color.black
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        Color(uiColor: .systemBackground)
         .overlay(alignment: .topTrailing) {
             Circle()
-                .fill(accent.opacity(0.13))
+                .fill(Color.primary.opacity(0.055))
                 .frame(width: 290, height: 290)
                 .blur(radius: 70)
                 .offset(x: 120, y: -90)
@@ -87,14 +86,9 @@ struct AltimeterScreen: View {
     private var hero: some View {
         VStack(spacing: 13) {
             Spacer(minLength: 6)
-            Text("ВЫСОТА НАД УРОВНЕМ МОРЯ")
-                .font(.caption2.weight(.bold))
-                .tracking(1.5)
-                .foregroundStyle(.secondary)
-
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(AltimeterFormat.altitude(state.altitude, unit: model.unit))
-                    .font(.system(size: 76, weight: .thin, design: .rounded))
+                    .font(.system(size: 82, weight: .thin, design: .default))
                     .monospacedDigit()
                     .minimumScaleFactor(0.55)
                     .foregroundStyle(accent)
@@ -131,8 +125,9 @@ struct AltimeterScreen: View {
                 )
                 StatusChip(
                     icon: "gauge.with.dots.needle.50percent",
-                    text: state.hasBarometer ? "барометр" : "без барометра",
-                    color: state.hasBarometer ? accent : .secondary
+                    text: state.pressureHPA.map { String(format: "%.0f гПа", $0) }
+                        ?? (state.hasBarometer ? "барометр" : "без барометра"),
+                    color: .secondary
                 )
                 StatusChip(icon: "scope", text: model.calibrationMode.title, color: accent)
             }

@@ -9,6 +9,20 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Оформление") {
+                    Picker(
+                        "Тема",
+                        selection: Binding(
+                            get: { model.darkTheme },
+                            set: { model.darkTheme = $0 }
+                        )
+                    ) {
+                        Text("Светлая").tag(false)
+                        Text("Тёмная").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 Section("Единицы") {
                     Picker("Высота", selection: $model.unit) {
                         Text("Метры").tag(AltitudeUnit.meters)
@@ -65,6 +79,13 @@ struct SettingsView: View {
                 Section("Экран и карта") {
                     Toggle("Топографическая карта", isOn: $model.useTopographicMap)
                     Toggle("Не выключать экран", isOn: $model.keepScreenAwake)
+                }
+
+                Section("Умный авторек") {
+                    Toggle("Автоматическая запись", isOn: $model.autoTrackEnabled)
+                    Text("Запуск после 90 секунд и 120 м ходьбы. Автопауза после 5 минут без движения, возобновление после 60 м.")
+                        .font(.footnote.weight(.light))
+                        .foregroundStyle(.secondary)
                 }
 
                 Section {

@@ -29,11 +29,11 @@
     <key>NSHealthShareUsageDescription</key>
     <string>Альтиметр читает пульс, SpO₂, шаги и активные калории из приложения «Здоровье», чтобы показывать состояние во время маршрута.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Фоновый доступ нужен для записи GPX-маршрута при заблокированном экране.</string>
+    <string>Фоновый доступ нужен для автоматического запуска и записи GPX-маршрута при заблокированном экране.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Геопозиция нужна для абсолютной высоты GPS, карты и записи маршрута.</string>
     <key>NSMotionUsageDescription</key>
-    <string>Барометр используется для плавного и точного измерения изменения высоты.</string>
+    <string>Данные движения и барометра используются для определения ходьбы, автоматической записи трека и точного изменения высоты.</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>

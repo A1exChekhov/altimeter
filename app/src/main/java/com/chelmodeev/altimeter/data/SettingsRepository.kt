@@ -18,6 +18,8 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class SettingsRepository(private val context: Context) {
 
     data class Settings(
+        val darkTheme: Boolean,
+        val autoTrackEnabled: Boolean,
         val unit: AltUnit,
         val calibrationMode: CalibrationMode,
         val manualOffset: Double?,
@@ -37,10 +39,14 @@ class SettingsRepository(private val context: Context) {
         val TOPO = booleanPreferencesKey("topo")
         val KEEP_ON = booleanPreferencesKey("keep_on")
         val AUTO_SEND = booleanPreferencesKey("auto_send")
+        val DARK_THEME = booleanPreferencesKey("dark_theme")
+        val AUTO_TRACK = booleanPreferencesKey("auto_track")
     }
 
     val flow: Flow<Settings> = context.dataStore.data.map { p ->
         Settings(
+            darkTheme = p[K.DARK_THEME] ?: true,
+            autoTrackEnabled = p[K.AUTO_TRACK] ?: false,
             unit = enumOrDefault(p[K.UNIT], AltUnit.METERS),
             calibrationMode = enumOrDefault(p[K.CALIB], CalibrationMode.AUTO_GPS),
             manualOffset = p[K.MANUAL_OFFSET],
@@ -75,4 +81,6 @@ class SettingsRepository(private val context: Context) {
     suspend fun setTopo(v: Boolean) = context.dataStore.edit { it[K.TOPO] = v }
     suspend fun setKeepScreenOn(v: Boolean) = context.dataStore.edit { it[K.KEEP_ON] = v }
     suspend fun setAutoSend(v: Boolean) = context.dataStore.edit { it[K.AUTO_SEND] = v }
+    suspend fun setDarkTheme(v: Boolean) = context.dataStore.edit { it[K.DARK_THEME] = v }
+    suspend fun setAutoTrack(v: Boolean) = context.dataStore.edit { it[K.AUTO_TRACK] = v }
 }

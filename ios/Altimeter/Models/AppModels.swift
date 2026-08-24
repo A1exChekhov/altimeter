@@ -40,6 +40,12 @@ struct ChartPoint: Identifiable, Equatable {
     let altitude: Double
 }
 
+struct VitalPoint: Identifiable, Equatable {
+    let id = UUID()
+    let date: Date
+    let value: Double
+}
+
 enum AdviceSeverity: Int, Comparable {
     case info
     case caution
@@ -83,10 +89,15 @@ struct VitalSample: Equatable {
     var stepsDate: Date?
     var activeCaloriesToday: Double?
     var activeCaloriesDate: Date?
+    var heartRateSeries: [VitalPoint] = []
+    var oxygenSeries: [VitalPoint] = []
+    var stepsSeries: [VitalPoint] = []
 }
 
 struct TrackState: Equatable {
     var isRecording = false
+    var isPaused = false
+    var automatic = false
     var startedAt: Date?
     var pointCount = 0
     var distanceMeters = 0.0

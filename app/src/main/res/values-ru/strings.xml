@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Альтиметр</string>
+    <string name="nav_home">Главная</string>
+    <string name="nav_map">Карта</string>
+    <string name="nav_track">Поход</string>
+    <string name="nav_analytics">Данные</string>
     <string name="brand_rights">Errarium™ by Aleksey Hermes · errarium.ai@gmail.com</string>
 
     <string name="above_sea_level">над уровнем моря</string>
@@ -67,6 +71,9 @@
     <string name="we_error">Wear Engine: ошибка %1$s. Проверьте: установлен и авторизован Huawei Health; приложение зарегистрировано в AppGallery Connect с доступом Wear Engine; в gradle.properties указаны пакет и отпечаток приложения на часах.</string>
 
     <string name="settings">Настройки</string>
+    <string name="settings_appearance">Оформление</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
     <string name="settings_units">Единицы</string>
     <string name="settings_calibration">Калибровка</string>
     <string name="calib_auto">Авто (GPS)</string>
@@ -101,6 +108,14 @@
 
     <string name="notif_channel">Высота</string>
     <string name="notif_channel_tracking">Запись трека</string>
+    <string name="auto_track_title">Умный авторек</string>
+    <string name="auto_track_setting">Автоматическая запись трека</string>
+    <string name="auto_track_hint">Запуск после 90 секунд и 120 м подтверждённой ходьбы. Автопауза после 5 минут без шагов.</string>
+    <string name="auto_track_ready">Жду ходьбу · 90 с · 120 м</string>
+    <string name="auto_track_started">Трек начат автоматически</string>
+    <string name="auto_track_paused">Автопауза</string>
+    <string name="auto_track_resumed">Запись продолжена</string>
+    <string name="auto_track_no_step_sensor">Нет датчика шагов — автоматический старт отключён</string>
 
     <string name="track_title">Запись трека (GPX)</string>
     <string name="track_open">Треки и запись GPX</string>

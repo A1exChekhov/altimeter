@@ -2,6 +2,7 @@ import Combine
 import CoreLocation
 import CoreMotion
 import Foundation
+import UserNotifications
 
 @MainActor
 final class AltimeterEngine: NSObject, ObservableObject {
@@ -13,6 +14,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
     private let fusion = FusionEngine()
     private let statistics = TrackStatistics()
     private let recorder = GPXRecorder()
+    private let motionActivity = CMMotionActivityManager()
     private let trackStore: TrackStore
     private let placeResolver = PlaceResolver()
 
@@ -25,6 +27,12 @@ final class AltimeterEngine: NSObject, ObservableObject {
     private var currentTrackID: UUID?
     private var lastAutosaveAt = Date.distantPast
     private var isStarted = false
+    private var autoTrackEnabled = false
+    private var autoMovementActive = false
+    private var autoLastMovingAt = Date.distantPast
+    private var autoCandidateStartedAt: Date?
+    private var autoCandidateLastLocation: CLLocation?
+    private var autoCandidateDistance = 0.0
 
     override init() {
         let trackStore = TrackStore()
@@ -64,6 +72,38 @@ final class AltimeterEngine: NSObject, ObservableObject {
         locationManager.requestWhenInUseAuthorization()
     }
 
+    func setAutoTrackEnabled(_ enabled: Bool) {
+        guard autoTrackEnabled != enabled else { return }
+        autoTrackEnabled = enabled
+        resetAutoCandidate()
+
+        if enabled {
+            if locationManager.authorizationStatus == .notDetermined {
+                locationManager.requestWhenInUseAuthorization()
+            } else if locationManager.authorizationStatus == .authorizedWhenInUse {
+                locationManager.requestAlwaysAuthorization()
+            }
+            locationManager.desiredAccuracy = kCLLocationAccuracyBest
+            locationManager.distanceFilter = 10
+            locationManager.allowsBackgroundLocationUpdates = true
+            locationManager.showsBackgroundLocationIndicator = true
+            if isLocationAuthorized { locationManager.startUpdatingLocation() }
+            startMotionMonitoring()
+            Task {
+                _ = try? await UNUserNotificationCenter.current()
+                    .requestAuthorization(options: [.alert, .sound])
+            }
+        } else {
+            motionActivity.stopActivityUpdates()
+            autoMovementActive = false
+            if !state.track.isRecording {
+                locationManager.allowsBackgroundLocationUpdates = false
+                locationManager.showsBackgroundLocationIndicator = false
+                locationManager.distanceFilter = kCLDistanceFilterNone
+            }
+        }
+    }
+
     func applySettings(mode: CalibrationMode, manualOffset: Double?, qnhHPA: Double) {
         fusion.apply(mode: mode, manualOffset: manualOffset, qnhHPA: qnhHPA)
         tick()
@@ -80,7 +120,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
         tick()
     }
 
-    func startRecording() {
+    func startRecording(automatic: Bool = false) {
         guard !state.track.isRecording else { return }
         if locationManager.authorizationStatus == .authorizedWhenInUse {
             locationManager.requestAlwaysAuthorization()
@@ -91,7 +131,13 @@ final class AltimeterEngine: NSObject, ObservableObject {
         currentTrackURL = trackStore.makeTrackURL()
         currentTrackID = UUID()
         lastAutosaveAt = .distantPast
-        state.track = TrackState(isRecording: true, startedAt: Date())
+        state.track = TrackState(
+            isRecording: true,
+            isPaused: false,
+            automatic: automatic,
+            startedAt: Date()
+        )
+        autoLastMovingAt = Date()
         locationManager.allowsBackgroundLocationUpdates = true
         locationManager.showsBackgroundLocationIndicator = true
         locationManager.startUpdatingLocation()
@@ -101,8 +147,12 @@ final class AltimeterEngine: NSObject, ObservableObject {
         guard state.track.isRecording else { return }
         saveTrack(complete: true)
         state.track.isRecording = false
-        locationManager.allowsBackgroundLocationUpdates = false
-        locationManager.showsBackgroundLocationIndicator = false
+        state.track.isPaused = false
+        state.track.automatic = false
+        if !autoTrackEnabled {
+            locationManager.allowsBackgroundLocationUpdates = false
+            locationManager.showsBackgroundLocationIndicator = false
+        }
     }
 
     func fileURL(for track: SavedTrack) -> URL {
@@ -156,6 +206,13 @@ final class AltimeterEngine: NSObject, ObservableObject {
         state.history = statistics.history
         state.pressureTrendHPAperHour = pressureTrend()
         state.timestamp = date
+
+        if autoTrackEnabled, state.track.isRecording, !state.track.isPaused,
+           date.timeIntervalSince(autoLastMovingAt) >= 5 * 60 {
+            state.track.isPaused = true
+            resetAutoCandidate()
+            notifyAutoTrack(title: "Автопауза", body: "Запись продолжится после движения на 60 м.")
+        }
     }
 
     private func handle(_ location: CLLocation) {
@@ -176,7 +233,9 @@ final class AltimeterEngine: NSObject, ObservableObject {
             if let name = await placeResolver.resolve(location) { state.placeName = name }
         }
 
-        if state.track.isRecording {
+        evaluateAutoTrack(with: location)
+
+        if state.track.isRecording && !state.track.isPaused {
             if recorder.offer(location: location, elevation: state.altitude, date: location.timestamp) {
                 state.track.pointCount = recorder.points.count
                 state.track.distanceMeters = recorder.distanceMeters
@@ -187,6 +246,87 @@ final class AltimeterEngine: NSObject, ObservableObject {
                 saveTrack(complete: false)
             }
         }
+    }
+
+    private func startMotionMonitoring() {
+        guard CMMotionActivityManager.isActivityAvailable() else { return }
+        motionActivity.startActivityUpdates(to: .main) { [weak self] activity in
+            guard let activity else { return }
+            Task { @MainActor [weak self] in
+                guard let self, autoTrackEnabled else { return }
+                if activity.automotive {
+                    autoMovementActive = false
+                    resetAutoCandidate()
+                    return
+                }
+                let moving = activity.walking || activity.running || activity.cycling
+                autoMovementActive = moving
+                if moving {
+                    autoLastMovingAt = Date()
+                    if autoCandidateStartedAt == nil {
+                        autoCandidateStartedAt = Date()
+                        autoCandidateLastLocation = lastLocation
+                        autoCandidateDistance = 0
+                    }
+                }
+            }
+        }
+    }
+
+    private func evaluateAutoTrack(with location: CLLocation) {
+        guard autoTrackEnabled else { return }
+        let now = location.timestamp
+
+        if !autoMovementActive, now.timeIntervalSince(autoLastMovingAt) > 45 {
+            resetAutoCandidate()
+            return
+        }
+        guard autoMovementActive, let startedAt = autoCandidateStartedAt else { return }
+
+        if let previous = autoCandidateLastLocation {
+            let segment = location.distance(from: previous)
+            if (1...80).contains(segment) { autoCandidateDistance += segment }
+        }
+        autoCandidateLastLocation = location
+        let elapsed = now.timeIntervalSince(startedAt)
+
+        if state.track.isRecording, state.track.isPaused {
+            if elapsed >= 60, autoCandidateDistance >= 60 {
+                state.track.isPaused = false
+                resetAutoCandidate()
+                notifyAutoTrack(title: "Запись продолжена", body: "Движение снова обнаружено.")
+            }
+            return
+        }
+        guard !state.track.isRecording, elapsed >= 90, autoCandidateDistance >= 120 else { return }
+        let speed = autoCandidateDistance / max(elapsed, 1)
+        guard (0.45...4.2).contains(speed) else {
+            resetAutoCandidate()
+            return
+        }
+        startRecording(automatic: true)
+        resetAutoCandidate()
+        notifyAutoTrack(title: "Трек начат автоматически", body: "Подтверждены 90 секунд и 120 м движения.")
+    }
+
+    private func resetAutoCandidate() {
+        autoCandidateStartedAt = nil
+        autoCandidateLastLocation = nil
+        autoCandidateDistance = 0
+    }
+
+    private func notifyAutoTrack(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.threadIdentifier = "auto-track"
+        let request = UNNotificationRequest(
+            identifier: "auto-track-\(UUID().uuidString)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
     }
 
     private func saveTrack(complete: Bool) {
@@ -237,6 +377,9 @@ extension AltimeterEngine: CLLocationManagerDelegate {
         Task { @MainActor [weak self] in
             guard let self else { return }
             state.authorization = manager.authorizationStatus
+            if autoTrackEnabled && manager.authorizationStatus == .authorizedWhenInUse {
+                manager.requestAlwaysAuthorization()
+            }
             if isLocationAuthorized { manager.startUpdatingLocation() }
         }
     }

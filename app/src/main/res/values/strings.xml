@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Altimeter</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_map">Map</string>
+    <string name="nav_track">Hike</string>
+    <string name="nav_analytics">Data</string>
     <string name="brand_name" translatable="false">ERRARIUM™</string>
     <string name="brand_rights">Errarium™ by Aleksey Hermes · errarium.ai@gmail.com</string>
 
@@ -68,6 +72,9 @@
     <string name="we_error">Wear Engine: error %1$s. Check that Huawei Health is installed and signed in, the app is registered in AppGallery Connect with Wear Engine access, and the watch app package/fingerprint are set in gradle.properties.</string>
 
     <string name="settings">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="settings_units">Units</string>
     <string name="settings_calibration">Calibration</string>
     <string name="calib_auto">Auto (GPS)</string>
@@ -102,6 +109,14 @@
 
     <string name="notif_channel">Altitude</string>
     <string name="notif_channel_tracking">Track recording</string>
+    <string name="auto_track_title">Smart auto track</string>
+    <string name="auto_track_setting">Automatic track recording</string>
+    <string name="auto_track_hint">Starts after 90 seconds and 120 m of confirmed walking. Pauses after 5 minutes without steps.</string>
+    <string name="auto_track_ready">Waiting for walking · 90 s · 120 m</string>
+    <string name="auto_track_started">Track started automatically</string>
+    <string name="auto_track_paused">Auto pause</string>
+    <string name="auto_track_resumed">Track resumed</string>
+    <string name="auto_track_no_step_sensor">Step detector unavailable — automatic start is disabled</string>
 
     <string name="track_title">Track recording (GPX)</string>
     <string name="track_open">Tracks and GPX recording</string>

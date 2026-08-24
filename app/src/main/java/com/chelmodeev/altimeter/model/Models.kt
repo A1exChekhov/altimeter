@@ -36,6 +36,8 @@ data class WatchState(
 /** Состояние записи GPX-трека (foreground-сервис). */
 data class TrackRecState(
     val recording: Boolean = false,
+    val paused: Boolean = false,
+    val automatic: Boolean = false,
     val startedAtMs: Long = 0L,
     val points: Int = 0,
     val distanceM: Double = 0.0,
@@ -141,6 +143,8 @@ data class VitalsState(
 )
 
 data class UiState(
+    val darkTheme: Boolean = true,
+    val autoTrackEnabled: Boolean = false,
     val hasBarometer: Boolean = false,
     val locationPermissionGranted: Boolean = false,
 

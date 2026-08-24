@@ -11,5 +11,18 @@
     "terrainDownloadUrl": "https://github.com/A1exChekhov/altimeter/releases/download/v1.5/errarium-everest-2026-dem.pmtiles",
     "terrainSizeBytes": 60048426,
     "terrainSha256": "eae299024602ac294ca322cbcfe2f2cf47f89d067b8697753fe61e48e7e1ad6c"
+  },
+  {
+    "id": "kailash-kora-2026",
+    "title": "Кайлас · кора",
+    "description": "Дарчен, Дирапук, Долма-Ла и Зутулпук · 81.05–81.55° E, 30.85–31.25° N · масштаб до 15",
+    "fileName": "errarium-kailash-kora-2026.pmtiles",
+    "downloadUrl": "https://github.com/A1exChekhov/altimeter/releases/download/maps-2026.08.24/errarium-kailash-kora-2026.pmtiles",
+    "sizeBytes": 1339569,
+    "sha256": "09f7f2bd1a0551dcd4292f483d285433e66384e986ebce73f82fdd409f80c780",
+    "terrainFileName": "errarium-kailash-kora-2026-dem.pmtiles",
+    "terrainDownloadUrl": "https://github.com/A1exChekhov/altimeter/releases/download/maps-2026.08.24/errarium-kailash-kora-2026-dem.pmtiles",
+    "terrainSizeBytes": 11308674,
+    "terrainSha256": "d49acb704d95dd39842cedc5b4b8ad59f1d5a1f9d766a5693d438084d8f075bd"
   }
 ]

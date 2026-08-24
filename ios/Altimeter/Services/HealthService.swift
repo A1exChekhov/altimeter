@@ -48,12 +48,40 @@ final class HealthService: ObservableObject {
         async let oxygen = latestQuantity(.oxygenSaturation)
         async let steps = stepsToday()
         async let calories = activeCaloriesToday()
-        let (heartSample, restingHeartSample, oxygenSample, stepsValue, caloriesValue) = await (
+        async let heartHistory = quantitySeries(
+            .heartRate,
+            unit: HKUnit.count().unitDivided(by: .minute())
+        )
+        async let restingHistory = quantitySeries(
+            .restingHeartRate,
+            unit: HKUnit.count().unitDivided(by: .minute())
+        )
+        async let oxygenHistory = quantitySeries(
+            .oxygenSaturation,
+            unit: .percent(),
+            multiplier: 100
+        )
+        async let stepHistory = quantitySeries(.stepCount, unit: .count())
+        let (
+            heartSample,
+            restingHeartSample,
+            oxygenSample,
+            stepsValue,
+            caloriesValue,
+            heartPoints,
+            restingPoints,
+            oxygenPoints,
+            stepPoints
+        ) = await (
             heart,
             restingHeart,
             oxygen,
             steps,
-            calories
+            calories,
+            heartHistory,
+            restingHistory,
+            oxygenHistory,
+            stepHistory
         )
         let newestHeart = [heartSample, restingHeartSample]
             .compactMap { $0 }
@@ -80,6 +108,9 @@ final class HealthService: ObservableObject {
             vitals.activeCaloriesToday = caloriesValue
             vitals.activeCaloriesDate = Date()
         }
+        vitals.heartRateSeries = (heartPoints + restingPoints).sorted { $0.date < $1.date }
+        vitals.oxygenSeries = oxygenPoints
+        vitals.stepsSeries = stepPoints
     }
 
     private func latestQuantity(_ identifier: HKQuantityTypeIdentifier) async -> HKQuantitySample? {
@@ -126,6 +157,39 @@ final class HealthService: ObservableObject {
             ) { _, statistics, _ in
                 let value = statistics?.sumQuantity()?.doubleValue(for: unit)
                 continuation.resume(returning: value)
+            }
+            store.execute(query)
+        }
+    }
+
+    private func quantitySeries(
+        _ identifier: HKQuantityTypeIdentifier,
+        unit: HKUnit,
+        multiplier: Double = 1
+    ) async -> [VitalPoint] {
+        guard let type = HKObjectType.quantityType(forIdentifier: identifier) else { return [] }
+        let end = Date()
+        let start = end.addingTimeInterval(-6 * 60 * 60)
+        let predicate = HKQuery.predicateForSamples(
+            withStart: start,
+            end: end,
+            options: .strictEndDate
+        )
+        return await withCheckedContinuation { continuation in
+            let sort = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: true)
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [sort]
+            ) { _, samples, _ in
+                let points = (samples as? [HKQuantitySample] ?? []).map { sample in
+                    VitalPoint(
+                        date: sample.endDate,
+                        value: sample.quantity.doubleValue(for: unit) * multiplier
+                    )
+                }
+                continuation.resume(returning: points)
             }
             store.execute(query)
         }

@@ -78,6 +78,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             settingsRepo.flow.collect { s ->
                 _ui.update {
                     it.copy(
+                        darkTheme = s.darkTheme,
+                        autoTrackEnabled = s.autoTrackEnabled,
                         unit = s.unit,
                         calibrationMode = s.calibrationMode,
                         manualAltitude = s.manualAltitude,
@@ -203,6 +205,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setTopo(v: Boolean) = launchIo { settingsRepo.setTopo(v) }
     fun setKeepScreenOn(v: Boolean) = launchIo { settingsRepo.setKeepScreenOn(v) }
     fun setAutoSend(v: Boolean) = launchIo { settingsRepo.setAutoSend(v) }
+    fun setDarkTheme(v: Boolean) = launchIo { settingsRepo.setDarkTheme(v) }
+    fun setAutoTrack(v: Boolean) = launchIo { settingsRepo.setAutoTrack(v) }
 
     fun calibrateManual(text: String) {
         val v = text.replace(',', '.').trim().toDoubleOrNull() ?: return

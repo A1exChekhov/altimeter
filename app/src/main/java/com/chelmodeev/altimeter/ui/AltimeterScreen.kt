@@ -29,13 +29,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.TrendingDown
 import androidx.compose.material.icons.automirrored.rounded.TrendingFlat
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.FiberManualRecord
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MonitorHeart
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Refresh
@@ -56,7 +60,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -65,7 +72,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -95,6 +104,7 @@ import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.ui.theme.zoneAccent
 import com.chelmodeev.altimeter.util.Fmt
+import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -115,6 +125,8 @@ data class ScreenActions(
     val onToggleTopo: (Boolean) -> Unit,
     val onToggleKeepOn: (Boolean) -> Unit,
     val onToggleAutoSend: (Boolean) -> Unit,
+    val onToggleDarkTheme: (Boolean) -> Unit,
+    val onToggleAutoTrack: (Boolean) -> Unit,
     val onResetStats: () -> Unit,
     val onStartTrack: () -> Unit,
     val onStopTrack: () -> Unit,
@@ -128,91 +140,367 @@ data class ScreenActions(
     val onDeleteOfflineMap: (String) -> Unit,
 )
 
+private enum class AppSection { HOME, MAP, TRACK, ANALYTICS }
+
 @Composable
 fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
     var showSettings by remember { mutableStateOf(false) }
-    var showTracks by remember { mutableStateOf(false) }
     var showHealthDetails by remember { mutableStateOf(false) }
-    var mapExpanded by remember { mutableStateOf(false) }
-    val mapHeight by animateDpAsState(if (mapExpanded) 470.dp else 210.dp, label = "mapHeight")
+    var section by rememberSaveable { mutableStateOf(AppSection.HOME) }
+    val homeScroll = rememberScrollState()
+    val trackScroll = rememberScrollState()
+    val analyticsScroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    fun select(target: AppSection) {
+        if (section == target) {
+            scope.launch {
+                when (target) {
+                    AppSection.HOME -> homeScroll.animateScrollTo(0)
+                    AppSection.TRACK -> trackScroll.animateScrollTo(0)
+                    AppSection.ANALYTICS -> analyticsScroll.animateScrollTo(0)
+                    AppSection.MAP -> Unit
+                }
+            }
+        } else {
+            section = target
+        }
+    }
+
+    BackHandler(enabled = section != AppSection.HOME) { section = AppSection.HOME }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = { AppBottomBar(section, state.tracking.recording, ::select) },
+    ) { contentPadding ->
         Box(
             Modifier
-                .fillMaxWidth()
-                .height(340.dp)
-                .background(
-                    Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), Color.Transparent))
-                )
-        )
-        Column(
-            Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp)
+                .padding(contentPadding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            HeaderRow(
-                trackRecording = state.tracking.recording,
-                onTracks = { showTracks = true },
-                onSettings = { showSettings = true },
-            )
-            Spacer(Modifier.height(4.dp))
-            Readout(state, accent, actions)
-            if (!state.locationPermissionGranted) {
-                Spacer(Modifier.height(10.dp))
-                PermissionCard(actions.onGrantLocation)
-            }
-            Spacer(Modifier.height(12.dp))
-            MapCard(
-                latitude = state.latitude,
-                longitude = state.longitude,
-                accuracyMeters = state.gpsAccuracy,
-                topo = state.topoMap,
-                accent = accent,
-                trackPoints = state.mapTrack,
-                trackRecording = state.tracking.recording,
-                offlineMapPath = state.offlineMaps.activePath,
-                expanded = mapExpanded,
-                onToggleExpanded = { mapExpanded = !mapExpanded },
-                modifier = Modifier
+            Box(
+                Modifier
                     .fillMaxWidth()
-                    .height(mapHeight),
+                    .height(340.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(accent.copy(alpha = 0.10f), Color.Transparent)
+                        )
+                    )
             )
-            Spacer(Modifier.height(14.dp))
-            VitalsCard(state, actions, onDetails = { showHealthDetails = true })
-            if (state.advices.isNotEmpty()) {
-                Spacer(Modifier.height(14.dp))
-                AdviceCard(state.advices)
-            }
-            Spacer(Modifier.height(14.dp))
-            ChartCard(state, accent)
-            Spacer(Modifier.height(14.dp))
-            DetailsGrid(state)
-            Spacer(Modifier.height(14.dp))
-            WatchCard(state, actions)
-            Spacer(Modifier.height(18.dp))
-            Footer()
-            Spacer(Modifier.navigationBarsPadding())
-            Spacer(Modifier.height(6.dp))
-        }
 
-        if (showSettings) {
-            SettingsSheet(state = state, actions = actions, onDismiss = { showSettings = false })
+            when (section) {
+                AppSection.HOME -> HomePage(
+                    state = state,
+                    accent = accent,
+                    actions = actions,
+                    scrollState = homeScroll,
+                    onOpenMap = { select(AppSection.MAP) },
+                    onOpenTrack = { select(AppSection.TRACK) },
+                    onOpenSettings = { showSettings = true },
+                    onOpenHealth = { showHealthDetails = true },
+                )
+                AppSection.MAP -> MapPage(
+                    state = state,
+                    accent = accent,
+                    onOpenSettings = { showSettings = true },
+                )
+                AppSection.TRACK -> TrackPage(
+                    state = state,
+                    actions = actions,
+                    scrollState = trackScroll,
+                    onOpenMap = { select(AppSection.MAP) },
+                    onOpenSettings = { showSettings = true },
+                )
+                AppSection.ANALYTICS -> AnalyticsPage(
+                    state = state,
+                    accent = accent,
+                    actions = actions,
+                    scrollState = analyticsScroll,
+                    onOpenSettings = { showSettings = true },
+                    onOpenHealth = { showHealthDetails = true },
+                )
+            }
+
+            if (showSettings) {
+                SettingsSheet(
+                    state = state,
+                    actions = actions,
+                    onDismiss = { showSettings = false },
+                )
+            }
+            if (showHealthDetails) {
+                VitalsDetailsSheet(
+                    state = state,
+                    actions = actions,
+                    onDismiss = { showHealthDetails = false },
+                )
+            }
         }
-        if (showTracks) {
-            TrackSheet(state = state, actions = actions, onDismiss = { showTracks = false })
+    }
+}
+
+@Composable
+private fun AppBottomBar(
+    section: AppSection,
+    trackRecording: Boolean,
+    onSelect: (AppSection) -> Unit,
+) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)) {
+        val items = listOf(
+            Triple(AppSection.HOME, Icons.Rounded.Home, R.string.nav_home),
+            Triple(AppSection.MAP, Icons.Rounded.Map, R.string.nav_map),
+            Triple(AppSection.TRACK, Icons.Rounded.Route, R.string.nav_track),
+            Triple(AppSection.ANALYTICS, Icons.Rounded.Insights, R.string.nav_analytics),
+        )
+        items.forEach { (target, icon, label) ->
+            NavigationBarItem(
+                selected = section == target,
+                onClick = { onSelect(target) },
+                icon = {
+                    Box {
+                        Icon(icon, contentDescription = stringResource(label))
+                        if (target == AppSection.TRACK && trackRecording) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(7.dp)
+                                    .background(Color(0xFFFF5252), CircleShape)
+                            )
+                        }
+                    }
+                },
+                label = { Text(stringResource(label), maxLines = 1, fontSize = 10.sp) },
+                alwaysShowLabel = true,
+            )
         }
-        if (showHealthDetails) {
-            VitalsDetailsSheet(
-                state = state,
-                actions = actions,
-                onDismiss = { showHealthDetails = false },
+    }
+}
+
+@Composable
+private fun HomePage(
+    state: UiState,
+    accent: Color,
+    actions: ScreenActions,
+    scrollState: androidx.compose.foundation.ScrollState,
+    onOpenMap: () -> Unit,
+    onOpenTrack: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenHealth: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+    ) {
+        HeaderRow(
+            trackRecording = state.tracking.recording,
+            onTracks = onOpenTrack,
+            onSettings = onOpenSettings,
+        )
+        Spacer(Modifier.height(4.dp))
+        Readout(state, accent, actions)
+        if (!state.locationPermissionGranted) {
+            Spacer(Modifier.height(10.dp))
+            PermissionCard(actions.onGrantLocation)
+        }
+        Spacer(Modifier.height(12.dp))
+        HomeStatusRow(state)
+        Spacer(Modifier.height(12.dp))
+        MapCard(
+            latitude = state.latitude,
+            longitude = state.longitude,
+            accuracyMeters = state.gpsAccuracy,
+            topo = state.topoMap,
+            accent = accent,
+            trackPoints = state.mapTrack,
+            trackRecording = state.tracking.recording,
+            offlineMapPath = state.offlineMaps.activePath,
+            expanded = false,
+            onToggleExpanded = onOpenMap,
+            modifier = Modifier.fillMaxWidth().height(230.dp),
+        )
+        Spacer(Modifier.height(14.dp))
+        VitalsCard(state, actions, onDetails = onOpenHealth)
+        state.advices.firstOrNull()?.let {
+            Spacer(Modifier.height(14.dp))
+            AdviceCard(listOf(it))
+        }
+        Spacer(Modifier.height(18.dp))
+    }
+}
+
+@Composable
+private fun MapPage(
+    state: UiState,
+    accent: Color,
+    onOpenSettings: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 12.dp)
+    ) {
+        PageHeader(R.string.nav_map, Icons.Rounded.Map, onOpenSettings)
+        MapCard(
+            latitude = state.latitude,
+            longitude = state.longitude,
+            accuracyMeters = state.gpsAccuracy,
+            topo = state.topoMap,
+            accent = accent,
+            trackPoints = state.mapTrack,
+            trackRecording = state.tracking.recording,
+            offlineMapPath = state.offlineMaps.activePath,
+            expanded = true,
+            onToggleExpanded = {},
+            modifier = Modifier.fillMaxWidth().weight(1f),
+        )
+        if (state.latitude != null && state.longitude != null) {
+            Text(
+                text = Fmt.coords(state.latitude, state.longitude),
+                style = TextStyle(fontSize = 13.sp, fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                textAlign = TextAlign.Center,
+            )
+        } else {
+            Spacer(Modifier.height(10.dp))
+        }
+    }
+}
+
+@Composable
+private fun TrackPage(
+    state: UiState,
+    actions: ScreenActions,
+    scrollState: androidx.compose.foundation.ScrollState,
+    onOpenMap: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+    ) {
+        PageHeader(R.string.nav_track, Icons.Rounded.Route, onOpenSettings)
+        TrackCard(
+            state = state,
+            actions = actions,
+            onViewTrack = { path -> actions.onViewTrack(path); onOpenMap() },
+        )
+        Spacer(Modifier.height(18.dp))
+    }
+}
+
+@Composable
+private fun AnalyticsPage(
+    state: UiState,
+    accent: Color,
+    actions: ScreenActions,
+    scrollState: androidx.compose.foundation.ScrollState,
+    onOpenSettings: () -> Unit,
+    onOpenHealth: () -> Unit,
+) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+    ) {
+        PageHeader(R.string.nav_analytics, Icons.Rounded.Insights, onOpenSettings)
+        VitalsCard(state, actions, onDetails = onOpenHealth)
+        Spacer(Modifier.height(14.dp))
+        ChartCard(state, accent)
+        Spacer(Modifier.height(14.dp))
+        DetailsGrid(state)
+        if (state.advices.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            AdviceCard(state.advices)
+        }
+        Spacer(Modifier.height(14.dp))
+        WatchCard(state, actions)
+        Spacer(Modifier.height(18.dp))
+        Footer()
+        Spacer(Modifier.height(18.dp))
+    }
+}
+
+@Composable
+private fun PageHeader(
+    title: Int,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onOpenSettings: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().height(58.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Text(
+            text = stringResource(title),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 10.dp).weight(1f),
+        )
+        IconButton(onClick = onOpenSettings) {
+            Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.cd_settings))
+        }
+    }
+}
+
+@Composable
+private fun HomeStatusRow(state: UiState) {
+    val context = LocalContext.current
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        HomeStatusCell(
+            value = if (state.hasFix) "${state.satellitesUsed}/${state.satellitesTotal}" else "—",
+            caption = "GPS",
+            modifier = Modifier.weight(1f),
+        )
+        HomeStatusCell(
+            value = state.pressureHpa?.let { Fmt.pressure(context, it) } ?: "—",
+            caption = stringResource(R.string.detail_pressure),
+            modifier = Modifier.weight(1f),
+        )
+        HomeStatusCell(
+            value = state.gpsVertAccuracy?.let {
+                Fmt.accuracy(context, it.toDouble(), state.unit)
+            } ?: "—",
+            caption = stringResource(R.string.detail_vacc),
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun HomeStatusCell(value: String, caption: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.05f),
+        modifier = modifier,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+        ) {
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(
+                caption,
+                fontSize = 8.5.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -265,6 +553,7 @@ private fun HeaderRow(
 @Composable
 private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
     val context = LocalContext.current
+    val altitudeText = MaterialTheme.colorScheme.onSurface
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth(),
@@ -279,7 +568,7 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
                         letterSpacing = (-2).sp,
                         fontFeatureSettings = "tnum",
                         brush = Brush.verticalGradient(
-                            listOf(Color.White, accent.copy(alpha = 0.85f))
+                            listOf(altitudeText, accent)
                         ),
                     ),
                     maxLines = 1,
@@ -581,6 +870,7 @@ private fun VitalsCard(
         vitals.spo2Percent,
         vitals.stepsToday,
     ).count { it == null }
+    val metricColor = MaterialTheme.colorScheme.onSurface
 
     SectionCard {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -588,21 +878,21 @@ private fun VitalsCard(
                 label = stringResource(R.string.vitals_hr),
                 value = vitals.heartRateBpm?.toString() ?: "—",
                 unit = stringResource(R.string.vitals_bpm),
-                color = Color(0xFFFF8A80),
+                color = metricColor,
                 modifier = Modifier.weight(1f),
             )
             CompactVitalStat(
                 label = stringResource(R.string.vitals_spo2_short),
                 value = vitals.spo2Percent?.roundToInt()?.let { "$it" } ?: "—",
                 unit = "%",
-                color = Color(0xFF80D8FF),
+                color = metricColor,
                 modifier = Modifier.weight(1f),
             )
             CompactVitalStat(
                 label = stringResource(R.string.vitals_steps),
                 value = vitals.stepsToday?.toString() ?: "—",
                 unit = "",
-                color = Color(0xFFB9F6CA),
+                color = metricColor,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -1277,21 +1567,67 @@ private fun HrSparkline(series: List<Pair<Long, Long>>, color: Color, modifier: 
 private fun ChartCard(state: UiState, accent: Color) {
     val context = LocalContext.current
     var windowMs by remember { mutableStateOf(60L * 60L * 1_000L) }
+    var altitudeConnected by rememberSaveable { mutableStateOf(true) }
+    var heartConnected by rememberSaveable { mutableStateOf(true) }
+    var oxygenConnected by rememberSaveable { mutableStateOf(true) }
+    var stepsConnected by rememberSaveable { mutableStateOf(true) }
     val ranges = listOf(
         15L * 60L * 1_000L to R.string.chart_range_15m,
         60L * 60L * 1_000L to R.string.chart_range_1h,
         3L * 60L * 60L * 1_000L to R.string.chart_range_3h,
         6L * 60L * 60L * 1_000L to R.string.chart_range_6h,
     )
-    val heartColor = Color(0xFFFF6B7A)
-    val oxygenColor = Color(0xFF67C7FF)
-    val stepsColor = Color(0xFF78D89B)
-    val lines = listOf(
-        TrendLine(accent, state.history.map { it.timeMs to it.altitude }),
-        TrendLine(heartColor, state.vitals.hrSeries.map { it.first to it.second.toDouble() }),
-        TrendLine(oxygenColor, state.vitals.spo2Series),
-        TrendLine(stepsColor, state.vitals.stepsSeries.map { it.first to it.second.toDouble() }),
-    ).filter { it.points.isNotEmpty() }
+    val altitudeColor = Color(0xFFD5A657)
+    val heartColor = Color(0xFFE17070)
+    val oxygenColor = Color(0xFF62A9D8)
+    val stepsColor = Color(0xFF72B98B)
+    val altitudeLabel = stringResource(R.string.chart_altitude)
+    val heartLabel = stringResource(R.string.vitals_hr)
+    val stepsLabel = stringResource(R.string.vitals_steps)
+    val stepBars = state.vitals.stepsSeries.mapIndexed { index, sample ->
+        val previous = state.vitals.stepsSeries.getOrNull(index - 1)?.second ?: 0L
+        sample.first to (sample.second - previous).coerceAtLeast(0L).toDouble()
+    }
+    val allLines = listOf(
+        TrendLine(
+            key = "altitude",
+            label = altitudeLabel,
+            unit = if (state.unit == AltUnit.METERS) " м" else " ft",
+            color = altitudeColor,
+            points = state.history.map { it.timeMs to it.altitude },
+        ),
+        TrendLine(
+            key = "heart",
+            label = heartLabel,
+            unit = " ${stringResource(R.string.vitals_bpm)}",
+            color = heartColor,
+            points = state.vitals.hrSeries.map { it.first to it.second.toDouble() },
+        ),
+        TrendLine(
+            key = "oxygen",
+            label = "SpO₂",
+            unit = "%",
+            color = oxygenColor,
+            points = state.vitals.spo2Series,
+            decimals = 1,
+        ),
+        TrendLine(
+            key = "steps",
+            label = stepsLabel,
+            unit = "",
+            color = stepsColor,
+            points = stepBars,
+            style = TrendStyle.BARS,
+        ),
+    )
+    val connections = mapOf(
+        "altitude" to altitudeConnected,
+        "heart" to heartConnected,
+        "oxygen" to oxygenConnected,
+        "steps" to stepsConnected,
+    )
+    val lines = allLines.filter { connections[it.key] == true && it.points.isNotEmpty() }
+    val scales = trendScales(lines, windowMs)
 
     SectionCard {
         Text(
@@ -1314,29 +1650,38 @@ private fun ChartCard(state: UiState, accent: Color) {
         }
         Spacer(Modifier.height(6.dp))
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
-            ChartLegend(
-                color = accent,
-                text = state.altitude?.let { Fmt.altitude(context, it, state.unit) }
-                    ?: stringResource(R.string.chart_altitude),
-            )
-            ChartLegend(
-                color = heartColor,
-                text = state.vitals.heartRateBpm?.let { "$it ${stringResource(R.string.vitals_bpm)}" }
-                    ?: stringResource(R.string.vitals_hr),
-            )
-            ChartLegend(
-                color = oxygenColor,
-                text = state.vitals.spo2Percent?.roundToInt()?.let { "SpO₂ $it%" }
-                    ?: "SpO₂",
-            )
-            ChartLegend(
-                color = stepsColor,
-                text = state.vitals.stepsToday?.let { "👣 $it" }
-                    ?: stringResource(R.string.vitals_steps),
-            )
+            ChartConnector(altitudeColor, altitudeLabel, altitudeConnected) {
+                altitudeConnected = !altitudeConnected
+            }
+            ChartConnector(heartColor, heartLabel, heartConnected) {
+                heartConnected = !heartConnected
+            }
+            ChartConnector(oxygenColor, "SpO₂", oxygenConnected) {
+                oxygenConnected = !oxygenConnected
+            }
+            ChartConnector(stepsColor, stepsLabel, stepsConnected) {
+                stepsConnected = !stepsConnected
+            }
+        }
+        if (scales.isNotEmpty()) {
+            Spacer(Modifier.height(7.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                scales.forEach { scale ->
+                    Text(
+                        text = "${scale.line.label} ${formatTrendValue(scale.min, scale.line.decimals)}–" +
+                            "${formatTrendValue(scale.max, scale.line.decimals)}${scale.line.unit}",
+                        fontSize = 9.5.sp,
+                        color = scale.line.color,
+                        maxLines = 1,
+                    )
+                }
+            }
         }
         Spacer(Modifier.height(8.dp))
         if (lines.isEmpty()) {
@@ -1349,30 +1694,37 @@ private fun ChartCard(state: UiState, accent: Color) {
             CombinedTrendChart(
                 lines = lines,
                 windowMs = windowMs,
+                gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f),
+                axisColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                backgroundColor = MaterialTheme.colorScheme.surface,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(210.dp),
             )
         }
     }
 }
 
 @Composable
-private fun ChartLegend(color: Color, text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(7.dp)
-                .background(color, CircleShape)
-        )
-        Spacer(Modifier.size(4.dp))
-        Text(
-            text = text,
-            fontSize = 10.5.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-    }
+private fun ChartConnector(color: Color, text: String, connected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = connected,
+        onClick = onClick,
+        leadingIcon = {
+            Box(
+                Modifier
+                    .size(7.dp)
+                    .background(if (connected) color else MaterialTheme.colorScheme.outline, CircleShape)
+            )
+        },
+        label = {
+            Text(
+                text = text,
+                fontSize = 10.5.sp,
+                color = if (connected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+    )
 }
 
 @Composable

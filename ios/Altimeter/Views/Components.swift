@@ -9,10 +9,10 @@ struct InstrumentCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color.white.opacity(0.055))
+                    .fill(Color(uiColor: .secondarySystemBackground))
                     .overlay {
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(Color(uiColor: .separator).opacity(0.35), lineWidth: 0.5)
                     }
             )
     }
@@ -25,11 +25,11 @@ struct StatusChip: View {
 
     var body: some View {
         Label(text, systemImage: icon)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(color)
+            .font(.caption.weight(.regular))
+            .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .background(Capsule().fill(color.opacity(0.12)))
+            .background(Capsule().fill(Color(uiColor: .tertiarySystemFill)))
     }
 }
 
@@ -41,12 +41,12 @@ struct MetricCell: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title.uppercased())
-                .font(.caption2.weight(.bold))
+                .font(.caption2.weight(.regular))
                 .tracking(0.8)
                 .foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text(value)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .font(.system(size: 23, weight: .light, design: .default))
                     .monospacedDigit()
                 if !unit.isEmpty {
                     Text(unit).font(.caption).foregroundStyle(.secondary)
@@ -55,7 +55,7 @@ struct MetricCell: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(Color.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 15))
+        .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 15))
     }
 }
 
@@ -65,7 +65,7 @@ struct SectionHeading: View {
 
     var body: some View {
         Label(title, systemImage: icon)
-            .font(.headline)
+            .font(.headline.weight(.regular))
             .foregroundStyle(.primary)
     }
 }

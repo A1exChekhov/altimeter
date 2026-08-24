@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.chelmodeev.altimeter.health.HealthReader
 import com.chelmodeev.altimeter.track.TrackingService
+import com.chelmodeev.altimeter.track.AutoTrackService
 import com.chelmodeev.altimeter.ui.AltimeterScreen
 import com.chelmodeev.altimeter.ui.ScreenActions
 import com.chelmodeev.altimeter.ui.theme.AltimeterTheme
@@ -32,12 +33,20 @@ import java.io.File
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private var pendingAutoTrackEnable = false
 
     private val locationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
             val granted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
             viewModel.onLocationPermission(granted)
+            if (granted && pendingAutoTrackEnable) continueAutoTrackPermission()
+        }
+
+    private val activityRecognitionPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted && pendingAutoTrackEnable) viewModel.setAutoTrack(true)
+            pendingAutoTrackEnable = false
         }
 
     private val healthPermissionLauncher =
@@ -71,8 +80,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            AltimeterTheme {
-                val state by viewModel.ui.collectAsStateWithLifecycle()
+            val state by viewModel.ui.collectAsStateWithLifecycle()
+            AltimeterTheme(darkTheme = state.darkTheme) {
                 AltimeterScreen(
                     state = state,
                     actions = ScreenActions(
@@ -92,6 +101,8 @@ class MainActivity : ComponentActivity() {
                         onToggleTopo = viewModel::setTopo,
                         onToggleKeepOn = viewModel::setKeepScreenOn,
                         onToggleAutoSend = viewModel::setAutoSend,
+                        onToggleDarkTheme = viewModel::setDarkTheme,
+                        onToggleAutoTrack = ::setAutoTrackEnabled,
                         onResetStats = viewModel::resetStats,
                         onStartTrack = { TrackingService.start(this) },
                         onStopTrack = { TrackingService.stop(this) },
@@ -122,6 +133,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        lifecycleScope.launch {
+            viewModel.ui.map { it.autoTrackEnabled }.distinctUntilChanged().collect { enabled ->
+                AutoTrackService.setEnabled(this@MainActivity, enabled)
+            }
+        }
+
         if (hasLocationPermission()) {
             viewModel.onLocationPermission(true)
         } else {
@@ -140,6 +157,34 @@ class MainActivity : ComponentActivity() {
         )
         if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
         locationPermissionLauncher.launch(perms.toTypedArray())
+    }
+
+    private fun setAutoTrackEnabled(enabled: Boolean) {
+        if (!enabled) {
+            pendingAutoTrackEnable = false
+            viewModel.setAutoTrack(false)
+            return
+        }
+        pendingAutoTrackEnable = true
+        if (!hasLocationPermission()) {
+            requestLocationPermissions()
+        } else {
+            continueAutoTrackPermission()
+        }
+    }
+
+    private fun continueAutoTrackPermission() {
+        if (Build.VERSION.SDK_INT < 29 ||
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACTIVITY_RECOGNITION,
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            viewModel.setAutoTrack(true)
+            pendingAutoTrackEnable = false
+        } else {
+            activityRecognitionPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
+        }
     }
 
     private fun requestHealthPermissions() {

@@ -41,6 +41,15 @@ final class AppModel: ObservableObject {
             UIApplication.shared.isIdleTimerDisabled = keepScreenAwake
         }
     }
+    @Published var darkTheme: Bool {
+        didSet { defaults.set(darkTheme, forKey: Keys.darkTheme) }
+    }
+    @Published var autoTrackEnabled: Bool {
+        didSet {
+            defaults.set(autoTrackEnabled, forKey: Keys.autoTrackEnabled)
+            engine.setAutoTrackEnabled(autoTrackEnabled)
+        }
+    }
 
     private let defaults = UserDefaults.standard
     private var subscriptions: Set<AnyCancellable> = []
@@ -54,6 +63,8 @@ final class AppModel: ObservableObject {
         manualOffset = store.object(forKey: Keys.manualOffset) as? Double
         useTopographicMap = store.object(forKey: Keys.topographicMap) as? Bool ?? true
         keepScreenAwake = store.object(forKey: Keys.keepScreenAwake) as? Bool ?? true
+        darkTheme = store.object(forKey: Keys.darkTheme) as? Bool ?? true
+        autoTrackEnabled = store.object(forKey: Keys.autoTrackEnabled) as? Bool ?? false
 
         engine.objectWillChange
             .sink { [weak self] _ in
@@ -78,6 +89,7 @@ final class AppModel: ObservableObject {
             .store(in: &subscriptions)
 
         applyCalibration()
+        engine.setAutoTrackEnabled(autoTrackEnabled)
         UIApplication.shared.isIdleTimerDisabled = keepScreenAwake
     }
 
@@ -166,5 +178,7 @@ final class AppModel: ObservableObject {
         static let manualOffset = "manualOffset"
         static let topographicMap = "useTopographicMap"
         static let keepScreenAwake = "keepScreenAwake"
+        static let darkTheme = "darkTheme"
+        static let autoTrackEnabled = "autoTrackEnabled"
     }
 }

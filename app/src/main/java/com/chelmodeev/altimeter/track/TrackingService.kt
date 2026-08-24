@@ -45,22 +45,39 @@ class TrackingService : Service() {
     companion object {
         private const val ACTION_START = "com.chelmodeev.altimeter.track.START"
         private const val ACTION_STOP = "com.chelmodeev.altimeter.track.STOP"
+        private const val ACTION_PAUSE = "com.chelmodeev.altimeter.track.PAUSE"
+        private const val ACTION_RESUME = "com.chelmodeev.altimeter.track.RESUME"
+        private const val EXTRA_AUTOMATIC = "automatic"
         private const val CHANNEL_ID = "tracking"
         private const val NOTIFICATION_ID = 7
 
         private val _state = MutableStateFlow(TrackRecState())
         val state: StateFlow<TrackRecState> = _state.asStateFlow()
 
-        fun start(context: Context) {
+        fun start(context: Context, automatic: Boolean = false) {
             ContextCompat.startForegroundService(
                 context,
-                Intent(context, TrackingService::class.java).setAction(ACTION_START)
+                Intent(context, TrackingService::class.java)
+                    .setAction(ACTION_START)
+                    .putExtra(EXTRA_AUTOMATIC, automatic)
             )
         }
 
         fun stop(context: Context) {
             context.startService(
                 Intent(context, TrackingService::class.java).setAction(ACTION_STOP)
+            )
+        }
+
+        fun pause(context: Context) {
+            context.startService(
+                Intent(context, TrackingService::class.java).setAction(ACTION_PAUSE)
+            )
+        }
+
+        fun resume(context: Context) {
+            context.startService(
+                Intent(context, TrackingService::class.java).setAction(ACTION_RESUME)
             )
         }
     }
@@ -78,14 +95,16 @@ class TrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startTracking()
+            ACTION_START -> startTracking(intent.getBooleanExtra(EXTRA_AUTOMATIC, false))
             ACTION_STOP -> stopTracking()
+            ACTION_PAUSE -> setPaused(true)
+            ACTION_RESUME -> setPaused(false)
             else -> if (!_state.value.recording) stopSelf()
         }
         return START_NOT_STICKY
     }
 
-    private fun startTracking() {
+    private fun startTracking(automatic: Boolean) {
         if (_state.value.recording) return
         ensureChannel()
         val c = AltimeterCore.get(this)
@@ -96,6 +115,8 @@ class TrackingService : Service() {
         _state.update {
             TrackRecState(
                 recording = true,
+                paused = false,
+                automatic = automatic,
                 startedAtMs = System.currentTimeMillis(),
                 lastSavedName = it.lastSavedName,
                 lastSavedPath = it.lastSavedPath,
@@ -124,7 +145,7 @@ class TrackingService : Service() {
     private fun onCoreState(s: AltimeterCore.CoreState) {
         if (!_state.value.recording) return
         lastAltitude = s.altitude ?: lastAltitude
-        if (recorder.offer(s)) {
+        if (!_state.value.paused && recorder.offer(s)) {
             _state.update {
                 it.copy(
                     points = recorder.pointCount,
@@ -163,6 +184,7 @@ class TrackingService : Service() {
             _state.update {
                 it.copy(
                     recording = false,
+                    paused = false,
                     lastSavedName = if (saved) file.name else it.lastSavedName,
                     lastSavedPath = if (saved) file.absolutePath else it.lastSavedPath,
                 )
@@ -178,6 +200,19 @@ class TrackingService : Service() {
         }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun setPaused(paused: Boolean) {
+        if (!_state.value.recording || _state.value.paused == paused) return
+        _state.update { it.copy(paused = paused) }
+        AltimeterWidgetStore.updateAltitudeAndTrack(
+            this,
+            lastAltitude,
+            AltimeterWidgetStore.read(this).unit,
+            _state.value,
+        )
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(NOTIFICATION_ID, buildNotification())
     }
 
     override fun onDestroy() {
@@ -212,7 +247,8 @@ class TrackingService : Service() {
     private fun buildNotification(): Notification {
         val s = _state.value
         val altText = lastAltitude?.let { Fmt.altitude(this, it, AltUnit.METERS) } ?: "—"
-        val text = "$altText · ${Fmt.distance(this, s.distanceM)} · ${s.points}"
+        val prefix = if (s.paused) getString(R.string.auto_track_paused) else altText
+        val text = "$prefix · ${Fmt.distance(this, s.distanceM)} · ${s.points}"
 
         val contentIntent = PendingIntent.getActivity(
             this, 0,
