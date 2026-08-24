@@ -41,6 +41,16 @@ class AltitudeWidgetProvider : AppWidgetProvider() {
                 setTextViewText(R.id.altitude_widget_altitude, content.altitude)
                 setTextViewText(R.id.altitude_widget_pressure, content.pressure)
                 setTextViewText(R.id.altitude_widget_coordinates, content.coordinates)
+                applyWidgetTheme(
+                    context = context,
+                    darkTheme = data.darkTheme,
+                    rootId = R.id.altitude_widget_root,
+                    primaryTextIds = intArrayOf(R.id.altitude_widget_altitude),
+                    secondaryTextIds = intArrayOf(
+                        R.id.altitude_widget_pressure,
+                        R.id.altitude_widget_coordinates,
+                    ),
+                )
                 setOnClickPendingIntent(
                     R.id.altitude_widget_root,
                     PendingIntent.getActivity(

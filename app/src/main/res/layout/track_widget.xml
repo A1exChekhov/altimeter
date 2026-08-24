@@ -16,32 +16,32 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="20sp"
-        android:autoSizeMinTextSize="13sp"
+        android:autoSizeMaxTextSize="31sp"
+        android:autoSizeMinTextSize="19sp"
         android:autoSizeStepGranularity="1sp"
         android:autoSizeTextType="uniform"
         android:fontFamily="sans-serif-light"
         android:gravity="center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="⏱ —   ↔ —"
+        android:text="↔ 0 м"
         android:textColor="@color/widget_text"
-        android:textSize="20sp" />
+        android:textSize="31sp" />
 
     <TextView
         android:id="@+id/track_widget_secondary"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:autoSizeMaxTextSize="16sp"
-        android:autoSizeMinTextSize="11sp"
+        android:autoSizeMaxTextSize="13sp"
+        android:autoSizeMinTextSize="9sp"
         android:autoSizeStepGranularity="1sp"
         android:autoSizeTextType="uniform"
         android:fontFamily="sans-serif-light"
         android:gravity="center_vertical"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:text="↗ —   ↘ —   🔥 —"
+        android:text="⏱ 0 мин   ↑0 м   ↓0 м   🔥 ·"
         android:textColor="@color/widget_secondary"
-        android:textSize="16sp" />
+        android:textSize="13sp" />
 </LinearLayout>

@@ -24,8 +24,8 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:autoSizeMaxTextSize="43sp"
-            android:autoSizeMinTextSize="28sp"
+            android:autoSizeMaxTextSize="47sp"
+            android:autoSizeMinTextSize="25sp"
             android:autoSizeStepGranularity="1sp"
             android:autoSizeTextType="uniform"
             android:fontFamily="sans-serif-light"
@@ -34,7 +34,7 @@
             android:maxLines="1"
             android:text="—"
             android:textColor="@color/widget_text"
-            android:textSize="43sp" />
+            android:textSize="47sp" />
 
         <TextView
             android:id="@+id/altitude_widget_pressure"

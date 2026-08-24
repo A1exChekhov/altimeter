@@ -3,4 +3,8 @@
     <color name="ink">#FF0B1220</color>
     <color name="widget_text">#FF171A1E</color>
     <color name="widget_secondary">#FF59616A</color>
+    <color name="widget_dark_text">#FFF2F4F6</color>
+    <color name="widget_dark_secondary">#FFAAB2BB</color>
+    <color name="widget_light_text">#FF171A1E</color>
+    <color name="widget_light_secondary">#FF59616A</color>
 </resources>

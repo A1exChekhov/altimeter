@@ -76,6 +76,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             settingsRepo.flow.collect { s ->
+                AltimeterWidgetStore.updateTheme(getApplication(), s.darkTheme)
                 _ui.update {
                     it.copy(
                         darkTheme = s.darkTheme,

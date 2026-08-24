@@ -40,6 +40,13 @@ class AltimeterWidgetProvider : AppWidgetProvider() {
             views.setTextViewText(R.id.widget_altitude, content.altitude)
             views.setTextViewText(R.id.widget_vitals, content.expeditionVitals)
             views.setTextViewText(R.id.widget_track, content.expeditionTrack)
+            views.applyWidgetTheme(
+                context = context,
+                darkTheme = data.darkTheme,
+                rootId = R.id.widget_root,
+                primaryTextIds = intArrayOf(R.id.widget_altitude, R.id.widget_vitals),
+                secondaryTextIds = intArrayOf(R.id.widget_track),
+            )
 
             val openApp = PendingIntent.getActivity(
                 context,

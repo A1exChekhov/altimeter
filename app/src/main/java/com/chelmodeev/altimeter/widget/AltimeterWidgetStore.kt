@@ -27,6 +27,7 @@ data class AltimeterWidgetSnapshot(
     val spo2Source: VitalsSource?,
     val stepsSource: VitalsSource?,
     val updatedAtMs: Long,
+    val darkTheme: Boolean,
 )
 
 /** Последний разрешённый снимок для домашнего виджета. */
@@ -44,11 +45,10 @@ object AltimeterWidgetStore {
         val edit = prefs(context).edit()
             .putString("unit", unit.name)
             .putLong("updated", System.currentTimeMillis())
-        if (altitudeM == null) edit.remove("altitude")
-        else edit.putLong("altitude", altitudeM.toBits())
-        edit.putDoubleOrRemove("pressure", pressureHpa)
-        edit.putDoubleOrRemove("latitude", latitude)
-        edit.putDoubleOrRemove("longitude", longitude)
+        if (altitudeM != null) edit.putLong("altitude", altitudeM.toBits())
+        edit.putDoubleIfPresent("pressure", pressureHpa)
+        edit.putDoubleIfPresent("latitude", latitude)
+        edit.putDoubleIfPresent("longitude", longitude)
         edit.apply()
         updateAllWidgets(context)
     }
@@ -83,8 +83,7 @@ object AltimeterWidgetStore {
             .putLong("track_moving_time", track.movingTimeMs)
             .putLong("track_stopped_time", track.stoppedTimeMs)
             .putLong("updated", System.currentTimeMillis())
-        if (altitudeM == null) edit.remove("altitude")
-        else edit.putLong("altitude", altitudeM.toBits())
+        if (altitudeM != null) edit.putLong("altitude", altitudeM.toBits())
         edit.apply()
         updateAllWidgets(context)
     }
@@ -92,17 +91,19 @@ object AltimeterWidgetStore {
     fun updateVitals(context: Context, vitals: VitalsState) {
         val edit = prefs(context).edit()
             .putLong("updated", System.currentTimeMillis())
-        if (vitals.heartRateBpm == null) edit.remove("heart_rate")
-        else edit.putLong("heart_rate", vitals.heartRateBpm)
-        if (vitals.spo2Percent == null) edit.remove("spo2")
-        else edit.putLong("spo2", vitals.spo2Percent.toBits())
-        if (vitals.stepsToday == null) edit.remove("steps")
-        else edit.putLong("steps", vitals.stepsToday)
-        edit.putDoubleOrRemove("active_calories", vitals.activeCaloriesToday)
+        if (vitals.heartRateBpm != null) edit.putLong("heart_rate", vitals.heartRateBpm)
+        if (vitals.spo2Percent != null) edit.putLong("spo2", vitals.spo2Percent.toBits())
+        if (vitals.stepsToday != null) edit.putLong("steps", vitals.stepsToday)
+        edit.putDoubleIfPresent("active_calories", vitals.activeCaloriesToday)
         putSource(edit, "heart_source", vitals.heartRateSource)
         putSource(edit, "spo2_source", vitals.spo2Source)
         putSource(edit, "steps_source", vitals.stepsSource)
         edit.apply()
+        updateAllWidgets(context)
+    }
+
+    fun updateTheme(context: Context, darkTheme: Boolean) {
+        prefs(context).edit().putBoolean("dark_theme", darkTheme).apply()
         updateAllWidgets(context)
     }
 
@@ -131,6 +132,7 @@ object AltimeterWidgetStore {
             spo2Source = p.source("spo2_source"),
             stepsSource = p.source("steps_source"),
             updatedAtMs = p.getLong("updated", 0L),
+            darkTheme = p.getBoolean("dark_theme", true),
         )
     }
 
@@ -147,11 +149,11 @@ object AltimeterWidgetStore {
     private fun android.content.SharedPreferences.getLongOrNull(key: String): Long? =
         if (contains(key)) getLong(key, 0L) else null
 
-    private fun android.content.SharedPreferences.Editor.putDoubleOrRemove(
+    private fun android.content.SharedPreferences.Editor.putDoubleIfPresent(
         key: String,
         value: Double?,
     ) {
-        if (value == null) remove(key) else putLong(key, value.toBits())
+        if (value != null) putLong(key, value.toBits())
     }
 
     private fun android.content.SharedPreferences.source(key: String): VitalsSource? =

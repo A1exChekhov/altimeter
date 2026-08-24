@@ -40,29 +40,31 @@ internal data class WidgetContent(
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
                     )
                 }
-            } ?: "—"
+            } ?: SpannableString("нет высоты").apply {
+                setSpan(RelativeSizeSpan(0.38f), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
             val pressure = data.pressureHpa?.let {
                 String.format(Locale.getDefault(), "%.1f гПа", it)
-            } ?: "— гПа"
+            } ?: "давление · нет"
             val coordinates = if (data.latitude != null && data.longitude != null) {
                 String.format(Locale.US, "%.5f, %.5f", data.latitude, data.longitude)
-            } else "—, —"
+            } else "координаты · нет"
             val distance = Fmt.distance(context, data.trackDistanceM)
             val track = when {
                 data.trackRecording -> context.getString(R.string.widget_track_recording, distance)
                 data.trackPoints > 0 -> context.getString(R.string.widget_track_saved, distance)
                 else -> context.getString(R.string.widget_track_empty)
             }
-            val heart = data.heartRateBpm?.toString() ?: "—"
-            val oxygen = data.spo2Percent?.roundToInt()?.let { "$it%" } ?: "—"
+            val heart = data.heartRateBpm?.toString() ?: "·"
+            val oxygen = data.spo2Percent?.roundToInt()?.let { "$it%" } ?: "·"
             val steps = data.stepsToday?.let {
                 NumberFormat.getIntegerInstance(Locale.getDefault()).format(it)
-            } ?: "—"
+            } ?: "·"
             val estimatedCalories = if (data.trackPoints > 1) {
                 (data.trackDistanceM / 1_000.0 * 50.0 + data.trackAscentM * 0.1).roundToInt()
             } else null
-            val calories = estimatedCalories?.let { "≈$it" } ?: "—"
-            val dailyCalories = data.activeCaloriesToday?.roundToInt()?.toString() ?: "—"
+            val calories = estimatedCalories?.let { "≈$it" } ?: "·"
+            val dailyCalories = data.activeCaloriesToday?.roundToInt()?.let { "$it ккал" } ?: "·"
             val moving = formatDuration(data.trackMovingTimeMs)
             val ascent = data.trackAscentM.roundToInt()
             val descent = data.trackDescentM.roundToInt()
@@ -72,16 +74,16 @@ internal data class WidgetContent(
                 coordinates = coordinates,
                 distance = distance,
                 track = track,
-                trackPrimary = "⏱ $moving   ↔ $distance",
-                trackSecondary = "↗ $ascent м   ↘ $descent м   🔥 $calories",
-                expeditionTrack = "↔ $distance   ↗ $ascent м   ↘ $descent м",
+                trackPrimary = "↔ $distance",
+                trackSecondary = "⏱ $moving   ↑$ascent м   ↓$descent м   🔥 $calories",
+                expeditionTrack = "↔ $distance   ⏱ $moving   ↑$ascent м   ↓$descent м",
                 heart = heart,
                 oxygen = oxygen,
                 steps = steps,
                 calories = calories,
-                healthTop = "♥ $heart    O₂ $oxygen",
+                healthTop = "❤️ $heart    O₂ $oxygen",
                 healthBottom = "👣 $steps    🔥 $dailyCalories",
-                expeditionVitals = "♥ $heart    O₂ $oxygen    👣 $steps",
+                expeditionVitals = "❤️ $heart    O₂ $oxygen    👣 $steps",
             )
         }
 

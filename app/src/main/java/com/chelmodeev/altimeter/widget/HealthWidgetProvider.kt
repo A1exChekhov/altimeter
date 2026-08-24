@@ -39,6 +39,15 @@ class HealthWidgetProvider : AppWidgetProvider() {
             return RemoteViews(context.packageName, R.layout.health_widget).apply {
                 setTextViewText(R.id.health_widget_top, content.healthTop)
                 setTextViewText(R.id.health_widget_bottom, content.healthBottom)
+                applyWidgetTheme(
+                    context = context,
+                    darkTheme = data.darkTheme,
+                    rootId = R.id.health_widget_root,
+                    primaryTextIds = intArrayOf(
+                        R.id.health_widget_top,
+                        R.id.health_widget_bottom,
+                    ),
+                )
                 setOnClickPendingIntent(
                     R.id.health_widget_root,
                     PendingIntent.getActivity(

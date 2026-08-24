@@ -34,6 +34,13 @@ class TrackWidgetProvider : AppWidgetProvider() {
                 val content = WidgetContent.create(context, data)
                 setTextViewText(R.id.track_widget_primary, content.trackPrimary)
                 setTextViewText(R.id.track_widget_secondary, content.trackSecondary)
+                applyWidgetTheme(
+                    context = context,
+                    darkTheme = data.darkTheme,
+                    rootId = R.id.track_widget_root,
+                    primaryTextIds = intArrayOf(R.id.track_widget_primary),
+                    secondaryTextIds = intArrayOf(R.id.track_widget_secondary),
+                )
                 setOnClickPendingIntent(
                     R.id.track_widget_root,
                     PendingIntent.getActivity(
