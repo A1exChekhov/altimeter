@@ -67,18 +67,17 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Altimeter Kailas Android 1.6.2](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.2/Altimeter-Kailas-Android-1.6.2.apk)**.
+**[скачать Altimeter Kailas Android 1.6.1](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.1/Altimeter-Kailas-Android-1.6.1.apk)**.
 
-В версии 1.6.2 графики высоты, пульса, SpO₂ и шагов используют единый непрерывный
-линейный вид на общей оси времени. Исправление восстановления маршрута после
-возврата из фона из версии 1.6.1 сохранено.
+В версии 1.6.1 линия маршрута принудительно восстанавливается после возврата
+приложения из фона. Источник и оба слоя трека проверяются независимо, поэтому
+собранные foreground-service точки снова отображаются поверх онлайн- и офлайн-карты.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
 `Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk`,
-`Altimeter-Kailas-Android-1.6.0.apk`, `Altimeter-Kailas-Android-1.6.1.apk`,
-`Altimeter-Kailas-Android-1.6.2.apk` и т. д.
+`Altimeter-Kailas-Android-1.6.0.apk`, `Altimeter-Kailas-Android-1.6.1.apk` и т. д.
 Стабильная резервная 1.5.12 сохранена на GitHub; новая сборка не перезаписывает её.
 
 ## Где находятся устанавливаемые файлы
@@ -93,10 +92,10 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно публикуется как asset релиза `v1.6.2`. Локально он создаётся
+Git, но готовый APK отдельно публикуется как asset релиза `v1.6.1`. Локально он создаётся
 командой `:app:assembleDebug`.
 
-Готовый Android 1.6.2: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.2/Altimeter-Kailas-Android-1.6.2.apk)**.
+Готовый Android 1.6.1: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.1/Altimeter-Kailas-Android-1.6.1.apk)**.
 
 ### iPhone
 
