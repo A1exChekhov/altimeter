@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,10 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
@@ -207,6 +210,8 @@ fun MapCard(
     fineLocationGranted: Boolean,
     offlineMapPath: String?,
     expanded: Boolean,
+    showExpandControl: Boolean = true,
+    bottomControlPadding: Dp = 10.dp,
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -317,7 +322,7 @@ fun MapCard(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(if (expanded) RectangleShape else RoundedCornerShape(22.dp))
             .background(Color(0xFF10192B))
     ) {
         AndroidView(
@@ -331,6 +336,7 @@ fun MapCard(
         Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
+                .then(if (expanded) Modifier.statusBarsPadding() else Modifier)
                 .padding(10.dp),
         ) {
             Surface(shape = RoundedCornerShape(50), color = Color(0xCC101826)) {
@@ -360,20 +366,25 @@ fun MapCard(
             }
         }
 
-        TouristMapButton(
-            icon = {
-                Icon(
-                    if (expanded) Icons.Rounded.CloseFullscreen else Icons.Rounded.OpenInFull,
-                    contentDescription = stringResource(
-                        if (expanded) R.string.cd_collapse_map else R.string.cd_expand_map
-                    ),
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp),
-                )
-            },
-            onClick = onToggleExpanded,
-            modifier = Modifier.align(Alignment.TopEnd).padding(10.dp),
-        )
+        if (showExpandControl) {
+            TouristMapButton(
+                icon = {
+                    Icon(
+                        if (expanded) Icons.Rounded.CloseFullscreen else Icons.Rounded.OpenInFull,
+                        contentDescription = stringResource(
+                            if (expanded) R.string.cd_collapse_map else R.string.cd_expand_map
+                        ),
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+                onClick = onToggleExpanded,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .then(if (expanded) Modifier.statusBarsPadding() else Modifier)
+                    .padding(10.dp),
+            )
+        }
 
         TouristMapButton(
             icon = {
@@ -392,7 +403,9 @@ fun MapCard(
                     )
                 }
             },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 10.dp, bottom = bottomControlPadding),
         )
 
         if (latitude == null) {

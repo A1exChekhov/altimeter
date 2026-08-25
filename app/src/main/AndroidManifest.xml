@@ -110,6 +110,18 @@
         </receiver>
 
         <receiver
+            android:name=".widget.AltitudeCompactWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_altitude_compact_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/altitude_compact_widget_info" />
+        </receiver>
+
+        <receiver
             android:name=".widget.HealthWidgetProvider"
             android:exported="true"
             android:label="@string/widget_health_name">

@@ -222,10 +222,12 @@
 
     <string name="widget_combined_name">Altimeter Kailas · всё</string>
     <string name="widget_altitude_name">Altimeter Kailas · высота</string>
+    <string name="widget_altitude_compact_name">Altimeter Kailas · высота 1×1</string>
     <string name="widget_health_name">Altimeter Kailas · здоровье</string>
     <string name="widget_track_name">Altimeter Kailas · поход</string>
     <string name="widget_description">Высота, трек, пульс, SpO₂ и шаги (4×1)</string>
     <string name="widget_altitude_description">Высота, давление и координаты (2×1)</string>
+    <string name="widget_altitude_compact_description">Высота (1×1)</string>
     <string name="widget_health_description">Пульс, SpO₂, шаги и калории (2×1)</string>
     <string name="widget_track_description">Время движения, путь, подъём и спуск (2×1)</string>
     <string name="widget_track_recording">● Трек %1$s</string>

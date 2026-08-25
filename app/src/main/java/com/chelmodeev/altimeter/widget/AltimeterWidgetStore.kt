@@ -142,6 +142,7 @@ object AltimeterWidgetStore {
     private fun updateAllWidgets(context: Context) {
         AltimeterWidgetProvider.updateAll(context)
         AltitudeWidgetProvider.updateAll(context)
+        AltitudeCompactWidgetProvider.updateAll(context)
         HealthWidgetProvider.updateAll(context)
         TrackWidgetProvider.updateAll(context)
     }

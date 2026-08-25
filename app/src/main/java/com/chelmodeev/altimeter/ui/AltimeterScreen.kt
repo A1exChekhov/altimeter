@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -65,6 +66,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -220,12 +222,18 @@ fun AltimeterScreen(state: UiState, actions: ScreenActions) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = { AppBottomBar(section, state.tracking.recording, ::select) },
+        bottomBar = {
+            AppBottomBar(
+                section = section,
+                trackRecording = state.tracking.recording,
+                compact = section == AppSection.MAP,
+                onSelect = ::select,
+            )
+        },
     ) { contentPadding ->
         Box(
-            Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
+            (if (section == AppSection.MAP) Modifier.fillMaxSize()
+             else Modifier.fillMaxSize().padding(contentPadding))
                 .background(MaterialTheme.colorScheme.background)
         ) {
             Box(
@@ -319,9 +327,14 @@ private fun PersistentPage(
 private fun AppBottomBar(
     section: AppSection,
     trackRecording: Boolean,
+    compact: Boolean,
     onSelect: (AppSection) -> Unit,
 ) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)) {
+    NavigationBar(
+        modifier = if (compact) Modifier.height(62.dp).navigationBarsPadding() else Modifier,
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = if (compact) 0.88f else 0.98f),
+        windowInsets = if (compact) WindowInsets(0, 0, 0, 0) else NavigationBarDefaults.windowInsets,
+    ) {
         val items = listOf(
             Triple(AppSection.HOME, Icons.Rounded.Home, R.string.nav_home),
             Triple(AppSection.MAP, Icons.Rounded.Map, R.string.nav_map),
@@ -346,8 +359,10 @@ private fun AppBottomBar(
                         }
                     }
                 },
-                label = { Text(stringResource(label), maxLines = 1, fontSize = 10.sp) },
-                alwaysShowLabel = true,
+                label = if (compact) null else {
+                    { Text(stringResource(label), maxLines = 1, fontSize = 10.sp) }
+                },
+                alwaysShowLabel = !compact,
             )
         }
     }
@@ -421,13 +436,7 @@ private fun MapPage(
     actions: ScreenActions,
     onOpenSettings: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 12.dp)
-    ) {
-        PageHeader(R.string.nav_map, Icons.Rounded.Map, onOpenSettings)
+    Box(Modifier.fillMaxSize()) {
         MapCard(
             session = mapSession,
             latitude = state.latitude,
@@ -442,40 +451,70 @@ private fun MapPage(
             fineLocationGranted = state.fineLocationPermissionGranted,
             offlineMapPath = state.offlineMaps.activePath,
             expanded = true,
+            showExpandControl = false,
+            bottomControlPadding = 146.dp,
             onToggleExpanded = {},
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier.fillMaxSize(),
         )
+
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(10.dp),
+        ) {
+            IconButton(onClick = onOpenSettings, modifier = Modifier.size(38.dp)) {
+                Icon(
+                    Icons.Rounded.Settings,
+                    contentDescription = stringResource(R.string.cd_settings),
+                )
+            }
+        }
+
         if (state.latitude != null && state.longitude != null) {
-            Text(
-                text = Fmt.coords(state.latitude, state.longitude),
-                style = TextStyle(fontSize = 13.sp, fontFeatureSettings = "tnum"),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                textAlign = TextAlign.Center,
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 12.dp, vertical = 70.dp),
             ) {
-                Button(
-                    onClick = actions.onShareLocation,
-                    modifier = Modifier.weight(1f),
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
                 ) {
-                    Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.location_share), maxLines = 1)
+                    Text(
+                        text = Fmt.coords(state.latitude, state.longitude),
+                        style = TextStyle(fontSize = 11.sp, fontFeatureSettings = "tnum"),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
                 }
-                OutlinedButton(
-                    onClick = actions.onShareLocationWithPhoto,
-                    modifier = Modifier.weight(1f),
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(17.dp))
-                    Spacer(Modifier.size(6.dp))
-                    Text(stringResource(R.string.location_share_photo), maxLines = 1)
+                    FilledTonalButton(
+                        onClick = actions.onShareLocation,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                        modifier = Modifier.height(40.dp),
+                    ) {
+                        Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.location_share), maxLines = 1, fontSize = 11.sp)
+                    }
+                    OutlinedButton(
+                        onClick = actions.onShareLocationWithPhoto,
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                        modifier = Modifier.height(40.dp),
+                    ) {
+                        Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text(stringResource(R.string.location_share_photo), maxLines = 1, fontSize = 11.sp)
+                    }
                 }
             }
-        } else {
-            Spacer(Modifier.height(10.dp))
         }
     }
 }

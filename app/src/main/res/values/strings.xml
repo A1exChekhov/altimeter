@@ -223,10 +223,12 @@
 
     <string name="widget_combined_name">Altimeter Kailas · all</string>
     <string name="widget_altitude_name">Altimeter Kailas · altitude</string>
+    <string name="widget_altitude_compact_name">Altimeter Kailas · altitude 1×1</string>
     <string name="widget_health_name">Altimeter Kailas · health</string>
     <string name="widget_track_name">Altimeter Kailas · hike</string>
     <string name="widget_description">Altitude, track, heart rate, SpO₂ and steps (4×1)</string>
     <string name="widget_altitude_description">Altitude, pressure and coordinates (2×1)</string>
+    <string name="widget_altitude_compact_description">Altitude (1×1)</string>
     <string name="widget_health_description">Heart rate, SpO₂, steps and calories (2×1)</string>
     <string name="widget_track_description">Moving time, distance, ascent and descent (2×1)</string>
     <string name="widget_track_recording">● Track %1$s</string>
