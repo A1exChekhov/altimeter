@@ -343,6 +343,7 @@ jobs:
             -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_ISSUER_ID" \
             DEVELOPMENT_TEAM=76UD6VNBTE \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY= \
             PROVISIONING_PROFILE_SPECIFIER= \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             archive | tee build/ios-testflight-archive.log
