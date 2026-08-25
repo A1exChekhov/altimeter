@@ -17,7 +17,6 @@ private struct MetricLine: Identifiable {
     let color: Color
     let points: [VitalPoint]
     let decimals: Int
-    let bars: Bool
 }
 
 private struct MetricScale: Identifiable {
@@ -98,8 +97,7 @@ struct AltitudeChartView: View {
                 points: points.map {
                     VitalPoint(date: $0.date, value: unit.value(fromMeters: $0.altitude))
                 },
-                decimals: 0,
-                bars: false
+                decimals: 0
             ),
             MetricLine(
                 id: .heart,
@@ -107,8 +105,7 @@ struct AltitudeChartView: View {
                 unit: " уд/мин",
                 color: heartColor,
                 points: vitals.heartRateSeries,
-                decimals: 0,
-                bars: false
+                decimals: 0
             ),
             MetricLine(
                 id: .oxygen,
@@ -116,8 +113,7 @@ struct AltitudeChartView: View {
                 unit: "%",
                 color: oxygenColor,
                 points: vitals.oxygenSeries,
-                decimals: 1,
-                bars: false
+                decimals: 1
             ),
             MetricLine(
                 id: .steps,
@@ -125,8 +121,7 @@ struct AltitudeChartView: View {
                 unit: "",
                 color: stepsColor,
                 points: vitals.stepsSeries,
-                decimals: 0,
-                bars: true
+                decimals: 0
             ),
         ]
     }
@@ -178,21 +173,13 @@ struct AltitudeChartView: View {
         Chart {
             ForEach(scales) { scale in
                 ForEach(scale.points) { point in
-                    if scale.line.bars {
-                        BarMark(
-                            x: .value("Время", point.date),
-                            y: .value(scale.line.title, scale.normalized(point.value))
-                        )
-                        .foregroundStyle(scale.line.color.opacity(0.82))
-                    } else {
-                        LineMark(
-                            x: .value("Время", point.date),
-                            y: .value(scale.line.title, scale.normalized(point.value)),
-                            series: .value("Показатель", scale.line.id.rawValue)
-                        )
-                        .foregroundStyle(scale.line.color)
-                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    }
+                    LineMark(
+                        x: .value("Время", point.date),
+                        y: .value(scale.line.title, scale.normalized(point.value)),
+                        series: .value("Показатель", scale.line.id.rawValue)
+                    )
+                    .foregroundStyle(scale.line.color)
+                    .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
             }
 

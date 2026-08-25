@@ -47,14 +47,14 @@ jobs:
           CERTIFICATES="$("$TOOLS/apksigner" verify --print-certs "$APK")"
           printf '%s\n' "$BADGING"
           printf '%s\n' "$CERTIFICATES"
-          printf '%s' "$BADGING" | grep -F "versionCode='21' versionName='1.6.1'"
+          printf '%s' "$BADGING" | grep -F "versionCode='22' versionName='1.6.2'"
           printf '%s' "$CERTIFICATES" | tr '[:lower:]' '[:upper:]' \
             | grep -F "16554CC9CDA37C649AF0D9B291255A3EB0DF5A1DD1FD0C9EDA5E48F661B9CAC2"
-          cp "$APK" "app/build/outputs/apk/release/Altimeter-Kailas-Android-1.6.1.apk"
+          cp "$APK" "app/build/outputs/apk/release/Altimeter-Kailas-Android-1.6.2.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: Altimeter-Kailas-Android-1.6.1
-          path: app/build/outputs/apk/release/Altimeter-Kailas-Android-1.6.1.apk
+          name: Altimeter-Kailas-Android-1.6.2
+          path: app/build/outputs/apk/release/Altimeter-Kailas-Android-1.6.2.apk
 
   navigation-smoke:
     name: Navigation + precise track — 5 full cycles

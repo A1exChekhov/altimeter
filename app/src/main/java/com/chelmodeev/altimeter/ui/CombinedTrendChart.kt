@@ -25,8 +25,6 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
-enum class TrendStyle { LINE, BARS }
-
 data class TrendLine(
     val key: String,
     val label: String,
@@ -34,7 +32,6 @@ data class TrendLine(
     val color: Color,
     val points: List<Pair<Long, Double>>,
     val decimals: Int = 0,
-    val style: TrendStyle = TrendStyle.LINE,
 )
 
 data class TrendScale(
@@ -174,19 +171,7 @@ fun CombinedTrendChart(
             fun yFor(value: Double): Float = bottom -
                 ((value - scale.min) / valueSpan).coerceIn(0.0, 1.0).toFloat() * plotHeight
 
-            if (scale.line.style == TrendStyle.BARS) {
-                val barWidth = (plotWidth / visible.size.coerceAtLeast(12)).coerceIn(2.dp.toPx(), 10.dp.toPx())
-                visible.forEach { sample ->
-                    val x = xFor(sample.first)
-                    drawLine(
-                        color = scale.line.color.copy(alpha = 0.8f),
-                        start = Offset(x, bottom),
-                        end = Offset(x, yFor(sample.second)),
-                        strokeWidth = barWidth,
-                        cap = StrokeCap.Round,
-                    )
-                }
-            } else if (visible.size == 1) {
+            if (visible.size == 1) {
                 drawCircle(
                     color = scale.line.color,
                     radius = 3.dp.toPx(),

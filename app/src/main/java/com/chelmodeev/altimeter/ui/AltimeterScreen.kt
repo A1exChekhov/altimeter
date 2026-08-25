@@ -1700,7 +1700,7 @@ private fun ChartCard(state: UiState, accent: Color) {
     val altitudeLabel = stringResource(R.string.chart_altitude)
     val heartLabel = stringResource(R.string.vitals_hr)
     val stepsLabel = stringResource(R.string.vitals_steps)
-    val stepBars = state.vitals.stepsSeries.mapIndexed { index, sample ->
+    val stepTrend = state.vitals.stepsSeries.mapIndexed { index, sample ->
         val previous = state.vitals.stepsSeries.getOrNull(index - 1)?.second ?: 0L
         sample.first to (sample.second - previous).coerceAtLeast(0L).toDouble()
     }
@@ -1732,8 +1732,7 @@ private fun ChartCard(state: UiState, accent: Color) {
             label = stepsLabel,
             unit = "",
             color = stepsColor,
-            points = stepBars,
-            style = TrendStyle.BARS,
+            points = stepTrend,
         ),
     )
     val connections = mapOf(

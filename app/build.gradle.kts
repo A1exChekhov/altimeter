@@ -17,8 +17,8 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
-        versionName = "1.6.1"
+        versionCode = 22
+        versionName = "1.6.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
