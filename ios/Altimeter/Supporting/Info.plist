@@ -6,6 +6,8 @@
     <string>ru</string>
     <key>CFBundleDisplayName</key>
     <string>Altimeter Kailas</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -50,6 +52,8 @@
         <string>arm64</string>
         <string>location-services</string>
     </array>
+    <key>UIRequiresFullScreen</key>
+    <true/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

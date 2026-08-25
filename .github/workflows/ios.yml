@@ -255,7 +255,7 @@ jobs:
   testflight:
     name: Upload to TestFlight
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.distribution == 'testflight' }}
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     env:
       APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
