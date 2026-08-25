@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>ru</string>
     <key>CFBundleDisplayName</key>
-    <string>Альтиметр</string>
+    <string>Altimeter Kailas</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,7 +27,7 @@
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
     <key>NSHealthShareUsageDescription</key>
-    <string>Альтиметр читает пульс, SpO₂, шаги и активные калории из приложения «Здоровье», чтобы показывать состояние во время маршрута.</string>
+    <string>Altimeter Kailas читает пульс, SpO₂, шаги и активные калории из приложения «Здоровье», чтобы показывать состояние во время маршрута.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Фоновый доступ нужен для автоматического запуска и записи GPX-маршрута при заблокированном экране.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
@@ -56,4 +56,3 @@
     </array>
 </dict>
 </plist>
-

@@ -338,7 +338,7 @@ struct AltimeterScreen: View {
         InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeading(icon: "applewatch", title: "Отправить на Apple Watch")
-                Text("Создаёт уведомление с текущей высотой. Часы покажут его, когда iPhone заблокирован и зеркалирование уведомлений Altimeter включено в Watch.")
+                Text("Создаёт уведомление с текущей высотой. Часы покажут его, когда iPhone заблокирован и зеркалирование уведомлений Altimeter Kailas включено в Watch.")
                     .font(.footnote).foregroundStyle(.secondary)
                 Button {
                     Task { await model.notifications.sendAltitude(state, unit: model.unit) }

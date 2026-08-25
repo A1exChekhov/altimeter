@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Альтиметр</string>
+    <string name="app_name">Altimeter Kailas</string>
     <string name="nav_home">Главная</string>
     <string name="nav_map">Карта</string>
     <string name="nav_track">Поход</string>
@@ -127,6 +127,11 @@
     <string name="track_open">Треки и запись GPX</string>
     <string name="track_start">Начать запись</string>
     <string name="track_stop">Стоп</string>
+    <string name="track_precise_location_required">Для записи GPX нужна точная геопозиция. Включите точное местоположение для Altimeter Kailas в настройках Android.</string>
+    <string name="track_waiting_for_gps">ТРЕК · ОЖИДАНИЕ GPS</string>
+    <string name="track_waiting_for_accuracy">ТРЕК · GPS ±%1$d м</string>
+    <string name="track_collecting_points">ТРЕК · %1$d/2 ТОЧКИ</string>
+    <string name="track_points_on_map">ТРЕК · %1$d ТОЧЕК</string>
     <string name="track_hero_stop">Остановить трек · %1$s</string>
     <string name="track_points">точек</string>
     <string name="track_distance">дистанция</string>
@@ -187,7 +192,7 @@
     <string name="vitals_health_connect_grant">Подключить Health Connect</string>
     <string name="vitals_permissions_status">Доступ: пульс %1$s · SpO₂ %2$s · шаги %3$s</string>
     <string name="vitals_health_connect_error">Health Connect: %1$s</string>
-    <string name="vitals_sources_hint">Разрешите приложению-источнику записывать пульс, SpO₂ и шаги в Health Connect, затем дайте Альтиметру доступ к этим данным.</string>
+    <string name="vitals_sources_hint">Разрешите приложению-источнику записывать пульс, SpO₂ и шаги в Health Connect, затем дайте Altimeter Kailas доступ к этим данным.</string>
     <string name="vitals_repo_mode">Сборка из репозитория · без Huawei App ID</string>
     <string name="vitals_repo_hint">Данные читаются локально из Health Connect. Приложение-источник должно иметь разрешение на запись нужных показателей.</string>
     <string name="vitals_missing_data_types">В Health Connect нет свежих записей: %1$s. Проверьте права на запись и состояние синхронизации в приложении-источнике.</string>
@@ -215,10 +220,10 @@
     <string name="vitals_open_health_connect">Открыть Health Connect</string>
     <string name="vitals_health_connect_open_failed">Не удалось открыть Health Connect</string>
 
-    <string name="widget_combined_name">Альтиметр · всё</string>
-    <string name="widget_altitude_name">Альтиметр · высота</string>
-    <string name="widget_health_name">Альтиметр · здоровье</string>
-    <string name="widget_track_name">Альтиметр · поход</string>
+    <string name="widget_combined_name">Altimeter Kailas · всё</string>
+    <string name="widget_altitude_name">Altimeter Kailas · высота</string>
+    <string name="widget_health_name">Altimeter Kailas · здоровье</string>
+    <string name="widget_track_name">Altimeter Kailas · поход</string>
     <string name="widget_description">Высота, трек, пульс, SpO₂ и шаги (4×1)</string>
     <string name="widget_altitude_description">Высота, давление и координаты (2×1)</string>
     <string name="widget_health_description">Пульс, SpO₂, шаги и калории (2×1)</string>

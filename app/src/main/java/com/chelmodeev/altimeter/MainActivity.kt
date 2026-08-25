@@ -38,13 +38,28 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
     private var pendingAutoTrackEnable = false
+    private var startTrackAfterLocationGrant = false
 
     private val locationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-            val granted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-            viewModel.onLocationPermission(granted)
-            if (granted && pendingAutoTrackEnable) continueAutoTrackPermission()
+            val fineGranted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+            val granted = fineGranted ||
+                result[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+            viewModel.onLocationPermission(granted, fineGranted)
+            if (startTrackAfterLocationGrant) {
+                startTrackAfterLocationGrant = false
+                if (fineGranted) TrackingService.start(this)
+                else showPreciseLocationRequired()
+            }
+            if (pendingAutoTrackEnable) {
+                if (fineGranted) continueAutoTrackPermission()
+                else {
+                    pendingAutoTrackEnable = false
+                    showPreciseLocationRequired()
+                }
+            }
         }
 
     private val activityRecognitionPermissionLauncher =
@@ -114,7 +129,7 @@ class MainActivity : ComponentActivity() {
                         onToggleAutoTrack = ::setAutoTrackEnabled,
                         onSetTrackSampling = viewModel::setTrackSampling,
                         onResetStats = viewModel::resetStats,
-                        onStartTrack = { TrackingService.start(this) },
+                        onStartTrack = ::startTrackWithPermission,
                         onStopTrack = { TrackingService.stop(this) },
                         onViewTrack = viewModel::viewTrack,
                         onShareTrack = ::shareTrack,
@@ -153,16 +168,17 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        if (hasLocationPermission()) {
-            viewModel.onLocationPermission(true)
+        val fineGranted = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+        val locationGranted = fineGranted || hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (locationGranted) {
+            viewModel.onLocationPermission(true, fineGranted)
         } else {
             requestLocationPermissions()
         }
     }
 
-    private fun hasLocationPermission(): Boolean =
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun requestLocationPermissions() {
         val perms = mutableListOf(
@@ -180,7 +196,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         pendingAutoTrackEnable = true
-        if (!hasLocationPermission()) {
+        if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
             requestLocationPermissions()
         } else {
             continueAutoTrackPermission()
@@ -188,6 +204,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun continueAutoTrackPermission() {
+        if (!hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            pendingAutoTrackEnable = false
+            showPreciseLocationRequired()
+            return
+        }
         if (Build.VERSION.SDK_INT < 29 ||
             ContextCompat.checkSelfPermission(
                 this,
@@ -199,6 +220,19 @@ class MainActivity : ComponentActivity() {
         } else {
             activityRecognitionPermissionLauncher.launch(Manifest.permission.ACTIVITY_RECOGNITION)
         }
+    }
+
+    private fun startTrackWithPermission() {
+        if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
+            TrackingService.start(this)
+            return
+        }
+        startTrackAfterLocationGrant = true
+        requestLocationPermissions()
+    }
+
+    private fun showPreciseLocationRequired() {
+        Toast.makeText(this, R.string.track_precise_location_required, Toast.LENGTH_LONG).show()
     }
 
     private fun requestHealthPermissions() {

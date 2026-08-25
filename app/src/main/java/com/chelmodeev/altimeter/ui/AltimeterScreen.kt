@@ -395,6 +395,9 @@ private fun HomePage(
             accent = accent,
             trackPoints = state.mapTrack,
             trackRecording = state.tracking.recording,
+            trackPointCount = state.tracking.points,
+            hasPreciseFix = state.hasFix,
+            fineLocationGranted = state.fineLocationPermissionGranted,
             offlineMapPath = state.offlineMaps.activePath,
             expanded = false,
             onToggleExpanded = onOpenMap,
@@ -434,6 +437,9 @@ private fun MapPage(
             accent = accent,
             trackPoints = state.mapTrack,
             trackRecording = state.tracking.recording,
+            trackPointCount = state.tracking.points,
+            hasPreciseFix = state.hasFix,
+            fineLocationGranted = state.fineLocationPermissionGranted,
             offlineMapPath = state.offlineMaps.activePath,
             expanded = true,
             onToggleExpanded = {},
@@ -789,6 +795,16 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (state.locationPermissionGranted && !state.fineLocationPermissionGranted) {
+            Text(
+                text = stringResource(R.string.track_precise_location_required),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = Color(0xFFF2B94B),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }

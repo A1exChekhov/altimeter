@@ -170,7 +170,7 @@ class GpxRecorder {
         val sb = StringBuilder(points.size * 96 + 512)
         sb.append("""<?xml version="1.0" encoding="UTF-8"?>""").append('\n')
         sb.append(
-            """<gpx version="1.1" creator="Errarium Altimeter" xmlns="http://www.topografix.com/GPX/1/1">"""
+            """<gpx version="1.1" creator="Errarium Altimeter Kailas" xmlns="http://www.topografix.com/GPX/1/1">"""
         ).append('\n')
         sb.append("  <metadata><time>")
             .append(Instant.ofEpochMilli(if (startedAtMs > 0) startedAtMs else System.currentTimeMillis()))

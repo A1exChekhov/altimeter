@@ -107,7 +107,7 @@ struct SettingsView: View {
                 }
 
                 Section("О приложении") {
-                    Text("Высота: барометр + GPS с медленным фильтром Калмана. Файлы GPX сохраняются в приложении «Файлы» → На iPhone → Altimeter → Tracks.")
+                    Text("Высота: барометр + GPS с медленным фильтром Калмана. Файлы GPX сохраняются в приложении «Файлы» → На iPhone → Altimeter Kailas → Tracks.")
                     Text("Советы носят информационный характер и не являются медицинской рекомендацией.")
                         .foregroundStyle(.secondary)
                     LabeledContent("Автор") { Text("Aleksey Hermes") }

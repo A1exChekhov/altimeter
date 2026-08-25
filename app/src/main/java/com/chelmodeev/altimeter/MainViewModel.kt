@@ -70,13 +70,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var trackRegionJob: Job? = null
     private var lastWidgetUpdateAt = 0L
     @Volatile private var appInForeground = false
+    private var uiCoreAcquired = false
 
     init {
         wearEngine.onStatus = { msg ->
             _ui.update { it.copy(watch = WatchState(statusText = msg, busy = false)) }
         }
-        core.acquire()
-
         viewModelScope.launch { core.state.collect { onCoreState(it) } }
 
         viewModelScope.launch {
@@ -144,7 +143,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         bluetoothHeartRateReader.stop()
-        core.release()
+        if (uiCoreAcquired) {
+            core.release()
+            uiCoreAcquired = false
+        }
         super.onCleared()
     }
 
@@ -206,8 +208,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun onLocationPermission(granted: Boolean) {
-        _ui.update { it.copy(locationPermissionGranted = granted) }
+    fun onLocationPermission(granted: Boolean, fineGranted: Boolean) {
+        _ui.update {
+            it.copy(
+                locationPermissionGranted = granted,
+                fineLocationPermissionGranted = fineGranted,
+            )
+        }
         core.onLocationPermission(granted)
     }
 
@@ -305,6 +312,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAppForegrounded() {
         appInForeground = true
+        if (!uiCoreAcquired) {
+            core.acquire()
+            uiCoreAcquired = true
+        }
         viewModelScope.launch {
             // Health Connect rejects aggregate reads until Android has fully promoted
             // the resumed activity to foreground. onPostResume + a short main-loop
@@ -316,6 +327,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAppBackgrounded() {
         appInForeground = false
+        if (uiCoreAcquired) {
+            core.release()
+            uiCoreAcquired = false
+        }
     }
 
     fun connectBluetoothHeartRate() {

@@ -163,6 +163,8 @@ data class UiState(
     val trackSamplingMode: TrackSamplingMode = TrackSamplingMode.EVERY_1S,
     val hasBarometer: Boolean = false,
     val locationPermissionGranted: Boolean = false,
+    /** Точная геопозиция обязательна для записи GPX; приблизительной хватает только для карты. */
+    val fineLocationPermissionGranted: Boolean = false,
 
     val altitude: Double? = null,          // метры MSL
     val accuracy: Double? = null,          // ± метры (null: режим ручной/QNH)

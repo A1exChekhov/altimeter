@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Altimeter</string>
+    <string name="app_name">Altimeter Kailas</string>
     <string name="nav_home">Home</string>
     <string name="nav_map">Map</string>
     <string name="nav_track">Hike</string>
@@ -128,6 +128,11 @@
     <string name="track_open">Tracks and GPX recording</string>
     <string name="track_start">Start recording</string>
     <string name="track_stop">Stop</string>
+    <string name="track_precise_location_required">Precise location is required to record a GPX track. Enable precise location for Altimeter Kailas in Android settings.</string>
+    <string name="track_waiting_for_gps">TRACK · WAITING FOR GPS</string>
+    <string name="track_waiting_for_accuracy">TRACK · GPS ±%1$d m</string>
+    <string name="track_collecting_points">TRACK · %1$d/2 POINTS</string>
+    <string name="track_points_on_map">TRACK · %1$d POINTS</string>
     <string name="track_hero_stop">Stop track · %1$s</string>
     <string name="track_points">points</string>
     <string name="track_distance">distance</string>
@@ -188,7 +193,7 @@
     <string name="vitals_health_connect_grant">Connect Health Connect</string>
     <string name="vitals_permissions_status">Access: heart %1$s · SpO₂ %2$s · steps %3$s</string>
     <string name="vitals_health_connect_error">Health Connect: %1$s</string>
-    <string name="vitals_sources_hint">Allow the source app to write heart rate, SpO₂ and steps to Health Connect, then grant Altimeter access to these data.</string>
+    <string name="vitals_sources_hint">Allow the source app to write heart rate, SpO₂ and steps to Health Connect, then grant Altimeter Kailas access to these data.</string>
     <string name="vitals_repo_mode">Repository build · no Huawei App ID</string>
     <string name="vitals_repo_hint">Data is read locally from Health Connect. The source app must have permission to write the required metrics.</string>
     <string name="vitals_missing_data_types">Health Connect has no recent records for: %1$s. Check write permissions and sync status in the source app.</string>
@@ -216,10 +221,10 @@
     <string name="vitals_open_health_connect">Open Health Connect</string>
     <string name="vitals_health_connect_open_failed">Could not open Health Connect</string>
 
-    <string name="widget_combined_name">Altimeter · all</string>
-    <string name="widget_altitude_name">Altimeter · altitude</string>
-    <string name="widget_health_name">Altimeter · health</string>
-    <string name="widget_track_name">Altimeter · hike</string>
+    <string name="widget_combined_name">Altimeter Kailas · all</string>
+    <string name="widget_altitude_name">Altimeter Kailas · altitude</string>
+    <string name="widget_health_name">Altimeter Kailas · health</string>
+    <string name="widget_track_name">Altimeter Kailas · hike</string>
     <string name="widget_description">Altitude, track, heart rate, SpO₂ and steps (4×1)</string>
     <string name="widget_altitude_description">Altitude, pressure and coordinates (2×1)</string>
     <string name="widget_health_description">Heart rate, SpO₂, steps and calories (2×1)</string>

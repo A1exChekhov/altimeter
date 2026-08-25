@@ -1,4 +1,4 @@
-# Альтиметр · Errarium™ — Android и iPhone
+# Altimeter Kailas · Errarium™ — Android и iPhone
 
 В корне находится Android-приложение для Honor/Huawei. Нативная iPhone-версия
 с Apple Health, Garmin-совместимостью, архивом GPX и WidgetKit находится в
@@ -67,12 +67,17 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Errarium Altimeter Android 1.5.13](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.13/Errarium-Altimeter-Android-1.5.13.apk)**.
+**[скачать Altimeter Kailas Android 1.6.0](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.0/Altimeter-Kailas-Android-1.6.0.apk)**.
+
+В версии 1.6.0 обновлён MapLibre, линия маршрута стала контрастнее, добавлены
+начальная точка и понятные статусы ожидания GPS. Запись запускается только с точной
+геопозицией, а без активного трека датчики освобождаются после сворачивания.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
-`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk` и т. д.
+`Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk`,
+`Altimeter-Kailas-Android-1.6.0.apk` и т. д.
 Стабильная резервная 1.5.12 сохранена на GitHub; новая сборка не перезаписывает её.
 
 ## Где находятся устанавливаемые файлы
@@ -87,10 +92,10 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно публикуется как asset релиза `v1.5.13`. Локально он создаётся
+Git, но готовый APK отдельно публикуется как asset релиза `v1.6.0`. Локально он создаётся
 командой `:app:assembleDebug`.
 
-Готовый Android 1.5.13: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.5.13/Errarium-Altimeter-Android-1.5.13.apk)**.
+Готовый Android 1.6.0: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.0/Altimeter-Kailas-Android-1.6.0.apk)**.
 
 ### iPhone
 
@@ -129,7 +134,7 @@ Xcode Organizer с development/ad hoc подписью.
 показывает уведомления телефона на часах.
 
 Включите: **Huawei Health → Устройства → ваши часы → Уведомления** → разрешить
-для приложения «Альтиметр».
+для приложения `Altimeter Kailas`.
 
 ### Необязательный Wear Engine (для своего приложения на часах)
 Кнопка **«Wear Engine»** шлёт JSON в приложение-приёмник на часах по P2P:
@@ -155,7 +160,7 @@ Xcode Organizer с development/ad hoc подписью.
 
 ### Сборка из репозитория — без Huawei App ID
 
-Это основной режим текущей сборки. Альтиметр читает пульс, SpO₂ и шаги из локальной базы
+Это основной режим текущей сборки. Altimeter Kailas читает пульс, SpO₂ и шаги из локальной базы
 **Health Connect**. Сам Health Connect не забирает данные с часов: приложение-источник
 должно сначала записать их туда. Для Huawei Watch 4 Pro в качестве такого источника
 можно использовать Gadgetbridge: его актуальная версия умеет экспортировать шаги,
@@ -174,7 +179,7 @@ Xcode Organizer с development/ad hoc подписью.
    обычную синхронизацию часов.
 5. В Health Connect откройте **Данные и доступ** и убедитесь, что появились записи
    трёх типов. Разделы без записей Health Connect не показывает.
-6. В Альтиметре нажмите **«Подключить Health Connect»** и разрешите чтение трёх типов.
+6. В Altimeter Kailas нажмите **«Подключить Health Connect»** и разрешите чтение трёх типов.
 
 Если после полного сброса разрешений передаются только шаги, обновите Gadgetbridge до
 актуальной официальной сборки и повторите пункты 1–5. Источник каждой величины
@@ -201,7 +206,7 @@ Xcode Organizer с development/ad hoc подписью.
 Для живого пульса HUAWEI App ID не требуется. На совместимых часах откройте
 **Настройки → Трансляция данных ЧСС**, запустите трансляцию (при необходимости —
 тренировку), затем в карточке здоровья нажмите **«Подключить пульс с часов»**.
-Альтиметр подключится к стандартному Bluetooth Heart Rate Service. Этот канал
+Altimeter Kailas подключится к стандартному Bluetooth Heart Rate Service. Этот канал
 передаёт пульс только во время активной трансляции. SpO₂ через стандартную Bluetooth-
 трансляцию Huawei не предоставляется; для истории SpO₂ нужен источник, записывающий
 насыщение крови кислородом в Health Connect.
@@ -209,7 +214,7 @@ Xcode Organizer с development/ad hoc подписью.
 ## Виджет
 
 На Honor: удерживайте свободное место на главном экране → **Карточки/Виджеты** →
-**Альтиметр**. Виджет показывает последний разрешённый снимок. Высота обновляется
+**Altimeter Kailas**. Виджет показывает последний разрешённый снимок. Высота обновляется
 при открытом приложении, путь — также во время фоновой GPX-записи, а пульс/SpO₂/шаги —
 после чтения Health Connect в открытом приложении. Сам виджет не опрашивает здоровье
 в фоне: он показывает последний разрешённый снимок.
@@ -262,5 +267,5 @@ watch-app/   заготовка приложения-приёмника для �
   офлайн-рельеф © Mapterhorn. Локальные глифы Noto Sans — SIL OFL 1.1.
   Названия мест: Nominatim (запросы редкие, троттлятся).
 - Советы информационные, **не медицинские рекомендации**.
-- Release-сборка подписана debug-ключом для удобства установки — для публикации
-  задайте свой `signingConfig`.
+- Локальная release-сборка без переменных подписи использует debug-ключ. Публичный APK
+  собирается GitHub Actions со стабильным keystore и проверкой SHA-256 сертификата.

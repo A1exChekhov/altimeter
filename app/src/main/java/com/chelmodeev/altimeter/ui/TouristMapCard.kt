@@ -9,6 +9,7 @@ import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -69,6 +70,7 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.io.File
+import kotlin.math.roundToInt
 
 class TouristMapSession(context: android.content.Context) {
     val mapView = MapView(context)
@@ -197,6 +199,9 @@ fun MapCard(
     accent: Color,
     trackPoints: List<TrackMapPoint>,
     trackRecording: Boolean,
+    trackPointCount: Int,
+    hasPreciseFix: Boolean,
+    fineLocationGranted: Boolean,
     offlineMapPath: String?,
     expanded: Boolean,
     onToggleExpanded: () -> Unit,
@@ -207,6 +212,14 @@ fun MapCard(
     val map = session.map
     val styleRevision = session.styleRevision
     val mapView = session.mapView
+    val trackStatus = when {
+        !trackRecording -> null
+        !fineLocationGranted || !hasPreciseFix -> stringResource(R.string.track_waiting_for_gps)
+        accuracyMeters != null && accuracyMeters > MAX_TRACK_ACCURACY_METERS ->
+            stringResource(R.string.track_waiting_for_accuracy, accuracyMeters.roundToInt())
+        trackPointCount < 2 -> stringResource(R.string.track_collecting_points, trackPointCount)
+        else -> stringResource(R.string.track_points_on_map, trackPointCount)
+    }
 
     // Keep overlays independently of the network-backed basemap. If an online
     // style finishes loading later, its callback restores the current local GPX
@@ -240,7 +253,7 @@ fun MapCard(
         }
         readyMap.setStyle(styleBuilder) { style ->
             installOverlayLayers(style)
-            updateRoute(style, session.latestTrackPoints, session.latestTrackColor)
+            updateRoute(style, session.latestTrackPoints)
             updateLocation(
                 style,
                 session.latestLatitude,
@@ -268,10 +281,10 @@ fun MapCard(
         }
     }
 
-    LaunchedEffect(map, styleRevision, trackPoints, trackRecording, accent) {
+    LaunchedEffect(map, styleRevision, trackPoints, trackRecording) {
         val readyMap = map ?: return@LaunchedEffect
         val style = readyMap.style ?: return@LaunchedEffect
-        updateRoute(style, trackPoints, accent.toArgb())
+        updateRoute(style, trackPoints)
         if (!trackRecording && trackPoints.size >= 2) {
             session.follow = false
             val points = trackPoints.map { LatLng(it.latitude, it.longitude) }
@@ -301,22 +314,36 @@ fun MapCard(
             modifier = Modifier.fillMaxSize(),
         )
 
-        Surface(
-            shape = RoundedCornerShape(50),
-            color = Color(0xCC101826),
+        Column(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(10.dp),
         ) {
-            Text(
-                text = stringResource(
-                    if (offlineMapPath != null) R.string.map_offline_beta
-                    else R.string.map_tourist_beta
-                ),
-                color = Color(0xFFB9F6CA),
-                fontSize = 9.sp,
-                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            )
+            Surface(shape = RoundedCornerShape(50), color = Color(0xCC101826)) {
+                Text(
+                    text = stringResource(
+                        if (offlineMapPath != null) R.string.map_offline_beta
+                        else R.string.map_tourist_beta
+                    ),
+                    color = Color(0xFFB9F6CA),
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                )
+            }
+            trackStatus?.let { status ->
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color(0xE61A2535),
+                    modifier = Modifier.padding(top = 6.dp),
+                ) {
+                    Text(
+                        text = status,
+                        color = if (trackPointCount >= 2) TRACK_COLOR else Color(0xFFF2B94B),
+                        fontSize = 9.sp,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                    )
+                }
+            }
         }
 
         TouristMapButton(
@@ -406,10 +433,36 @@ private fun installOverlayLayers(style: Style) {
             GeoJsonSource(ROUTE_SOURCE, FeatureCollection.fromFeatures(emptyArray<Feature>()))
         )
         style.addLayer(
+            LineLayer(ROUTE_CASING_LAYER, ROUTE_SOURCE).withProperties(
+                lineColor(TRACK_CASING_COLOR),
+                lineWidth(8f),
+                lineOpacity(0.92f),
+            )
+        )
+        style.addLayer(
             LineLayer(ROUTE_LAYER, ROUTE_SOURCE).withProperties(
-                lineColor(AndroidColor.CYAN),
-                lineWidth(5f),
-                lineOpacity(0.96f),
+                lineColor(TRACK_COLOR_ARGB),
+                lineWidth(4.5f),
+                lineOpacity(1f),
+            )
+        )
+    }
+    if (style.getSource(TRACK_START_SOURCE) == null) {
+        style.addSource(
+            GeoJsonSource(TRACK_START_SOURCE, FeatureCollection.fromFeatures(emptyArray<Feature>()))
+        )
+        style.addLayer(
+            CircleLayer(TRACK_START_OUTER_LAYER, TRACK_START_SOURCE).withProperties(
+                circleRadius(8f),
+                circleColor(AndroidColor.WHITE),
+                circleStrokeColor(TRACK_CASING_COLOR),
+                circleStrokeWidth(1.5f),
+            )
+        )
+        style.addLayer(
+            CircleLayer(TRACK_START_INNER_LAYER, TRACK_START_SOURCE).withProperties(
+                circleRadius(4.5f),
+                circleColor(TRACK_COLOR_ARGB),
             )
         )
     }
@@ -445,7 +498,7 @@ private fun updateLocation(style: Style, latitude: Double?, longitude: Double?, 
     style.getLayerAs<CircleLayer>(LOCATION_INNER_LAYER)?.setProperties(circleColor(color))
 }
 
-private fun updateRoute(style: Style, track: List<TrackMapPoint>, color: Int) {
+private fun updateRoute(style: Style, track: List<TrackMapPoint>) {
     val source = style.getSourceAs<GeoJsonSource>(ROUTE_SOURCE) ?: return
     val segments = mutableListOf<MutableList<Point>>()
     for (point in track) {
@@ -457,7 +510,11 @@ private fun updateRoute(style: Style, track: List<TrackMapPoint>, color: Int) {
         .map { Feature.fromGeometry(LineString.fromLngLats(it)) }
         .toTypedArray()
     source.setGeoJson(FeatureCollection.fromFeatures(features))
-    style.getLayerAs<LineLayer>(ROUTE_LAYER)?.setProperties(lineColor(color))
+    val startFeatures = track.firstOrNull()?.let { first ->
+        arrayOf(Feature.fromGeometry(Point.fromLngLat(first.longitude, first.latitude)))
+    } ?: emptyArray()
+    style.getSourceAs<GeoJsonSource>(TRACK_START_SOURCE)
+        ?.setGeoJson(FeatureCollection.fromFeatures(startFeatures))
 }
 
 @Composable
@@ -473,7 +530,15 @@ private fun TouristMapButton(
 
 private const val ONLINE_OUTDOOR_STYLE = "https://tiles.openfreemap.org/styles/liberty"
 private const val ROUTE_SOURCE = "errarium-route-source"
+private const val ROUTE_CASING_LAYER = "errarium-route-casing-layer"
 private const val ROUTE_LAYER = "errarium-route-layer"
+private const val TRACK_START_SOURCE = "errarium-track-start-source"
+private const val TRACK_START_OUTER_LAYER = "errarium-track-start-outer"
+private const val TRACK_START_INNER_LAYER = "errarium-track-start-inner"
 private const val LOCATION_SOURCE = "errarium-location-source"
 private const val LOCATION_OUTER_LAYER = "errarium-location-outer"
 private const val LOCATION_INNER_LAYER = "errarium-location-inner"
+private const val MAX_TRACK_ACCURACY_METERS = 50f
+private val TRACK_COLOR_ARGB = 0xFF35E0D0.toInt()
+private val TRACK_CASING_COLOR = 0xE6101826.toInt()
+private val TRACK_COLOR = Color(TRACK_COLOR_ARGB)

@@ -114,9 +114,9 @@ final class GPXRecorder {
     func data() -> Data {
         var xml = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <gpx version="1.1" creator="Errarium Altimeter" xmlns="http://www.topografix.com/GPX/1/1">
+        <gpx version="1.1" creator="Errarium Altimeter Kailas" xmlns="http://www.topografix.com/GPX/1/1">
           <metadata><time>\(Self.iso8601.string(from: startedAt))</time></metadata>
-          <trk><name>Altimeter track</name><trkseg>
+          <trk><name>Altimeter Kailas track</name><trkseg>
 
         """
         for (index, point) in points.enumerated() {

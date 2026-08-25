@@ -1,4 +1,4 @@
-# Альтиметр · Errarium™ by Aleksey Hermes для iPhone
+# Altimeter Kailas · Errarium™ by Aleksey Hermes для iPhone
 
 Нативный высотомер для iOS 17+: SwiftUI, Core Location, Core Motion, MapKit,
 HealthKit и запись GPX. Runtime-зависимостей и платных API нет.
@@ -87,8 +87,8 @@ macOS при изменениях в `ios/` и доступен для ручн�
 iOS build**. Обычный запуск создаёт simulator-артефакт только для проверки компиляции;
 его нельзя установить на физический iPhone.
 
-Для устанавливаемого IPA запустите workflow вручную с параметром
-`signed_ipa = true`. Репозиторий должен содержать четыре GitHub Actions secret:
+Для устанавливаемого development IPA запустите workflow вручную с параметром
+`distribution = development-ipa`. Репозиторий должен содержать четыре GitHub Actions secret:
 
 - `IOS_CERTIFICATE_BASE64` — сертификат `.p12` в Base64;
 - `IOS_CERTIFICATE_PASSWORD` — пароль `.p12`;
@@ -99,6 +99,21 @@ Profiles должны относиться к Team `76UD6VNBTE`, bundle IDs `ai.
 и `ai.errarium.altimeter.widget` и включать UDID устанавливаемого iPhone. При успешной
 сборке GitHub публикует приватный Actions artifact `Altimeter-signed-ipa`; сертификат
 и profiles в исходники или публичный Release не попадают.
+
+### Загрузка в TestFlight
+
+Режим `distribution = testflight` собирает App Store IPA версии 1.2.2 с уникальным
+build number из `GITHUB_RUN_NUMBER` и загружает его в App Store Connect. Для него нужны:
+
+- активная Apple Developer Program и карточка `ai.errarium.altimeter` в App Store Connect;
+- уже используемые secrets `IOS_CERTIFICATE_BASE64` и `IOS_CERTIFICATE_PASSWORD`;
+- API-ключ App Store Connect в secrets `APP_STORE_CONNECT_API_KEY_ID`,
+  `APP_STORE_CONNECT_API_ISSUER_ID` и `APP_STORE_CONNECT_API_PRIVATE_KEY_BASE64`.
+
+Workflow автоматически управляет App Store provisioning profiles, экспортирует методом
+`app-store-connect` и сохраняет приватный IPA вместе с логами. App Store icon 1024×1024,
+privacy manifest, фоновые location updates, HealthKit, App Group и export compliance
+уже включены в проект.
 
 ## Пульс, SpO₂, шаги и калории
 
@@ -124,7 +139,7 @@ Pulse Ox/SpO₂ в перечень данных, экспортируемых G
 При старте записи iOS предложит доступ к геопозиции «Всегда». Во время фоновой записи
 виден системный синий индикатор. Файлы находятся в:
 
-`Файлы → На iPhone → Альтиметр → Tracks`
+`Файлы → На iPhone → Altimeter Kailas → Tracks`
 
 Архив внутри приложения сохраняет дату, длительность, дистанцию, набор высоты и число
 точек. Он восстанавливается после перезапуска. Каждая запись доступна для экспорта через
@@ -132,7 +147,7 @@ Share Sheet; удаление GPX требует отдельного подтв
 
 ## Виджет iPhone
 
-Удерживайте главный экран → «+» → **Альтиметр** и выберите «Высота», «Здоровье»
+Удерживайте главный экран → «+» → **Altimeter Kailas** и выберите «Высота», «Здоровье»
 или «Высота и здоровье» в малом либо среднем размере.
 Основное приложение сохраняет в App Group последний снимок высоты, дистанции трека и
 разрешённых HealthKit-показателей. Пульс, SpO₂ и шаги помечены как конфиденциальные, поэтому
@@ -164,8 +179,8 @@ project.yml     описание проекта для XcodeGen
 
 ## Перед публикацией
 
-- добавить финальную иконку приложения в `AppIcon.appiconset`;
-- заменить Bundle ID при необходимости;
+- создать карточку `ai.errarium.altimeter` в App Store Connect;
+- добавить distribution-сертификат и API-ключ в GitHub Actions secrets;
 - заполнить App Privacy в App Store Connect (геопозиция и health data остаются на устройстве);
 - протестировать фоновые маршруты, разрешения и энергопотребление на нескольких iPhone;
 - проверить актуальные правила OpenTopoMap.
