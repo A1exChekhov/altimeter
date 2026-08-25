@@ -16,6 +16,16 @@ final class GPXRecorder {
     private(set) var movingTime: TimeInterval = 0
     private(set) var stoppedTime: TimeInterval = 0
 
+    var mapPoints: [TrackMapPoint] {
+        points.map {
+            TrackMapPoint(
+                latitude: $0.coordinate.latitude,
+                longitude: $0.coordinate.longitude,
+                startsNewSegment: $0.startsNewSegment
+            )
+        }
+    }
+
     private var lastAcceptedElevation: Double?
     private var lastBearing: Double?
     private var samplingMode: TrackSamplingMode = .everySecond

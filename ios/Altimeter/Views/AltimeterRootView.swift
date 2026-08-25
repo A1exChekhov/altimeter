@@ -59,6 +59,7 @@ private struct FullMapScreen: View {
             ZStack(alignment: .bottom) {
                 TopoMapView(
                     coordinate: model.state.coordinate,
+                    trackPoints: model.state.trackPoints,
                     topographic: model.useTopographicMap
                 )
                 .ignoresSafeArea(edges: .bottom)

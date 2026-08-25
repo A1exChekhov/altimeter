@@ -57,6 +57,10 @@ final class GPXRecorderTests: XCTestCase {
             XCTAssertTrue(recorder.offer(location: location, elevation: 300, date: location.timestamp))
         }
         XCTAssertEqual(recorder.points.count, locations.count)
+        XCTAssertEqual(recorder.mapPoints.count, locations.count)
+        XCTAssertTrue(recorder.mapPoints[0].startsNewSegment)
+        XCTAssertFalse(recorder.mapPoints[1].startsNewSegment)
+        XCTAssertEqual(recorder.mapPoints[20].longitude, 37.00020, accuracy: 0.0000001)
     }
 
     func testFourSecondModeStillKeepsImmediateTurnAndGPSGapIsSegmented() {

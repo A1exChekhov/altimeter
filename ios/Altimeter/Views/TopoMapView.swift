@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TopoMapView: UIViewRepresentable {
     let coordinate: CLLocationCoordinate2D?
+    let trackPoints: [TrackMapPoint]
     let topographic: Bool
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -15,12 +16,14 @@ struct TopoMapView: UIViewRepresentable {
         map.showsCompass = true
         map.showsScale = true
         map.pointOfInterestFilter = .excludingAll
-        context.coordinator.configureOverlay(on: map, topographic: topographic)
+        let modeChanged = context.coordinator.configureOverlay(on: map, topographic: topographic)
+        context.coordinator.configureRoute(on: map, points: trackPoints, force: modeChanged)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        context.coordinator.configureOverlay(on: map, topographic: topographic)
+        let modeChanged = context.coordinator.configureOverlay(on: map, topographic: topographic)
+        context.coordinator.configureRoute(on: map, points: trackPoints, force: modeChanged)
         guard let coordinate else { return }
         if context.coordinator.lastCenteredCoordinate == nil {
             map.setRegion(
@@ -38,15 +41,18 @@ struct TopoMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         var lastCenteredCoordinate: CLLocationCoordinate2D?
         private var tileOverlay: MKTileOverlay?
+        private var routeOverlays: [MKPolyline] = []
+        private var routePoints: [TrackMapPoint] = []
         private var currentMode: Bool?
 
-        func configureOverlay(on map: MKMapView, topographic: Bool) {
-            guard currentMode != topographic else { return }
+        @discardableResult
+        func configureOverlay(on map: MKMapView, topographic: Bool) -> Bool {
+            guard currentMode != topographic else { return false }
             currentMode = topographic
             if let tileOverlay { map.removeOverlay(tileOverlay) }
             tileOverlay = nil
             map.mapType = topographic ? .standard : .mutedStandard
-            guard topographic else { return }
+            guard topographic else { return true }
 
             let overlay = MKTileOverlay(
                 urlTemplate: "https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
@@ -56,10 +62,41 @@ struct TopoMapView: UIViewRepresentable {
             overlay.maximumZ = 17
             tileOverlay = overlay
             map.addOverlay(overlay, level: .aboveLabels)
+            return true
+        }
+
+        func configureRoute(on map: MKMapView, points: [TrackMapPoint], force: Bool = false) {
+            guard force || routePoints != points else { return }
+            if !routeOverlays.isEmpty { map.removeOverlays(routeOverlays) }
+            routePoints = points
+
+            var segments: [[CLLocationCoordinate2D]] = []
+            for point in points {
+                if segments.isEmpty || point.startsNewSegment { segments.append([]) }
+                segments[segments.count - 1].append(point.coordinate)
+            }
+            routeOverlays = segments.compactMap { segment in
+                guard segment.count >= 2 else { return nil }
+                return segment.withUnsafeBufferPointer { buffer in
+                    guard let baseAddress = buffer.baseAddress else { return nil }
+                    return MKPolyline(coordinates: baseAddress, count: buffer.count)
+                }
+            }
+            if !routeOverlays.isEmpty {
+                map.addOverlays(routeOverlays, level: .aboveLabels)
+            }
         }
 
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let tile = overlay as? MKTileOverlay { return MKTileOverlayRenderer(tileOverlay: tile) }
+            if let route = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: route)
+                renderer.strokeColor = UIColor(red: 0.21, green: 0.88, blue: 0.82, alpha: 1)
+                renderer.lineWidth = 5
+                renderer.lineCap = .round
+                renderer.lineJoin = .round
+                return renderer
+            }
             return MKOverlayRenderer(overlay: overlay)
         }
     }
@@ -84,7 +121,11 @@ struct MapCardView: View {
                 }
 
                 ZStack {
-                    TopoMapView(coordinate: state.coordinate, topographic: topographic)
+                    TopoMapView(
+                        coordinate: state.coordinate,
+                        trackPoints: state.trackPoints,
+                        topographic: topographic
+                    )
                     if state.coordinate == nil {
                         Rectangle().fill(.black.opacity(0.45))
                         ProgressView("Ждём координаты…")
@@ -102,4 +143,3 @@ struct MapCardView: View {
         }
     }
 }
-

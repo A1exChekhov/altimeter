@@ -125,6 +125,16 @@ struct TrackState: Equatable {
     var lastSavedURL: URL?
 }
 
+struct TrackMapPoint: Equatable {
+    let latitude: Double
+    let longitude: Double
+    let startsNewSegment: Bool
+
+    var coordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+}
+
 struct SavedTrack: Identifiable, Codable, Equatable {
     let id: UUID
     var fileName: String
@@ -157,5 +167,6 @@ struct AltimeterState {
     var pressureTrendHPAperHour: Double?
     var placeName: String?
     var track = TrackState()
+    var trackPoints: [TrackMapPoint] = []
     var timestamp = Date()
 }

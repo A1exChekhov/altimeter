@@ -76,6 +76,7 @@ class TouristMapSession(context: android.content.Context) {
     val mapView = MapView(context)
     var map by mutableStateOf<MapLibreMap?>(null)
     var styleRevision by mutableIntStateOf(0)
+    var foregroundRevision by mutableIntStateOf(0)
     var follow by mutableStateOf(true)
     var hadFirstFix by mutableStateOf(false)
     var requestedStyleKey: String? = null
@@ -108,9 +109,11 @@ class TouristMapSession(context: android.content.Context) {
     }
 
     fun updateHostState(state: Lifecycle.State) {
+        val wasResumed = hostResumed
         hostStarted = state.isAtLeast(Lifecycle.State.STARTED)
         hostResumed = state.isAtLeast(Lifecycle.State.RESUMED)
         syncLifecycle()
+        if (!wasResumed && hostResumed) foregroundRevision++
     }
 
     fun attach() {
@@ -211,6 +214,7 @@ fun MapCard(
     val networkAvailable = rememberNetworkAvailable()
     val map = session.map
     val styleRevision = session.styleRevision
+    val foregroundRevision = session.foregroundRevision
     val mapView = session.mapView
     val trackStatus = when {
         !trackRecording -> null
@@ -264,9 +268,18 @@ fun MapCard(
         }
     }
 
-    LaunchedEffect(map, styleRevision, latitude, longitude, accuracyMeters, accent) {
+    LaunchedEffect(
+        map,
+        styleRevision,
+        foregroundRevision,
+        latitude,
+        longitude,
+        accuracyMeters,
+        accent,
+    ) {
         val readyMap = map ?: return@LaunchedEffect
         val style = readyMap.style ?: return@LaunchedEffect
+        installOverlayLayers(style)
         updateLocation(style, latitude, longitude, accent.toArgb())
         if (latitude != null && longitude != null) {
             val target = LatLng(latitude, longitude)
@@ -281,9 +294,10 @@ fun MapCard(
         }
     }
 
-    LaunchedEffect(map, styleRevision, trackPoints, trackRecording) {
+    LaunchedEffect(map, styleRevision, foregroundRevision, trackPoints, trackRecording) {
         val readyMap = map ?: return@LaunchedEffect
         val style = readyMap.style ?: return@LaunchedEffect
+        installOverlayLayers(style)
         updateRoute(style, trackPoints)
         if (!trackRecording && trackPoints.size >= 2) {
             session.follow = false
@@ -432,6 +446,8 @@ private fun installOverlayLayers(style: Style) {
         style.addSource(
             GeoJsonSource(ROUTE_SOURCE, FeatureCollection.fromFeatures(emptyArray<Feature>()))
         )
+    }
+    if (style.getLayer(ROUTE_CASING_LAYER) == null) {
         style.addLayer(
             LineLayer(ROUTE_CASING_LAYER, ROUTE_SOURCE).withProperties(
                 lineColor(TRACK_CASING_COLOR),
@@ -439,6 +455,8 @@ private fun installOverlayLayers(style: Style) {
                 lineOpacity(0.92f),
             )
         )
+    }
+    if (style.getLayer(ROUTE_LAYER) == null) {
         style.addLayer(
             LineLayer(ROUTE_LAYER, ROUTE_SOURCE).withProperties(
                 lineColor(TRACK_COLOR_ARGB),
@@ -451,6 +469,8 @@ private fun installOverlayLayers(style: Style) {
         style.addSource(
             GeoJsonSource(TRACK_START_SOURCE, FeatureCollection.fromFeatures(emptyArray<Feature>()))
         )
+    }
+    if (style.getLayer(TRACK_START_OUTER_LAYER) == null) {
         style.addLayer(
             CircleLayer(TRACK_START_OUTER_LAYER, TRACK_START_SOURCE).withProperties(
                 circleRadius(8f),
@@ -459,6 +479,8 @@ private fun installOverlayLayers(style: Style) {
                 circleStrokeWidth(1.5f),
             )
         )
+    }
+    if (style.getLayer(TRACK_START_INNER_LAYER) == null) {
         style.addLayer(
             CircleLayer(TRACK_START_INNER_LAYER, TRACK_START_SOURCE).withProperties(
                 circleRadius(4.5f),
@@ -470,6 +492,8 @@ private fun installOverlayLayers(style: Style) {
         style.addSource(
             GeoJsonSource(LOCATION_SOURCE, FeatureCollection.fromFeatures(emptyArray<Feature>()))
         )
+    }
+    if (style.getLayer(LOCATION_OUTER_LAYER) == null) {
         style.addLayer(
             CircleLayer(LOCATION_OUTER_LAYER, LOCATION_SOURCE).withProperties(
                 circleRadius(9f),
@@ -478,6 +502,8 @@ private fun installOverlayLayers(style: Style) {
                 circleStrokeWidth(1.5f),
             )
         )
+    }
+    if (style.getLayer(LOCATION_INNER_LAYER) == null) {
         style.addLayer(
             CircleLayer(LOCATION_INNER_LAYER, LOCATION_SOURCE).withProperties(
                 circleRadius(5.5f),

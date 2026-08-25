@@ -132,6 +132,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
             locationManager.requestWhenInUseAuthorization()
         }
         recorder.begin()
+        state.trackPoints = []
         currentTrackURL = trackStore.makeTrackURL()
         currentTrackID = UUID()
         lastAutosaveAt = .distantPast
@@ -251,6 +252,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
                 state.track.descentMeters = recorder.descentMeters
                 state.track.movingTime = recorder.movingTime
                 state.track.stoppedTime = recorder.stoppedTime
+                state.trackPoints = recorder.mapPoints
             }
             if Date().timeIntervalSince(lastAutosaveAt) >= 30, !recorder.points.isEmpty {
                 lastAutosaveAt = Date()
