@@ -28,8 +28,8 @@ targets:
           - Supporting/Info.plist
           - Supporting/Altimeter.entitlements
           - Resources
-    resources:
       - path: Altimeter/Resources
+        buildPhase: resources
     entitlements:
       path: Altimeter/Supporting/Altimeter.entitlements
     settings:
@@ -60,8 +60,8 @@ targets:
           - AltimeterWidget.entitlements
           - PrivacyInfo.xcprivacy
       - path: Altimeter/Shared/WidgetSnapshotStore.swift
-    resources:
       - path: AltimeterWidget/PrivacyInfo.xcprivacy
+        buildPhase: resources
     entitlements:
       path: AltimeterWidget/AltimeterWidget.entitlements
     settings:
