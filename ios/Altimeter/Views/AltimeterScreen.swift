@@ -1,11 +1,19 @@
 import SwiftUI
 
+private struct AltitudePeriodStatistics {
+    let ascent: Double
+    let descent: Double
+    let minimum: Double
+    let maximum: Double
+}
+
 struct AltimeterScreen: View {
     let page: AppTab
     @EnvironmentObject private var model: AppModel
     @State private var showsSettings = false
     @State private var showsTracks = false
     @State private var showsHealthSources = false
+    @State private var chartRange: ChartTimeRange = .hour
 
     private var state: AltimeterState { model.state }
     private var accent: Color { .primary }
@@ -61,7 +69,12 @@ struct AltimeterScreen: View {
             trackCard
         case .data:
             healthCard
-            AltitudeChartView(points: state.history, vitals: model.vitals, unit: model.unit)
+            AltitudeChartView(
+                points: state.history,
+                vitals: model.vitals,
+                unit: model.unit,
+                selectedRange: $chartRange
+            )
             statisticsCard
             adviceSection
             watchCard
@@ -164,9 +177,10 @@ struct AltimeterScreen: View {
     }
 
     private var statisticsCard: some View {
-        InstrumentCard {
+        let period = altitudeStatistics
+        return InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeading(icon: "mountain.2.fill", title: "Показатели")
+                SectionHeading(icon: "mountain.2.fill", title: "Показатели · \(chartRange.title)")
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
                     MetricCell(
                         title: "Скорость",
@@ -178,13 +192,38 @@ struct AltimeterScreen: View {
                         value: state.pressureHPA.map { String(format: "%.1f", $0) } ?? "—",
                         unit: "гПа"
                     )
-                    MetricCell(title: "Набор", value: AltimeterFormat.altitude(state.ascentMeters, unit: model.unit), unit: model.unit.symbol)
-                    MetricCell(title: "Спуск", value: AltimeterFormat.altitude(state.descentMeters, unit: model.unit), unit: model.unit.symbol)
-                    MetricCell(title: "Минимум", value: AltimeterFormat.altitude(state.minAltitude, unit: model.unit), unit: model.unit.symbol)
-                    MetricCell(title: "Максимум", value: AltimeterFormat.altitude(state.maxAltitude, unit: model.unit), unit: model.unit.symbol)
+                    MetricCell(title: "Набор", value: AltimeterFormat.altitude(period?.ascent, unit: model.unit), unit: model.unit.symbol)
+                    MetricCell(title: "Спуск", value: AltimeterFormat.altitude(period?.descent, unit: model.unit), unit: model.unit.symbol)
+                    MetricCell(title: "Минимум", value: AltimeterFormat.altitude(period?.minimum, unit: model.unit), unit: model.unit.symbol)
+                    MetricCell(title: "Максимум", value: AltimeterFormat.altitude(period?.maximum, unit: model.unit), unit: model.unit.symbol)
                 }
             }
         }
+    }
+
+    private var altitudeStatistics: AltitudePeriodStatistics? {
+        let now = Date()
+        let visible = state.history.filter {
+            $0.date >= chartRange.startDate(reference: now) && $0.date <= now
+        }
+        guard let first = visible.first else { return nil }
+
+        var anchor = first.altitude
+        var ascent = 0.0
+        var descent = 0.0
+        for point in visible.dropFirst() {
+            let delta = point.altitude - anchor
+            if abs(delta) >= 3 {
+                if delta > 0 { ascent += delta } else { descent -= delta }
+                anchor = point.altitude
+            }
+        }
+        return AltitudePeriodStatistics(
+            ascent: ascent,
+            descent: descent,
+            minimum: visible.map(\.altitude).min() ?? first.altitude,
+            maximum: visible.map(\.altitude).max() ?? first.altitude
+        )
     }
 
     private var trackCard: some View {
@@ -355,11 +394,12 @@ struct AltimeterScreen: View {
 
     @ViewBuilder
     private var adviceSection: some View {
-        if !model.advices.isEmpty {
+        let fieldInformation = model.advices.filter(\.isFieldInformation)
+        if !fieldInformation.isEmpty {
             InstrumentCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading(icon: "exclamationmark.triangle.fill", title: "Советы и предупреждения")
-                    ForEach(model.advices) { advice in
+                    SectionHeading(icon: "info.circle.fill", title: "Информация и напоминания")
+                    ForEach(fieldInformation) { advice in
                         HStack(alignment: .top, spacing: 11) {
                             Image(systemName: advice.icon)
                                 .foregroundStyle(advice.color)
@@ -369,9 +409,9 @@ struct AltimeterScreen: View {
                                 Text(advice.message).font(.caption).foregroundStyle(.secondary)
                             }
                         }
-                        if advice.id != model.advices.last?.id { Divider().opacity(0.25) }
+                        if advice.id != fieldInformation.last?.id { Divider().opacity(0.25) }
                     }
-                    Text("Информация не заменяет консультацию врача.")
+                    Text("Только сведения о воде, погоде и качестве GPS.")
                         .font(.caption2).foregroundStyle(.tertiary)
                 }
             }

@@ -49,6 +49,16 @@ enum AltimeterFormat {
 }
 
 extension Advice {
+    var isFieldInformation: Bool {
+        switch kind {
+        case .pressureFallingFast, .pressureFalling, .pressureRising, .hydration, .gpsWeak:
+            true
+        case .altitudeAcclimatize, .altitudeHigh, .altitudeVeryHigh, .fastAscent,
+             .oxygenLow, .oxygenVeryLow, .heartRateHigh:
+            false
+        }
+    }
+
     var title: String {
         switch kind {
         case .pressureFallingFast: "Давление быстро падает"
@@ -69,7 +79,7 @@ extension Advice {
     var message: String {
         switch kind {
         case .pressureFallingFast:
-            "−\(value ?? "?") гПа/ч: возможна гроза. Подумайте об укрытии или спуске."
+            "−\(value ?? "?") гПа/ч: возможна гроза и быстрое ухудшение погоды."
         case .pressureFalling:
             "−\(value ?? "?") гПа/ч: погода может ухудшиться."
         case .pressureRising:
@@ -91,7 +101,7 @@ extension Advice {
         case .heartRateHigh:
             "Пульс \(value ?? "?") уд/мин на высоте — сделайте паузу."
         case .gpsWeak:
-            "Точность снижена. Выйдите на открытое место."
+            "Точность геопозиции и записанного трека снижена."
         }
     }
 

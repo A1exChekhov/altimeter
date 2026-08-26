@@ -10,17 +10,25 @@ final class FusionEngine {
     private var manualOffset: Double?
     private var pendingManualAltitude: Double?
     private var standardBarometricAltitude: Double?
+    private var pressureWindow: [Double] = []
+    private var smoothedPressureHPA: Double?
 
     private var automaticOffset: Double?
     private var automaticOffsetVariance = 1_600.0
+    private var initialOffsetCandidates: [Double] = []
 
     private var gpsAltitude: Double?
     private var gpsVariance = 1_600.0
 
     func onPressure(_ hpa: Double) {
         guard hpa.isFinite, hpa > 0 else { return }
-        pressureHPA = hpa
-        let altitude = Self.standardAltitude(pressureHPA: hpa, seaLevelHPA: 1013.25)
+        pressureWindow.append(hpa)
+        if pressureWindow.count > 9 { pressureWindow.removeFirst() }
+        let median = Self.median(pressureWindow)
+        let filtered = smoothedPressureHPA.map { $0 + 0.08 * (median - $0) } ?? median
+        smoothedPressureHPA = filtered
+        pressureHPA = filtered
+        let altitude = Self.standardAltitude(pressureHPA: filtered, seaLevelHPA: 1013.25)
         standardBarometricAltitude = altitude
         if let pendingManualAltitude {
             manualOffset = pendingManualAltitude - altitude
@@ -35,6 +43,7 @@ final class FusionEngine {
         let measurementVariance = sigma * sigma
 
         if let current = gpsAltitude {
+            guard abs(meters - current) <= max(25, 4 * sigma) else { return }
             gpsVariance += 2.0
             let gain = gpsVariance / (gpsVariance + measurementVariance)
             gpsAltitude = current + gain * (meters - current)
@@ -47,13 +56,19 @@ final class FusionEngine {
         guard let barometric = standardBarometricAltitude else { return }
         let measuredOffset = meters - barometric
         if let current = automaticOffset {
+            guard abs(measuredOffset - current) <= max(15, 4 * sigma) else { return }
             automaticOffsetVariance += 0.03
             let gain = automaticOffsetVariance / (automaticOffsetVariance + measurementVariance)
             automaticOffset = current + gain * (measuredOffset - current)
             automaticOffsetVariance *= 1.0 - gain
         } else {
-            automaticOffset = measuredOffset
-            automaticOffsetVariance = measurementVariance
+            initialOffsetCandidates.append(measuredOffset)
+            if initialOffsetCandidates.count > 5 { initialOffsetCandidates.removeFirst() }
+            if initialOffsetCandidates.count == 5 {
+                automaticOffset = Self.median(initialOffsetCandidates)
+                automaticOffsetVariance = measurementVariance
+                initialOffsetCandidates.removeAll()
+            }
         }
     }
 
@@ -119,5 +134,13 @@ final class FusionEngine {
     static func standardAltitude(pressureHPA: Double, seaLevelHPA: Double) -> Double {
         44_330.0 * (1.0 - pow(pressureHPA / seaLevelHPA, 0.190_294_9))
     }
-}
 
+    private static func median(_ values: [Double]) -> Double {
+        let sorted = values.sorted()
+        let middle = sorted.count / 2
+        if sorted.count.isMultiple(of: 2) {
+            return (sorted[middle - 1] + sorted[middle]) / 2
+        }
+        return sorted[middle]
+    }
+}

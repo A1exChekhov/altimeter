@@ -21,8 +21,7 @@ data class AdvisorInput(
 )
 
 /**
- * Контекстные советы: горная болезнь, темп набора, SpO₂/пульс с часов,
- * прогноз погоды по тренду барометра, качество GPS.
+ * Нейтральная полевая информация: вода, тренд погоды и качество GPS.
  */
 class Advisor {
 
@@ -40,34 +39,6 @@ class Advisor {
         }
 
         val alt = inp.altitude
-        if (alt != null) {
-            when {
-                alt >= 4000 -> out += Advice(AdviceKind.ALTITUDE_VERY_HIGH, AdviceSeverity.WARNING)
-                alt >= 3000 -> out += Advice(AdviceKind.ALTITUDE_HIGH, AdviceSeverity.CAUTION)
-                alt >= 2500 -> out += Advice(AdviceKind.ALTITUDE_ACCLIMATIZE, AdviceSeverity.INFO)
-            }
-            val vs = inp.verticalSpeedMpm
-            if (alt > 2000 && vs != null && vs >= 12.0) {
-                out += Advice(AdviceKind.FAST_ASCENT, AdviceSeverity.CAUTION)
-            }
-        }
-
-        val spo2 = inp.spo2
-        if (spo2 != null && isFresh(inp.nowMs, inp.spo2AtMs, 45 * 60_000L)) {
-            val v = spo2.toInt().toString()
-            when {
-                spo2 < 88 -> out += Advice(AdviceKind.SPO2_VERY_LOW, AdviceSeverity.WARNING, v)
-                spo2 <= 92 -> out += Advice(AdviceKind.SPO2_LOW, AdviceSeverity.CAUTION, v)
-            }
-        }
-
-        val hr = inp.heartRate
-        if (hr != null && alt != null && alt > 2500 && hr >= 120 &&
-            isFresh(inp.nowMs, inp.heartRateAtMs, 15 * 60_000L)
-        ) {
-            out += Advice(AdviceKind.HR_HIGH, AdviceSeverity.INFO, hr.toString())
-        }
-
         if (alt != null && alt >= 1500) {
             out += Advice(AdviceKind.HYDRATION, AdviceSeverity.INFO)
         }
@@ -81,6 +52,4 @@ class Advisor {
             .take(4)
     }
 
-    private fun isFresh(nowMs: Long, atMs: Long?, maxAgeMs: Long): Boolean =
-        atMs != null && nowMs - atMs in 0..maxAgeMs
 }

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.abs
 
 data class TrendLine(
@@ -38,9 +39,15 @@ data class TrendScale(
     val line: TrendLine,
     val min: Double,
     val max: Double,
+    val plotMin: Double,
+    val plotMax: Double,
 )
 
-fun trendScales(lines: List<TrendLine>, windowMs: Long): List<TrendScale> {
+fun trendScales(
+    lines: List<TrendLine>,
+    startTimeMs: Long,
+    endTimeMs: Long,
+): List<TrendScale> {
     val cleanLines = lines.mapNotNull { line ->
         val points = line.points.asSequence()
             .filter { (time, value) -> time > 0L && value.isFinite() }
@@ -48,15 +55,11 @@ fun trendScales(lines: List<TrendLine>, windowMs: Long): List<TrendScale> {
             .toList()
         if (points.isEmpty()) null else line.copy(points = points)
     }
-    val safeWindowMs = windowMs.coerceAtLeast(1L)
-    val latest = cleanLines.maxOfOrNull { line ->
-        line.points.maxOfOrNull { it.first } ?: Long.MIN_VALUE
-    }
-        ?.takeUnless { it == Long.MIN_VALUE } ?: return emptyList()
-    val cutoff = latest - safeWindowMs
+    val safeStart = minOf(startTimeMs, endTimeMs - 1L)
+    val safeEnd = maxOf(endTimeMs, safeStart + 1L)
     return cleanLines.mapNotNull { line ->
         val values = line.points.asSequence()
-            .filter { it.first >= cutoff && it.first <= latest }
+            .filter { it.first in safeStart..safeEnd }
             .map { it.second }
             .toList()
         if (values.isEmpty()) null else {
@@ -69,7 +72,13 @@ fun trendScales(lines: List<TrendLine>, windowMs: Long): List<TrendScale> {
                 else -> 2.0
             }
             val padding = ((rawMax - rawMin) * 0.08).coerceAtLeast(basePadding)
-            TrendScale(line, rawMin - padding, rawMax + padding)
+            TrendScale(
+                line = line,
+                min = rawMin,
+                max = rawMax,
+                plotMin = rawMin - padding,
+                plotMax = rawMax + padding,
+            )
         }
     }
 }
@@ -81,18 +90,24 @@ fun trendScales(lines: List<TrendLine>, windowMs: Long): List<TrendScale> {
 @Composable
 fun CombinedTrendChart(
     lines: List<TrendLine>,
-    windowMs: Long,
+    startTimeMs: Long,
+    endTimeMs: Long,
     gridColor: Color,
     axisColor: Color,
     backgroundColor: Color,
     modifier: Modifier = Modifier,
 ) {
     var cursorX by remember { mutableStateOf<Float?>(null) }
-    val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    val scales = trendScales(lines, windowMs)
+    val localTimeZoneId = TimeZone.getDefault().id
+    val timeFormatter = remember(localTimeZoneId, Locale.getDefault()) {
+        SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone(localTimeZoneId)
+        }
+    }
+    val scales = trendScales(lines, startTimeMs, endTimeMs)
 
     Canvas(
-        modifier = modifier.pointerInput(lines, windowMs) {
+        modifier = modifier.pointerInput(lines, startTimeMs, endTimeMs) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 cursorX = down.position.x
@@ -116,12 +131,8 @@ fun CombinedTrendChart(
         val bottom = size.height - 29.dp.toPx()
         val plotWidth = (right - left).coerceAtLeast(1f)
         val plotHeight = (bottom - top).coerceAtLeast(1f)
-        val latest = scales.maxOf { scale -> scale.line.points.maxOf { it.first } }
-        val earliest = scales.minOf { scale -> scale.line.points.minOf { it.first } }
-        val hasFullWindow = latest - earliest >= windowMs
-        val startTime = if (hasFullWindow) latest - windowMs else earliest
-        // Пока окно не заполнено, его конец остаётся впереди: линия растёт слева направо.
-        val endTime = if (hasFullWindow) latest else startTime + windowMs
+        val startTime = minOf(startTimeMs, endTimeMs - 1L)
+        val endTime = maxOf(endTimeMs, startTime + 1L)
         val span = (endTime - startTime).coerceAtLeast(1L)
 
         repeat(5) { index ->
@@ -167,9 +178,9 @@ fun CombinedTrendChart(
                 .sortedBy { it.first }
                 .toList()
             if (visible.isEmpty()) return@forEach
-            val valueSpan = (scale.max - scale.min).coerceAtLeast(1e-9)
+            val valueSpan = (scale.plotMax - scale.plotMin).coerceAtLeast(1e-9)
             fun yFor(value: Double): Float = bottom -
-                ((value - scale.min) / valueSpan).coerceIn(0.0, 1.0).toFloat() * plotHeight
+                ((value - scale.plotMin) / valueSpan).coerceIn(0.0, 1.0).toFloat() * plotHeight
 
             if (visible.size == 1) {
                 drawCircle(
@@ -191,6 +202,27 @@ fun CombinedTrendChart(
             }
         }
 
+        repeat(5) { index ->
+            val fraction = index / 4.0
+            val y = top + plotHeight * index / 4f
+            val baseline = when (index) {
+                0 -> y + 9.dp.toPx()
+                4 -> y - 3.dp.toPx()
+                else -> y - 3.dp.toPx()
+            }
+            var textX = left + 4.dp.toPx()
+            scales.forEach { scale ->
+                val value = scale.plotMax - (scale.plotMax - scale.plotMin) * fraction
+                val label = formatTrendValue(value, scale.line.decimals)
+                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = 8.dp.toPx()
+                    color = scale.line.color.copy(alpha = 0.92f).toArgb()
+                }
+                drawContext.canvas.nativeCanvas.drawText(label, textX, baseline, paint)
+                textX += paint.measureText(label) + 7.dp.toPx()
+            }
+        }
+
         cursorX?.takeIf { it.isFinite() }?.coerceIn(left, right)?.let { x ->
             val cursorTime = startTime + (((x - left) / plotWidth) * span).toLong()
             drawLine(
@@ -204,8 +236,8 @@ fun CombinedTrendChart(
                     .filter { it.first in startTime..endTime }
                     .minByOrNull { abs(it.first - cursorTime) }
                     ?: return@mapNotNull null
-                val valueSpan = (scale.max - scale.min).coerceAtLeast(1e-9)
-                val y = bottom - ((nearest.second - scale.min) / valueSpan)
+                val valueSpan = (scale.plotMax - scale.plotMin).coerceAtLeast(1e-9)
+                val y = bottom - ((nearest.second - scale.plotMin) / valueSpan)
                     .coerceIn(0.0, 1.0).toFloat() * plotHeight
                 drawCircle(Color.White, 4.dp.toPx(), Offset(xFor(nearest.first), y))
                 drawCircle(scale.line.color, 2.6.dp.toPx(), Offset(xFor(nearest.first), y))

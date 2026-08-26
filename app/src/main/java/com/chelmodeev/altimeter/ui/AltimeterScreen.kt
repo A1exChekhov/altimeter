@@ -161,6 +161,29 @@ data class ScreenActions(
 
 private enum class AppSection { HOME, MAP, TRACK, ANALYTICS }
 
+private enum class ChartPeriod(val labelRes: Int, val durationMs: Long?) {
+    MINUTES_15(R.string.chart_range_15m, 15L * 60L * 1_000L),
+    HOUR_1(R.string.chart_range_1h, 60L * 60L * 1_000L),
+    HOURS_3(R.string.chart_range_3h, 3L * 60L * 60L * 1_000L),
+    HOURS_6(R.string.chart_range_6h, 6L * 60L * 60L * 1_000L),
+    HOURS_12(R.string.chart_range_12h, 12L * 60L * 60L * 1_000L),
+    TODAY(R.string.chart_range_today, null),
+}
+
+private data class ChartTimeWindow(val startMs: Long, val endMs: Long)
+
+private fun ChartPeriod.timeWindow(nowMs: Long): ChartTimeWindow {
+    val startMs = durationMs?.let { nowMs - it } ?: run {
+        Instant.ofEpochMilli(nowMs)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+    return ChartTimeWindow(startMs = startMs, endMs = nowMs)
+}
+
 @Composable
 fun AltimeterScreen(state: UiState, actions: ScreenActions) {
     val accent by animateColorAsState(zoneAccent(state.altitude), tween(900), label = "accent")
@@ -392,15 +415,14 @@ private fun HomePage(
             onTracks = onOpenTrack,
             onSettings = onOpenSettings,
         )
-        Spacer(Modifier.height(4.dp))
         Readout(state, accent, actions)
         if (!state.locationPermissionGranted) {
             Spacer(Modifier.height(10.dp))
             PermissionCard(actions.onGrantLocation)
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         HomeStatusRow(state)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         MapCard(
             session = mapSession,
             latitude = state.latitude,
@@ -420,9 +442,9 @@ private fun HomePage(
         )
         Spacer(Modifier.height(14.dp))
         VitalsCard(state, actions, onDetails = onOpenHealth)
-        state.advices.firstOrNull()?.let {
-            Spacer(Modifier.height(14.dp))
-            AdviceCard(listOf(it))
+        state.advices.firstOrNull { it.isNonMedicalInfo() }?.let { info ->
+            Spacer(Modifier.height(10.dp))
+            AdviceCard(listOf(info))
         }
         Spacer(Modifier.height(18.dp))
     }
@@ -494,20 +516,29 @@ private fun MapPage(
                 }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     FilledTonalButton(
                         onClick = actions.onShareLocation,
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                        modifier = Modifier.height(40.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        modifier = Modifier.height(40.dp).weight(1f),
                     ) {
                         Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.size(6.dp))
                         Text(stringResource(R.string.location_share), maxLines = 1, fontSize = 11.sp)
                     }
-                    OutlinedButton(
+                    FilledTonalButton(
                         onClick = actions.onShareLocationWithPhoto,
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                        modifier = Modifier.height(40.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                        modifier = Modifier.height(40.dp).weight(1f),
                     ) {
                         Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.size(6.dp))
@@ -553,6 +584,8 @@ private fun AnalyticsPage(
     onOpenSettings: () -> Unit,
     onOpenHealth: () -> Unit,
 ) {
+    var chartPeriod by rememberSaveable { mutableStateOf(ChartPeriod.HOUR_1) }
+    val chartWindow = chartPeriod.timeWindow(System.currentTimeMillis())
     Column(
         Modifier
             .fillMaxSize()
@@ -563,12 +596,19 @@ private fun AnalyticsPage(
         PageHeader(R.string.nav_analytics, Icons.Rounded.Insights, onOpenSettings)
         VitalsCard(state, actions, onDetails = onOpenHealth)
         Spacer(Modifier.height(14.dp))
-        ChartCard(state, accent)
+        ChartCard(
+            state = state,
+            accent = accent,
+            period = chartPeriod,
+            window = chartWindow,
+            onPeriodChange = { chartPeriod = it },
+        )
         Spacer(Modifier.height(14.dp))
-        DetailsGrid(state)
-        if (state.advices.isNotEmpty()) {
+        DetailsGrid(state, chartWindow)
+        val fieldInfo = state.advices.filter { it.isNonMedicalInfo() }
+        if (fieldInfo.isNotEmpty()) {
             Spacer(Modifier.height(14.dp))
-            AdviceCard(state.advices)
+            AdviceCard(fieldInfo)
         }
         Spacer(Modifier.height(14.dp))
         WatchCard(state, actions)
@@ -750,7 +790,7 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 10.dp),
+            modifier = Modifier.padding(top = 6.dp),
         ) {
             val accuracy = state.accuracy
             if (state.altitude != null && accuracy != null) {
@@ -779,7 +819,7 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 12.dp),
+            modifier = Modifier.padding(top = 8.dp),
         ) {
             Icon(
                 Icons.Rounded.Place,
@@ -814,7 +854,7 @@ private fun Readout(state: UiState, accent: Color, actions: ScreenActions) {
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp),
+                .padding(top = 10.dp),
         ) {
             Icon(
                 if (state.tracking.recording) Icons.Rounded.Stop else Icons.Rounded.Route,
@@ -932,20 +972,23 @@ private fun StatusChip(text: String, dotColor: Color) {
 }
 
 @Composable
-fun SectionCard(content: @Composable () -> Unit) {
+fun SectionCard(
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    content: @Composable () -> Unit,
+) {
     Surface(
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(16.dp)) { content() }
+        Column(Modifier.padding(contentPadding)) { content() }
     }
 }
 
 @Composable
 private fun PermissionCard(onGrant: () -> Unit) {
-    SectionCard {
+    SectionCard(contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)) {
         Text(
             text = stringResource(R.string.perm_needed),
             fontSize = 13.sp,
@@ -958,6 +1001,8 @@ private fun PermissionCard(onGrant: () -> Unit) {
 
 @Composable
 private fun AdviceCard(advices: List<Advice>) {
+    val visible = advices.filter { it.isNonMedicalInfo() }
+    if (visible.isEmpty()) return
     SectionCard {
         Text(
             text = stringResource(R.string.advice_title),
@@ -965,7 +1010,7 @@ private fun AdviceCard(advices: List<Advice>) {
             fontWeight = FontWeight.SemiBold,
         )
         Spacer(Modifier.height(10.dp))
-        advices.forEach { advice ->
+        visible.forEach { advice ->
             Row(modifier = Modifier.padding(vertical = 5.dp)) {
                 val (icon, tint) = when (advice.severity) {
                     AdviceSeverity.WARNING -> Icons.Rounded.Error to Color(0xFFFF8A80)
@@ -989,6 +1034,21 @@ private fun AdviceCard(advices: List<Advice>) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
+}
+
+private fun Advice.isNonMedicalInfo(): Boolean = when (kind) {
+    AdviceKind.PRESSURE_FALLING_FAST,
+    AdviceKind.PRESSURE_FALLING,
+    AdviceKind.PRESSURE_RISING,
+    AdviceKind.HYDRATION,
+    AdviceKind.GPS_WEAK -> true
+    AdviceKind.ALTITUDE_ACCLIMATIZE,
+    AdviceKind.ALTITUDE_HIGH,
+    AdviceKind.ALTITUDE_VERY_HIGH,
+    AdviceKind.FAST_ASCENT,
+    AdviceKind.SPO2_LOW,
+    AdviceKind.SPO2_VERY_LOW,
+    AdviceKind.HR_HIGH -> false
 }
 
 @Composable
@@ -1027,7 +1087,7 @@ private fun VitalsCard(
     ).count { it == null }
     val metricColor = MaterialTheme.colorScheme.onSurface
 
-    SectionCard {
+    SectionCard(contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CompactVitalStat(
                 label = stringResource(R.string.vitals_hr),
@@ -1063,15 +1123,15 @@ private fun VitalsCard(
                 stringResource(R.string.vitals_source_bluetooth)
             else -> stringResource(R.string.vitals_ready)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Rounded.MonitorHeart,
                 contentDescription = null,
                 tint = Color(0xFFFF8A80),
-                modifier = Modifier.size(15.dp),
+                modifier = Modifier.size(13.dp),
             )
-            Spacer(Modifier.size(6.dp))
+            Spacer(Modifier.size(5.dp))
             if (!hasAllPermissions || vitals.healthConnectError == "PERMISSION") {
                 TextButton(
                     onClick = if (vitals.healthConnectError == "PERMISSION") {
@@ -1084,7 +1144,7 @@ private fun VitalsCard(
                 ) {
                     Text(
                         text = status,
-                        fontSize = 10.5.sp,
+                        fontSize = 9.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -1092,7 +1152,7 @@ private fun VitalsCard(
             } else {
                 Text(
                     text = status,
-                    fontSize = 10.5.sp,
+                    fontSize = 9.5.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1100,21 +1160,21 @@ private fun VitalsCard(
                 )
             }
             if (vitals.refreshing) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
             } else {
-                IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(30.dp)) {
+                IconButton(onClick = actions.onRefreshVitals, modifier = Modifier.size(26.dp)) {
                     Icon(
                         Icons.Rounded.Refresh,
                         contentDescription = stringResource(R.string.vitals_refresh),
-                        modifier = Modifier.size(17.dp),
+                        modifier = Modifier.size(15.dp),
                     )
                 }
             }
-            IconButton(onClick = onDetails, modifier = Modifier.size(30.dp)) {
+            IconButton(onClick = onDetails, modifier = Modifier.size(26.dp)) {
                 Icon(
                     Icons.Rounded.Settings,
                     contentDescription = stringResource(R.string.vitals_sources),
-                    modifier = Modifier.size(17.dp),
+                    modifier = Modifier.size(15.dp),
                 )
             }
         }
@@ -1130,23 +1190,23 @@ private fun CompactVitalStat(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(12.dp),
         color = Color.White.copy(alpha = 0.045f),
         modifier = modifier,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 3.dp, vertical = 2.dp),
         ) {
             Text(
                 text = label,
-                fontSize = 9.5.sp,
+                fontSize = 9.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.height(40.dp),
+                modifier = Modifier.height(30.dp),
             ) {
                 val unitColor = MaterialTheme.colorScheme.onSurfaceVariant
                 val valueWithUnit = buildAnnotatedString {
@@ -1156,7 +1216,7 @@ private fun CompactVitalStat(
                         withStyle(
                             SpanStyle(
                                 color = unitColor,
-                                fontSize = 8.sp,
+                                fontSize = 7.5.sp,
                                 fontWeight = FontWeight.Normal,
                             )
                         ) {
@@ -1167,7 +1227,7 @@ private fun CompactVitalStat(
                 Text(
                     text = valueWithUnit,
                     style = TextStyle(
-                        fontSize = 23.sp,
+                        fontSize = 21.sp,
                         fontWeight = FontWeight.Bold,
                         fontFeatureSettings = "tnum",
                     ),
@@ -1719,19 +1779,17 @@ private fun HrSparkline(series: List<Pair<Long, Long>>, color: Color, modifier: 
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ChartCard(state: UiState, accent: Color) {
-    val context = LocalContext.current
-    var windowMs by remember { mutableStateOf(60L * 60L * 1_000L) }
+private fun ChartCard(
+    state: UiState,
+    accent: Color,
+    period: ChartPeriod,
+    window: ChartTimeWindow,
+    onPeriodChange: (ChartPeriod) -> Unit,
+) {
     var altitudeConnected by rememberSaveable { mutableStateOf(true) }
     var heartConnected by rememberSaveable { mutableStateOf(true) }
     var oxygenConnected by rememberSaveable { mutableStateOf(true) }
     var stepsConnected by rememberSaveable { mutableStateOf(true) }
-    val ranges = listOf(
-        15L * 60L * 1_000L to R.string.chart_range_15m,
-        60L * 60L * 1_000L to R.string.chart_range_1h,
-        3L * 60L * 60L * 1_000L to R.string.chart_range_3h,
-        6L * 60L * 60L * 1_000L to R.string.chart_range_6h,
-    )
     val altitudeColor = Color(0xFFD5A657)
     val heartColor = Color(0xFFE17070)
     val oxygenColor = Color(0xFF62A9D8)
@@ -1781,7 +1839,7 @@ private fun ChartCard(state: UiState, accent: Color) {
         "steps" to stepsConnected,
     )
     val lines = allLines.filter { connections[it.key] == true && it.points.isNotEmpty() }
-    val scales = trendScales(lines, windowMs)
+    val scales = trendScales(lines, window.startMs, window.endMs)
 
     SectionCard {
         Text(
@@ -1794,11 +1852,11 @@ private fun ChartCard(state: UiState, accent: Color) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp),
         ) {
-            ranges.forEach { (range, label) ->
+            ChartPeriod.entries.forEach { range ->
                 FilterChip(
-                    selected = windowMs == range,
-                    onClick = { windowMs = range },
-                    label = { Text(stringResource(label), fontSize = 10.5.sp) },
+                    selected = period == range,
+                    onClick = { onPeriodChange(range) },
+                    label = { Text(stringResource(range.labelRes), fontSize = 10.5.sp) },
                 )
             }
         }
@@ -1847,7 +1905,8 @@ private fun ChartCard(state: UiState, accent: Color) {
         } else {
             CombinedTrendChart(
                 lines = lines,
-                windowMs = windowMs,
+                startTimeMs = window.startMs,
+                endTimeMs = window.endMs,
                 gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.38f),
                 axisColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 backgroundColor = MaterialTheme.colorScheme.surface,
@@ -1882,8 +1941,14 @@ private fun ChartConnector(color: Color, text: String, connected: Boolean, onCli
 }
 
 @Composable
-private fun DetailsGrid(state: UiState) {
+private fun DetailsGrid(state: UiState, window: ChartTimeWindow) {
     val context = LocalContext.current
+    val altitudeStats = periodAltitudeStats(
+        state.history.asSequence()
+            .filter { it.timeMs in window.startMs..window.endMs }
+            .map { it.altitude }
+            .toList()
+    )
     val cells = buildList {
         add(
             stringResource(R.string.detail_pressure) to
@@ -1895,19 +1960,19 @@ private fun DetailsGrid(state: UiState) {
         )
         add(
             stringResource(R.string.detail_ascent) to
-                Fmt.altitudeSigned(context, state.totalAscent, state.unit)
+                (altitudeStats?.let { Fmt.altitudeSigned(context, it.ascent, state.unit) } ?: "—")
         )
         add(
             stringResource(R.string.detail_descent) to
-                Fmt.altitudeSigned(context, -state.totalDescent, state.unit)
+                (altitudeStats?.let { Fmt.altitudeSigned(context, -it.descent, state.unit) } ?: "—")
         )
         add(
             stringResource(R.string.detail_min) to
-                (state.minAltitude?.let { Fmt.altitude(context, it, state.unit) } ?: "—")
+                (altitudeStats?.let { Fmt.altitude(context, it.min, state.unit) } ?: "—")
         )
         add(
             stringResource(R.string.detail_max) to
-                (state.maxAltitude?.let { Fmt.altitude(context, it, state.unit) } ?: "—")
+                (altitudeStats?.let { Fmt.altitude(context, it.max, state.unit) } ?: "—")
         )
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1921,6 +1986,35 @@ private fun DetailsGrid(state: UiState) {
         }
     }
 }
+
+private data class PeriodAltitudeStats(
+    val min: Double,
+    val max: Double,
+    val ascent: Double,
+    val descent: Double,
+)
+
+private fun periodAltitudeStats(values: List<Double>): PeriodAltitudeStats? {
+    if (values.isEmpty()) return null
+    var anchor = values.first()
+    var ascent = 0.0
+    var descent = 0.0
+    values.drop(1).forEach { value ->
+        val change = value - anchor
+        if (abs(change) >= PERIOD_ASCENT_THRESHOLD_M) {
+            if (change > 0.0) ascent += change else descent -= change
+            anchor = value
+        }
+    }
+    return PeriodAltitudeStats(
+        min = values.min(),
+        max = values.max(),
+        ascent = ascent,
+        descent = descent,
+    )
+}
+
+private const val PERIOD_ASCENT_THRESHOLD_M = 3.0
 
 @Composable
 private fun DetailCell(label: String, value: String, modifier: Modifier = Modifier) {

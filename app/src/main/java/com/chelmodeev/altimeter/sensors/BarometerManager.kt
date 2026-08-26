@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import java.util.ArrayDeque
 
 /**
  * Барометр: отдаёт сглаженное давление в гПа.
@@ -20,6 +21,7 @@ class BarometerManager(
     val available: Boolean get() = sensor != null
 
     private var filtered: Double? = null
+    private val recentPressure = ArrayDeque<Double>()
     private var running = false
 
     fun start() {
@@ -38,10 +40,18 @@ class BarometerManager(
     override fun onSensorChanged(event: SensorEvent) {
         val p = event.values.firstOrNull()?.toDouble() ?: return
         if (p < 300.0 || p > 1200.0) return // мусорные значения
-        val f = filtered?.let { it + 0.25 * (p - it) } ?: p
+        recentPressure.addLast(p)
+        while (recentPressure.size > MEDIAN_WINDOW_SIZE) recentPressure.removeFirst()
+        val median = recentPressure.sorted()[recentPressure.size / 2]
+        val f = filtered?.let { it + FILTER_ALPHA * (median - it) } ?: median
         filtered = f
         onPressure(f)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+    private companion object {
+        const val MEDIAN_WINDOW_SIZE = 9
+        const val FILTER_ALPHA = 0.08
+    }
 }

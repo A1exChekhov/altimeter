@@ -36,6 +36,8 @@
     <string name="chart_range_1h">1 ч</string>
     <string name="chart_range_3h">3 ч</string>
     <string name="chart_range_6h">6 ч</string>
+    <string name="chart_range_12h">12 ч</string>
+    <string name="chart_range_today">Сегодня</string>
 
     <string name="detail_pressure">Давление</string>
     <string name="detail_vacc">Верт. точность GPS</string>
@@ -244,8 +246,8 @@
     <string name="widget_steps_compact">ШАГИ %1$s</string>
     <string name="widget_steps_empty">ШАГИ —</string>
 
-    <string name="advice_title">Советы и предупреждения</string>
-    <string name="advice_pressure_falling_fast">Давление быстро падает (−%1$s гПа/ч) — возможна резкая порча погоды, гроза. Подумайте об укрытии или спуске.</string>
+    <string name="advice_title">Информация и напоминания</string>
+    <string name="advice_pressure_falling_fast">Давление быстро падает (−%1$s гПа/ч) — возможна резкая порча погоды или гроза.</string>
     <string name="advice_pressure_falling">Давление падает (−%1$s гПа/ч) — погода может испортиться.</string>
     <string name="advice_pressure_rising">Давление растёт — погода, скорее всего, улучшается.</string>
     <string name="advice_alt_acclimatize">Выше 2500 м возможна горная болезнь — набирайте высоту постепенно, следите за самочувствием.</string>
@@ -256,12 +258,13 @@
     <string name="advice_spo2_low">SpO₂ %1$s%% понижен — сделайте паузу и отдохните. При плохом самочувствии спускайтесь.</string>
     <string name="advice_spo2_very_low">SpO₂ %1$s%% низкий — остановитесь, отдохните, согрейтесь. Если не растёт или самочувствие плохое — спуск и за помощью.</string>
     <string name="advice_hr_high">Пульс %1$s уд/мин на высоте — сделайте паузу, восстановитесь.</string>
-    <string name="advice_gps_weak">Слабый сигнал GPS — точность высоты снижена. Выйдите на открытое место.</string>
-    <string name="advice_disclaimer">Подсказки информационные и не являются медицинской рекомендацией.</string>
+    <string name="advice_gps_weak">Слабый сигнал GPS — точность координат и высоты снижена.</string>
+    <string name="advice_disclaimer">Только сведения о воде, погоде и качестве GPS.</string>
 
     <string name="cd_settings">Настройки</string>
     <string name="cd_expand_map">Развернуть карту</string>
     <string name="cd_collapse_map">Свернуть карту</string>
     <string name="cd_center_map">Центрировать на мне</string>
+    <string name="cd_north_map">Север наверху</string>
     <string name="cd_map_layer">Слой карты</string>
 </resources>

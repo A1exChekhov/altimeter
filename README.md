@@ -68,21 +68,22 @@ APK появится в `app/build/outputs/apk/debug/app-debug.apk` — скоп
 телефон и установите (разрешите установку из неизвестных источников).
 
 Актуальная готовая сборка опубликована в GitHub Releases:
-**[скачать Altimeter Kailas Android 1.6.2](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.2/Altimeter-Kailas-Android-1.6.2.apk)**.
+**[скачать Altimeter Kailas Android 1.6.3](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.3/Altimeter-Kailas-Android-1.6.3.apk)**.
 
-В версии 1.6.2 все графики — высота, пульс, SpO₂ и шаги — отображаются
-непрерывными линиями на общей временной шкале. Карта Android занимает весь экран:
-заголовок убран, навигация стала компактной, а настройки и действия перенесены
-поверх карты. Добавлен отдельный виджет высоты 1×1. Также сохранено
-восстановление линии маршрута после возврата
-приложения из фона, добавленное в 1.6.1.
+В версии 1.6.3 карта использует максимум экрана, безопасно центрируется, показывает
+направление на север и догружает онлайн-подложку за пределами офлайн-региона.
+Кнопка фото снова контрастна. Графики получили местное время, цветные числовые оси,
+периоды 12 часов и «Сегодня»; статистика пересчитывается для выбранного периода.
+Высота дополнительно стабилизирована фильтрацией барометра и защитой от скачков GPS.
+Карточки пульса, SpO₂ и шагов сохранены и уплотнены. Приложение показывает только
+нейтральные сведения о воде, погоде и GPS — без медицинских указаний.
 
 Локальные готовые версии сохраняются раздельно в `I:\Altimeter\.release-artifacts\`
 под именами `Altimeter-v1.3.apk`, `Altimeter-v1.4.apk`, `Altimeter-v1.5.apk`,
 `Altimeter-v1.5.1.apk`, `Altimeter-v1.5.2.apk`, `Altimeter-v1.5.3.apk`,
 `Altimeter-v1.5.4.apk`, `Altimeter-v1.5.5.apk`, `Altimeter-v1.5.6.apk`,
 `Altimeter-Kailas-Android-1.6.0.apk`, `Altimeter-Kailas-Android-1.6.1.apk`,
-`Altimeter-Kailas-Android-1.6.2.apk` и т. д.
+`Altimeter-Kailas-Android-1.6.2.apk`, `Altimeter-Kailas-Android-1.6.3.apk` и т. д.
 Стабильная резервная 1.5.12 сохранена на GitHub; новая сборка не перезаписывает её.
 
 ## Где находятся устанавливаемые файлы
@@ -97,10 +98,10 @@ I:\Altimeter\app\build\outputs\apk\debug\app-debug.apk
 
 После самостоятельной сборки в любом клоне используется тот же относительный путь:
 `app/build/outputs/apk/debug/app-debug.apk`. Каталог `app/build/` не хранится в дереве
-Git, но готовый APK отдельно публикуется как asset релиза `v1.6.2`. Локально он создаётся
+Git, но готовый APK отдельно публикуется как asset релиза `v1.6.3`. Локально он создаётся
 командой `:app:assembleDebug`.
 
-Готовый Android 1.6.2: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.2/Altimeter-Kailas-Android-1.6.2.apk)**.
+Готовый Android 1.6.3: **[скачать APK](https://github.com/A1exChekhov/altimeter/releases/download/v1.6.3/Altimeter-Kailas-Android-1.6.3.apk)**.
 
 ### iPhone
 

@@ -10,9 +10,10 @@ class TrackStats {
 
     private companion object {
         const val HISTORY_STEP_MS = 5_000L
-        const val HISTORY_MAX_POINTS = 4_320 // до 6 часов
+        const val HISTORY_MAX_POINTS = 18_000
+        const val HISTORY_MAX_AGE_MS = 25L * 60L * 60L * 1_000L
         const val SPEED_WINDOW_MS = 20_000L
-        const val ASCENT_THRESHOLD_M = 2.0 // гистерезис против шума
+        const val ASCENT_THRESHOLD_M = 3.0 // гистерезис против шума
     }
 
     private val history = ArrayDeque<ChartPoint>()
@@ -50,6 +51,9 @@ class TrackStats {
         if (timeMs - lastHistoryAt >= HISTORY_STEP_MS) {
             lastHistoryAt = timeMs
             history.addLast(ChartPoint(timeMs, alt))
+            while (history.isNotEmpty() && history.first().timeMs < timeMs - HISTORY_MAX_AGE_MS) {
+                history.removeFirst()
+            }
             while (history.size > HISTORY_MAX_POINTS) history.removeFirst()
         }
     }

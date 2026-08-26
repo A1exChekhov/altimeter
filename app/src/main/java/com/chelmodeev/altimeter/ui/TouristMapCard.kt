@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloseFullscreen
 import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,6 +30,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
@@ -81,6 +84,7 @@ class TouristMapSession(context: android.content.Context) {
     var styleRevision by mutableIntStateOf(0)
     var foregroundRevision by mutableIntStateOf(0)
     var follow by mutableStateOf(true)
+    var bearing by mutableDoubleStateOf(0.0)
     var hadFirstFix by mutableStateOf(false)
     var requestedStyleKey: String? = null
     var latestTrackPoints: List<TrackMapPoint> = emptyList()
@@ -106,8 +110,11 @@ class TouristMapSession(context: android.content.Context) {
             map = readyMap
             readyMap.uiSettings.isRotateGesturesEnabled = true
             readyMap.uiSettings.isTiltGesturesEnabled = true
-            readyMap.uiSettings.isCompassEnabled = true
+            readyMap.uiSettings.isCompassEnabled = false
             readyMap.cameraPosition = CameraPosition.Builder().zoom(4.5).build()
+            readyMap.addOnCameraMoveListener {
+                bearing = readyMap.cameraPosition.bearing
+            }
         }
     }
 
@@ -248,15 +255,19 @@ fun MapCard(
     LaunchedEffect(map, offlineMapPath, topo, networkAvailable) {
         val readyMap = map ?: return@LaunchedEffect
         val localPath = offlineMapPath?.takeIf { File(it).isFile }
-        val styleKey = localPath ?: ONLINE_OUTDOOR_STYLE
+        val styleKey = if (localPath != null) {
+            "$localPath|fallback:$networkAvailable"
+        } else {
+            "$ONLINE_OUTDOOR_STYLE|online:$networkAvailable"
+        }
         // Retry an online style exactly when connectivity returns. Offline PMTiles
         // never depend on this flag and are not needlessly reloaded.
-        if (session.requestedStyleKey == styleKey && (localPath != null || !networkAvailable)) {
-            return@LaunchedEffect
-        }
+        if (session.requestedStyleKey == styleKey) return@LaunchedEffect
         session.requestedStyleKey = styleKey
         val styleBuilder = if (localPath != null) {
-            Style.Builder().fromJson(offlineMapStyle(localPath))
+            Style.Builder().fromJson(
+                offlineMapStyle(localPath, includeOnlineFallback = networkAvailable)
+            )
         } else {
             Style.Builder().fromUri(ONLINE_OUTDOOR_STYLE)
         }
@@ -291,7 +302,8 @@ fun MapCard(
             if (!session.hadFirstFix) {
                 session.hadFirstFix = true
                 if (trackRecording || trackPoints.isEmpty()) {
-                    readyMap.animateCamera(CameraUpdateFactory.newLatLngZoom(target, 15.0))
+                    val zoom = if (offlineMapPath != null) OFFLINE_FOLLOW_ZOOM else ONLINE_FOLLOW_ZOOM
+                    readyMap.animateCamera(CameraUpdateFactory.newLatLngZoom(target, zoom))
                 }
             } else if (session.follow) {
                 readyMap.animateCamera(CameraUpdateFactory.newLatLng(target))
@@ -398,14 +410,52 @@ fun MapCard(
             onClick = {
                 session.follow = true
                 if (latitude != null && longitude != null) {
-                    session.map?.animateCamera(
-                        CameraUpdateFactory.newLatLngZoom(LatLng(latitude, longitude), 15.0)
-                    )
+                    session.map?.let { readyMap ->
+                        val current = readyMap.cameraPosition
+                        val maxZoom = if (offlineMapPath != null) OFFLINE_MAX_FOLLOW_ZOOM
+                            else ONLINE_MAX_FOLLOW_ZOOM
+                        val zoom = current.zoom.coerceIn(MIN_FOLLOW_ZOOM, maxZoom)
+                        readyMap.animateCamera(
+                            CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.Builder(current)
+                                    .target(LatLng(latitude, longitude))
+                                    .zoom(zoom)
+                                    .build()
+                            )
+                        )
+                    }
                 }
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 10.dp, bottom = bottomControlPadding),
+        )
+
+        TouristMapButton(
+            icon = {
+                Icon(
+                    Icons.Rounded.Navigation,
+                    contentDescription = stringResource(R.string.cd_north_map),
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp).rotate(-session.bearing.toFloat()),
+                )
+            },
+            onClick = {
+                session.map?.let { readyMap ->
+                    readyMap.animateCamera(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.Builder(readyMap.cameraPosition)
+                                .bearing(0.0)
+                                .tilt(0.0)
+                                .build()
+                        )
+                    )
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .then(if (expanded) Modifier.statusBarsPadding() else Modifier)
+                .padding(top = 58.dp, end = 10.dp),
         )
 
         if (latitude == null) {
@@ -578,6 +628,11 @@ private const val LOCATION_SOURCE = "errarium-location-source"
 private const val LOCATION_OUTER_LAYER = "errarium-location-outer"
 private const val LOCATION_INNER_LAYER = "errarium-location-inner"
 private const val MAX_TRACK_ACCURACY_METERS = 50f
+private const val MIN_FOLLOW_ZOOM = 11.0
+private const val OFFLINE_FOLLOW_ZOOM = 13.0
+private const val OFFLINE_MAX_FOLLOW_ZOOM = 13.5
+private const val ONLINE_FOLLOW_ZOOM = 15.0
+private const val ONLINE_MAX_FOLLOW_ZOOM = 17.0
 private val TRACK_COLOR_ARGB = 0xFF35E0D0.toInt()
 private val TRACK_CASING_COLOR = 0xE6101826.toInt()
 private val TRACK_COLOR = Color(TRACK_COLOR_ARGB)

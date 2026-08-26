@@ -2,9 +2,9 @@ import Foundation
 
 final class TrackStatistics {
     private let historyStep: TimeInterval = 2
-    private let maxHistoryPoints = 1_800
+    private let maxHistoryPoints = 45_000
     private let speedWindow: TimeInterval = 20
-    private let ascentThreshold = 2.0
+    private let ascentThreshold = 3.0
 
     private var speedPoints: [ChartPoint] = []
     private var lastAcceptedAltitude: Double?
@@ -76,4 +76,3 @@ final class TrackStatistics {
         lastHistoryDate = .distantPast
     }
 }
-

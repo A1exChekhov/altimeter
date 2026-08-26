@@ -10,6 +10,39 @@ private enum ChartMetric: String, CaseIterable, Hashable, Identifiable {
     var id: String { rawValue }
 }
 
+enum ChartTimeRange: String, CaseIterable, Identifiable {
+    case minutes15
+    case hour
+    case hours3
+    case hours6
+    case hours12
+    case today
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .minutes15: "15 мин"
+        case .hour: "1 ч"
+        case .hours3: "3 ч"
+        case .hours6: "6 ч"
+        case .hours12: "12 ч"
+        case .today: "Сегодня"
+        }
+    }
+
+    func startDate(reference: Date) -> Date {
+        switch self {
+        case .minutes15: reference.addingTimeInterval(-15 * 60)
+        case .hour: reference.addingTimeInterval(-60 * 60)
+        case .hours3: reference.addingTimeInterval(-3 * 60 * 60)
+        case .hours6: reference.addingTimeInterval(-6 * 60 * 60)
+        case .hours12: reference.addingTimeInterval(-12 * 60 * 60)
+        case .today: Calendar.current.startOfDay(for: reference)
+        }
+    }
+}
+
 private struct MetricLine: Identifiable {
     let id: ChartMetric
     let title: String
@@ -39,9 +72,9 @@ struct AltitudeChartView: View {
     let points: [ChartPoint]
     let vitals: VitalSample
     let unit: AltitudeUnit
+    @Binding var selectedRange: ChartTimeRange
 
     @State private var connected = Set(ChartMetric.allCases)
-    @State private var window: TimeInterval = 60 * 60
     @State private var selectedDate: Date?
 
     private let altitudeColor = Color(red: 0.84, green: 0.65, blue: 0.34)
@@ -58,14 +91,17 @@ struct AltitudeChartView: View {
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeading(icon: "chart.xyaxis.line", title: "Динамика показателей")
 
-                HStack(spacing: 6) {
-                    ForEach(timeRanges, id: \.0) { range, title in
-                        Button(title) { window = range }
-                            .font(.caption.weight(.regular))
-                            .buttonStyle(.bordered)
-                            .tint(window == range ? .primary : .secondary)
+                ScrollView(.horizontal) {
+                    HStack(spacing: 6) {
+                        ForEach(ChartTimeRange.allCases) { range in
+                            Button(range.title) { selectedRange = range }
+                                .font(.caption.weight(.regular))
+                                .buttonStyle(.bordered)
+                                .tint(selectedRange == range ? .primary : .secondary)
+                        }
                     }
                 }
+                .scrollIndicators(.hidden)
 
                 HStack(spacing: 6) {
                     ForEach(metricLines) { line in
@@ -92,7 +128,7 @@ struct AltitudeChartView: View {
             MetricLine(
                 id: .altitude,
                 title: "Высота",
-                unit: " (unit.symbol)",
+                unit: " \(unit.symbol)",
                 color: altitudeColor,
                 points: points.map {
                     VitalPoint(date: $0.date, value: unit.value(fromMeters: $0.altitude))
@@ -126,18 +162,10 @@ struct AltitudeChartView: View {
         ]
     }
 
-    private var timeRanges: [(TimeInterval, String)] {
-        [(15 * 60, "15 мин"), (60 * 60, "1 ч"), (3 * 60 * 60, "3 ч"), (6 * 60 * 60, "6 ч")]
-    }
-
     private func timeline(for lines: [MetricLine]) -> (start: Date, end: Date)? {
-        let dates = lines.flatMap { $0.points.map(\.date) }
-        guard let earliest = dates.min(), let latest = dates.max() else { return nil }
-        if latest.timeIntervalSince(earliest) >= window {
-            return (latest.addingTimeInterval(-window), latest)
-        }
-        // Неполное окно закреплено слева и постепенно заполняется новыми точками.
-        return (earliest, earliest.addingTimeInterval(window))
+        guard lines.contains(where: { !$0.points.isEmpty }) else { return nil }
+        let end = Date()
+        return (selectedRange.startDate(reference: end), end)
     }
 
     private func makeScales(

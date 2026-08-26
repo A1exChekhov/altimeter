@@ -1,6 +1,8 @@
 package com.chelmodeev.altimeter.logic
 
 import com.chelmodeev.altimeter.model.CalibrationMode
+import java.util.ArrayDeque
+import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -31,6 +33,7 @@ class FusionEngine {
     // Авто-поправка: msl ≈ baroStdAlt + offset
     private var offset: Double? = null
     private var offsetVar: Double = 1600.0
+    private val initialOffsetSamples = ArrayDeque<Double>()
 
     // Оценка только по GPS (для устройств без барометра)
     private var gpsAlt: Double? = null
@@ -59,10 +62,14 @@ class FusionEngine {
             gpsAlt = msl
             gpsVar = r
         } else {
-            gpsVar += 2.0
-            val k = gpsVar / (gpsVar + r)
-            gpsAlt = g + k * (msl - g)
-            gpsVar *= (1 - k)
+            val innovation = msl - g
+            val gate = (4.0 * sigma).coerceAtLeast(GPS_ALTITUDE_GATE_M)
+            if (abs(innovation) <= gate) {
+                gpsVar += 2.0
+                val k = gpsVar / (gpsVar + r)
+                gpsAlt = g + k * innovation
+                gpsVar *= (1 - k)
+            }
         }
 
         // Поправка барометра: почти константа, дрейфует только с погодой
@@ -70,13 +77,24 @@ class FusionEngine {
         val z = msl - b
         val o = offset
         if (o == null) {
-            offset = z
-            offsetVar = r
+            initialOffsetSamples.addLast(z)
+            while (initialOffsetSamples.size > INITIAL_OFFSET_SAMPLE_COUNT) {
+                initialOffsetSamples.removeFirst()
+            }
+            if (initialOffsetSamples.size == INITIAL_OFFSET_SAMPLE_COUNT) {
+                offset = initialOffsetSamples.sorted()[INITIAL_OFFSET_SAMPLE_COUNT / 2]
+                offsetVar = r
+                initialOffsetSamples.clear()
+            }
         } else {
-            offsetVar += 0.03
-            val k = offsetVar / (offsetVar + r)
-            offset = o + k * (z - o)
-            offsetVar *= (1 - k)
+            val innovation = z - o
+            val gate = (4.0 * sigma).coerceAtLeast(GPS_OFFSET_GATE_M)
+            if (abs(innovation) <= gate) {
+                offsetVar += OFFSET_PROCESS_NOISE
+                val k = offsetVar / (offsetVar + r)
+                offset = o + k * innovation
+                offsetVar *= (1 - k)
+            }
         }
     }
 
@@ -143,4 +161,11 @@ class FusionEngine {
 
     private fun stdAltitude(p: Double, p0: Double): Double =
         44330.0 * (1.0 - (p / p0).pow(0.1902949))
+
+    private companion object {
+        const val INITIAL_OFFSET_SAMPLE_COUNT = 5
+        const val GPS_ALTITUDE_GATE_M = 25.0
+        const val GPS_OFFSET_GATE_M = 15.0
+        const val OFFSET_PROCESS_NOISE = 0.03
+    }
 }

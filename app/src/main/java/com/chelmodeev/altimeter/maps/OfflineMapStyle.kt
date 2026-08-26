@@ -5,7 +5,7 @@ import org.json.JSONObject
 import java.io.File
 
 /** Минимальный походный стиль Protomaps v4, не требующий сети, шрифтов или спрайтов. */
-fun offlineMapStyle(path: String): String {
+fun offlineMapStyle(path: String, includeOnlineFallback: Boolean = false): String {
     val baseMap = File(path)
     val archive = "pmtiles://${Uri.fromFile(baseMap)}"
     val sourceUrl = JSONObject.quote(archive)
@@ -24,6 +24,23 @@ fun offlineMapStyle(path: String): String {
     val hillshadeLayer = if (terrain.isFile) {
         """{"id":"hillshade","type":"hillshade","source":"terrain","paint":{"hillshade-exaggeration":0.55,"hillshade-shadow-color":"#4b4038","hillshade-highlight-color":"#fff7e2","hillshade-accent-color":"#776a59"}},"""
     } else ""
+    val fallbackSource = if (includeOnlineFallback) {
+        """,
+            "online-topo": {
+              "type": "raster",
+              "tiles": [
+                "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+                "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+                "https://c.tile.opentopomap.org/{z}/{x}/{y}.png"
+              ],
+              "tileSize": 256,
+              "maxzoom": 17,
+              "attribution": "© OpenStreetMap contributors, © OpenTopoMap"
+            }"""
+    } else ""
+    val fallbackLayer = if (includeOnlineFallback) {
+        """{"id":"online-topo","type":"raster","source":"online-topo"},"""
+    } else ""
     return """
         {
           "version": 8,
@@ -34,10 +51,11 @@ fun offlineMapStyle(path: String): String {
               "type": "vector",
               "url": $sourceUrl,
               "attribution": "© OpenStreetMap contributors"
-            }$terrainSource
+            }$terrainSource$fallbackSource
           },
           "layers": [
             {"id":"background","type":"background","paint":{"background-color":"#e8e2d1"}},
+            $fallbackLayer
             {"id":"earth","type":"fill","source":"protomaps","source-layer":"earth","paint":{"fill-color":"#e8e2d1"}},
             {"id":"landcover","type":"fill","source":"protomaps","source-layer":"landcover","paint":{"fill-color":["match",["get","kind"],"forest","#bfd3ae","glacier","#d9edf1","scrub","#d8d6af","grassland","#d5d8ae","#d9d5bb"],"fill-opacity":0.8}},
             {"id":"landuse","type":"fill","source":"protomaps","source-layer":"landuse","paint":{"fill-color":["match",["get","kind"],"forest","#b6cda6","wood","#b6cda6","national_park","#c8dcb8","nature_reserve","#c8dcb8","glacier","#d9edf1","sand","#ead9aa","bare_rock","#c9c1b4","#d7d3bb"],"fill-opacity":0.62}},

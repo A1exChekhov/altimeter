@@ -169,7 +169,7 @@ final class HealthService: ObservableObject {
     ) async -> [VitalPoint] {
         guard let type = HKObjectType.quantityType(forIdentifier: identifier) else { return [] }
         let end = Date()
-        let start = end.addingTimeInterval(-6 * 60 * 60)
+        let start = end.addingTimeInterval(-25 * 60 * 60)
         let predicate = HKQuery.predicateForSamples(
             withStart: start,
             end: end,

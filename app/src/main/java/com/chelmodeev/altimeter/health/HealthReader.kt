@@ -41,7 +41,7 @@ data class VitalsSnapshot(
     val stepsAt: Instant? = null,
     val stepsOrigin: String? = null,
     val activeCaloriesToday: Double? = null,
-    /** Пульс за последние 3 часа для мини-графика: (epochMs, bpm). */
+    /** Пульс с начала местного дня для графика: (epochMs, bpm). */
     val hrSeries: List<Pair<Long, Long>>,
     val spo2Series: List<Pair<Long, Double>> = emptyList(),
     val stepsSeries: List<Pair<Long, Long>> = emptyList(),
@@ -73,7 +73,6 @@ class HealthReader(private val context: Context) {
             STEPS_PERMISSION,
             ACTIVE_CALORIES_PERMISSION,
         )
-        private const val GRAPH_WINDOW_HOURS = 6L
     }
 
     fun sdkStatus(): Int = HealthConnectClient.getSdkStatus(context)
@@ -109,8 +108,9 @@ class HealthReader(private val context: Context) {
         if (!isAvailable()) return null
         val client = runCatching { HealthConnectClient.getOrCreate(context) }.getOrNull() ?: return null
         val now = Instant.now()
-        val from = now.minusSeconds(12 * 3600)
-        val graphFrom = now.minusSeconds(GRAPH_WINDOW_HOURS * 3600)
+        val zone = ZoneId.systemDefault()
+        val graphFrom = LocalDate.now(zone).atStartOfDay(zone).toInstant()
+        val from = now.minusSeconds(36 * 3600)
         val errors = mutableListOf<String>()
 
         var hrAt: Instant? = null
@@ -202,7 +202,6 @@ class HealthReader(private val context: Context) {
         var stepsOrigin: String? = null
         val stepsSeries = mutableListOf<Pair<Long, Long>>()
         if (permissions.steps) runCatching {
-            val zone = ZoneId.systemDefault()
             val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant()
             val aggregate = client.aggregate(
                 AggregateRequest(
@@ -235,7 +234,6 @@ class HealthReader(private val context: Context) {
 
         var activeCaloriesToday: Double? = null
         if (permissions.activeCalories) runCatching {
-            val zone = ZoneId.systemDefault()
             val startOfDay = LocalDate.now(zone).atStartOfDay(zone).toInstant()
             val aggregate = client.aggregate(
                 AggregateRequest(
