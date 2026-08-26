@@ -302,12 +302,10 @@ jobs:
 
           plutil -lint "$APP_ENTITLEMENTS"
           plutil -lint "$WIDGET_ENTITLEMENTS"
-          test "$(plutil -extract com.apple.developer.healthkit raw "$APP_ENTITLEMENTS")" = "true"
-          plutil -extract com.apple.security.application-groups xml1 \
-            -o - "$APP_ENTITLEMENTS" \
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.healthkit' "$APP_ENTITLEMENTS")" = "true"
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups' "$APP_ENTITLEMENTS" \
             | grep -F "group.ai.errarium.altimeter"
-          plutil -extract com.apple.security.application-groups xml1 \
-            -o - "$WIDGET_ENTITLEMENTS" \
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups' "$WIDGET_ENTITLEMENTS" \
             | grep -F "group.ai.errarium.altimeter"
 
       - name: Install distribution identity and App Store Connect key
@@ -453,9 +451,8 @@ jobs:
           codesign --verify --strict --verbose=2 "$APP_PATH"
           codesign -d --entitlements :- "$APP_PATH" > "$ENTITLEMENTS_PATH"
           plutil -lint "$ENTITLEMENTS_PATH"
-          test "$(plutil -extract com.apple.developer.healthkit raw "$ENTITLEMENTS_PATH")" = "true"
-          plutil -extract com.apple.security.application-groups xml1 \
-            -o - "$ENTITLEMENTS_PATH" \
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.healthkit' "$ENTITLEMENTS_PATH")" = "true"
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups' "$ENTITLEMENTS_PATH" \
             | grep -F "group.ai.errarium.altimeter"
 
       - name: Create App Store export configuration
@@ -514,9 +511,8 @@ jobs:
           codesign --verify --strict --verbose=2 "$APP_PATH"
           codesign -d --entitlements :- "$APP_PATH" > "$ENTITLEMENTS_PATH"
           plutil -lint "$ENTITLEMENTS_PATH"
-          test "$(plutil -extract com.apple.developer.healthkit raw "$ENTITLEMENTS_PATH")" = "true"
-          plutil -extract com.apple.security.application-groups xml1 \
-            -o - "$ENTITLEMENTS_PATH" \
+          test "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.healthkit' "$ENTITLEMENTS_PATH")" = "true"
+          /usr/libexec/PlistBuddy -c 'Print :com.apple.security.application-groups' "$ENTITLEMENTS_PATH" \
             | grep -F "group.ai.errarium.altimeter"
 
       - name: Upload build to App Store Connect
