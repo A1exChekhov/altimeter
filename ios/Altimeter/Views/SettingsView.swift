@@ -88,12 +88,7 @@ struct SettingsView: View {
                 }
 
                 Section("Экран и карта") {
-                    Picker("Режим карты", selection: $model.mapSourceMode) {
-                        ForEach(MapSourceMode.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-                    Text("Авто использует встроенную карту внутри региона Кайласа и онлайн-карту за его пределами.")
+                    Text(L10n.string("map.choice.on.map"))
                         .font(.footnote.weight(.light))
                         .foregroundStyle(.secondary)
                     Label(
@@ -104,8 +99,6 @@ struct SettingsView: View {
                     )
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(KailashOfflineMap.resources == nil ? .orange : .green)
-                    Toggle("Топографическая карта", isOn: $model.useTopographicMap)
-                        .disabled(model.mapSourceMode == .kailash)
                     Toggle("Не выключать экран", isOn: $model.keepScreenAwake)
                 }
 

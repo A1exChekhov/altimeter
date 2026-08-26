@@ -51,6 +51,10 @@ private struct FullMapScreen: View {
     @State private var showsSettings = false
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var selectedPhotoURL: URL?
+    @State private var showsPhotoSourceMenu = false
+    @State private var showsCamera = false
+    @State private var showsPhotoLibrary = false
+    @State private var photoErrorMessage: String?
     @State private var shareItems: [Any] = []
     @State private var showsShare = false
 
@@ -60,8 +64,8 @@ private struct FullMapScreen: View {
                 AltimeterMapSurface(
                     coordinate: model.state.coordinate,
                     trackPoints: model.state.trackPoints,
-                    topographic: model.useTopographicMap,
-                    sourceMode: model.mapSourceMode
+                    topographic: $model.useTopographicMap,
+                    sourceMode: $model.mapSourceMode
                 )
                 .ignoresSafeArea(edges: .bottom)
 
@@ -81,10 +85,12 @@ private struct FullMapScreen: View {
                             }
                             .buttonStyle(.borderedProminent)
 
-                            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                            Button {
+                                showsPhotoSourceMenu = true
+                            } label: {
                                 Label(
-                                    selectedPhotoURL == nil ? "Добавить фото" : "Фото добавлено",
-                                    systemImage: selectedPhotoURL == nil ? "photo.badge.plus" : "checkmark.circle"
+                                    "Добавить фото",
+                                    systemImage: "camera.fill"
                                 )
                             }
                             .buttonStyle(.bordered)
@@ -106,18 +112,51 @@ private struct FullMapScreen: View {
         }
         .sheet(isPresented: $showsSettings) { SettingsView() }
         .sheet(isPresented: $showsShare) { ActivityShareView(items: shareItems) }
-        .onChange(of: selectedPhoto) { _, item in
-            guard let item else {
-                selectedPhotoURL = nil
-                return
-            }
-            Task {
-                guard let data = try? await item.loadTransferable(type: Data.self) else { return }
-                let url = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("errarium-location-\(UUID().uuidString).jpg")
-                if (try? data.write(to: url, options: .atomic)) != nil {
-                    selectedPhotoURL = url
+        .fullScreenCover(isPresented: $showsCamera) {
+            CameraCaptureView { image in preparePhoto(image) }
+                .ignoresSafeArea()
+        }
+        .photosPicker(
+            isPresented: $showsPhotoLibrary,
+            selection: $selectedPhoto,
+            matching: .images
+        )
+        .confirmationDialog(
+            L10n.string("photo.source.title"),
+            isPresented: $showsPhotoSourceMenu,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("photo.source.camera")) {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    showsCamera = true
+                } else {
+                    photoErrorMessage = L10n.string("photo.camera.unavailable")
                 }
+            }
+            Button(L10n.string("photo.source.gallery")) { showsPhotoLibrary = true }
+            Button(L10n.string("photo.source.cancel"), role: .cancel) {}
+        }
+        .alert(
+            L10n.string("photo.error.title"),
+            isPresented: Binding(
+                get: { photoErrorMessage != nil },
+                set: { if !$0 { photoErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { photoErrorMessage = nil }
+        } message: {
+            Text(photoErrorMessage ?? "")
+        }
+        .onChange(of: selectedPhoto) { _, item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else {
+                    photoErrorMessage = L10n.string("photo.process.failed")
+                    return
+                }
+                preparePhoto(image)
+                selectedPhoto = nil
             }
         }
         .task { model.start() }
@@ -149,6 +188,40 @@ private struct FullMapScreen: View {
         shareItems = [text]
         if let selectedPhotoURL { shareItems.append(selectedPhotoURL) }
         showsShare = true
+    }
+
+    private func preparePhoto(_ image: UIImage) {
+        guard let coordinate = model.state.coordinate else {
+            photoErrorMessage = L10n.string("photo.location.unavailable")
+            return
+        }
+        let altitude = model.state.altitude.map {
+            L10n.string(
+                "format.altitude.value",
+                Int(model.unit.value(fromMeters: $0).rounded()),
+                model.unit.symbol
+            )
+        } ?? "—"
+        let pressure = model.state.pressureHPA.map { L10n.string("format.pressure", $0) } ?? "—"
+        let formatter = DateFormatter()
+        formatter.locale = model.appLanguage.locale
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let stamp = LocationPhotoStamp(
+            altitude: L10n.string("photo.stamp.altitude", altitude),
+            pressure: L10n.string("photo.stamp.pressure", pressure),
+            coordinates: String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude),
+            localTime: formatter.string(from: Date())
+        )
+        do {
+            if let selectedPhotoURL { try? FileManager.default.removeItem(at: selectedPhotoURL) }
+            selectedPhotoURL = try LocationPhotoComposer.compose(image: image, stamp: stamp)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                prepareShare(coordinate: coordinate)
+            }
+        } catch {
+            photoErrorMessage = L10n.string("photo.process.failed")
+        }
     }
 }
 

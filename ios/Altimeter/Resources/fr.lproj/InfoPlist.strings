@@ -1,6 +1,1 @@
-"CFBundleDisplayName" = "Altimeter Kailas";
-"NSHealthShareUsageDescription" = "Altimeter Kailas lit la fréquence cardiaque, la SpO₂, les pas et les calories actives dans Santé pour afficher les mesures pendant un parcours.";
-"NSHealthUpdateUsageDescription" = "Altimeter Kailas n’écrit aucune donnée dans Santé ; l’accès sert uniquement à lire et afficher les mesures.";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "La position en arrière-plan est nécessaire au démarrage automatique et à l’enregistrement GPX lorsque l’écran est verrouillé.";
-"NSLocationWhenInUseUsageDescription" = "La position est nécessaire pour l’altitude GPS absolue, la carte et l’enregistrement du parcours.";
-"NSMotionUsageDescription" = "Les données de mouvement et du baromètre servent à détecter la marche, démarrer automatiquement le parcours et mesurer précisément les variations d’altitude.";
+"NSCameraUsageDescription" = "L’appareil photo permet de photographier un point du parcours et de le partager avec l’altitude, la pression, les coordonnées et l’heure locale.";

@@ -6,8 +6,9 @@ import UIKit
 struct AltimeterMapSurface: View {
     let coordinate: CLLocationCoordinate2D?
     let trackPoints: [TrackMapPoint]
-    let topographic: Bool
-    let sourceMode: MapSourceMode
+    @Binding var topographic: Bool
+    @Binding var sourceMode: MapSourceMode
+    var compactSourceControl = false
 
     private var usesKailash: Bool {
         sourceMode.usesKailash(at: coordinate) && KailashOfflineMap.resources != nil
@@ -29,14 +30,80 @@ struct AltimeterMapSurface: View {
                 )
             }
 
-            if usesKailash {
-                Label(L10n.string("Кайлас · офлайн"), systemImage: "arrow.down.circle.fill")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(.black.opacity(0.68), in: Capsule())
-                    .padding(10)
+            MapSourceControl(
+                coordinate: coordinate,
+                topographic: $topographic,
+                sourceMode: $sourceMode,
+                compact: compactSourceControl
+            )
+            .padding(10)
+        }
+    }
+}
+
+private struct MapSourceControl: View {
+    let coordinate: CLLocationCoordinate2D?
+    @Binding var topographic: Bool
+    @Binding var sourceMode: MapSourceMode
+    let compact: Bool
+
+    private var choice: Choice {
+        if sourceMode.usesKailash(at: coordinate), KailashOfflineMap.resources != nil {
+            return .kailash
+        }
+        return topographic ? .topographic : .apple
+    }
+
+    var body: some View {
+        Menu {
+            ForEach(Choice.allCases) { item in
+                Button { select(item) } label: {
+                    Label(
+                        item.title,
+                        systemImage: item == choice ? "checkmark.circle.fill" : item.icon
+                    )
+                }
+                .disabled(item == .kailash && KailashOfflineMap.resources == nil)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "square.3.layers.3d")
+                if !compact { Text(choice.title).lineLimit(1) }
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, compact ? 10 : 12)
+            .frame(height: 38)
+            .background(.black.opacity(0.72), in: Capsule())
+        }
+        .accessibilityLabel(L10n.string("map.choice.accessibility"))
+    }
+
+    private func select(_ item: Choice) {
+        switch item {
+        case .apple:
+            topographic = false
+            sourceMode = .online
+        case .topographic:
+            topographic = true
+            sourceMode = .online
+        case .kailash:
+            sourceMode = .kailash
+        }
+    }
+
+    private enum Choice: String, CaseIterable, Identifiable {
+        case apple
+        case topographic
+        case kailash
+
+        var id: String { rawValue }
+        var title: String { L10n.string("map.choice.\(rawValue)") }
+        var icon: String {
+            switch self {
+            case .apple: "map"
+            case .topographic: "mountain.2"
+            case .kailash: "arrow.down.circle"
             }
         }
     }
@@ -56,6 +123,9 @@ struct KailashOfflineMapView: UIViewRepresentable {
         map.showsCompassView = true
         map.showsScale = true
         map.scaleBarUsesMetricSystem = true
+        map.scaleBarPosition = .bottomLeft
+        map.scaleBarMargins = CGPoint(x: 12, y: 12)
+        map.scaleBarShouldShowDarkStyles = false
         map.showsLogoView = false
         map.minimumZoomLevel = 7.5
         map.maximumZoomLevel = 15

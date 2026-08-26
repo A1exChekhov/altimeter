@@ -281,4 +281,20 @@
     <string name="cd_map_layer">Слой карты</string>
     <string name="error_gpx_import">Ошибка импорта GPX</string><string name="error_gpx_open">Не удалось открыть GPX</string><string name="error_gpx_save">Не удалось сохранить GPX</string><string name="error_gpx_no_coordinates">В GPX нет координат трека</string>
     <string name="error_map_import">Ошибка импорта карты</string><string name="error_map_download">Ошибка загрузки карты</string><string name="error_map_region_missing">Регион отсутствует в каталоге</string><string name="error_map_open_file">Не удалось открыть выбранный файл</string><string name="error_map_save">Не удалось сохранить карту</string><string name="error_map_not_found">Карта не найдена</string><string name="error_map_invalid_name">Некорректное имя карты</string><string name="error_map_delete">Не удалось удалить карту</string><string name="error_map_delete_terrain">Не удалось удалить рельеф</string><string name="error_map_invalid_file">Файл карты пуст или повреждён</string><string name="error_map_read_header">Не удалось прочитать заголовок карты</string><string name="error_map_pmtiles_v3">Нужен файл PMTiles версии 3</string><string name="error_map_checksum">Контрольная сумма карты не совпала</string><string name="error_map_update">Не удалось обновить карту</string>
+    <string name="location_photo_camera_error">Не удалось открыть камеру.</string>
+    <string name="location_photo_source_title">Добавить фото</string>
+    <string name="location_photo_camera">Снять фото</string>
+    <string name="location_photo_gallery">Выбрать из галереи</string>
+    <string name="location_photo_cancel">Отмена</string>
+    <string name="location_photo_process_error">Не удалось подготовить фото к отправке.</string>
+    <string name="location_photo_location_error">Дождитесь определения координат перед добавлением фото.</string>
+    <string name="photo_stamp_altitude">Высота · %1$s</string>
+    <string name="photo_stamp_pressure">Давление · %1$s</string>
+    <string name="chip_gps_fix">GPS · фикс</string>
+    <string name="map_source_choose">Выбрать карту</string>
+    <string name="map_source_outdoor">Туристическая</string>
+    <string name="map_source_google">Google</string>
+    <string name="map_source_google_unavailable">Google · нужен ключ</string>
+    <string name="map_source_offline_short">Офлайн</string>
+    <string name="settings_map_switch_hint">Карта переключается компактной кнопкой слоёв прямо на экране. Ниже управляются только офлайн-регионы.</string>
 </resources>
