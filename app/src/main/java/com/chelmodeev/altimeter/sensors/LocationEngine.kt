@@ -55,6 +55,10 @@ class LocationEngine(
     private var nmeaMsl: Double? = null
     private var nmeaMslAt = 0L
     private var lastPreciseAt = 0L
+    private var lastGnssStatusAt = 0L
+    private var nmeaSatellitesUsed = 0
+    private val nmeaVisibleByTalker = mutableMapOf<String, Int>()
+    private var gnssRegistered = false
     private var running = false
 
     private val gpsListener = object : LocationListener {
@@ -86,13 +90,17 @@ class LocationEngine(
             for (i in 0 until status.satelliteCount) {
                 if (status.usedInFix(i)) used++
             }
+            lastGnssStatusAt = SystemClock.elapsedRealtime()
             listener.onSatellites(used, status.satelliteCount)
         }
     }
 
     @SuppressLint("MissingPermission")
     fun start(): Boolean {
-        if (running) return true
+        if (running) {
+            registerGnssStatus()
+            return true
+        }
         val gpsRegistered = runCatching {
             if (Build.VERSION.SDK_INT >= 31) {
                 val request = LocationRequest.Builder(1_000L)
@@ -127,7 +135,7 @@ class LocationEngine(
         }
         running = true
         runCatching { locationManager.addNmeaListener(nmeaListener, handler) }
-        runCatching { locationManager.registerGnssStatusCallback(gnssCallback, handler) }
+        registerGnssStatus()
         // стартовая точка для карты
         runCatching {
             val last = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
@@ -143,7 +151,10 @@ class LocationEngine(
         runCatching { locationManager.removeUpdates(gpsListener) }
         runCatching { locationManager.removeUpdates(networkListener) }
         runCatching { locationManager.removeNmeaListener(nmeaListener) }
-        runCatching { locationManager.unregisterGnssStatusCallback(gnssCallback) }
+        if (gnssRegistered) {
+            runCatching { locationManager.unregisterGnssStatusCallback(gnssCallback) }
+        }
+        gnssRegistered = false
     }
 
     private fun handleLocation(location: Location, precise: Boolean) {
@@ -187,15 +198,42 @@ class LocationEngine(
         )
     }
 
-    /** $GPGGA / $GNGGA: [9] — высота MSL, [11] — разделение геоида. */
+    @SuppressLint("MissingPermission")
+    private fun registerGnssStatus(): Boolean {
+        if (gnssRegistered) return true
+        gnssRegistered = runCatching {
+            if (Build.VERSION.SDK_INT >= 30) {
+                locationManager.registerGnssStatusCallback(context.mainExecutor, gnssCallback)
+            } else {
+                locationManager.registerGnssStatusCallback(gnssCallback, handler)
+            }
+        }.getOrDefault(false)
+        return gnssRegistered
+    }
+
+    /**
+     * GGA: [7] satellites used, [9] MSL altitude, [11] geoid separation.
+     * GSV: [3] satellites visible. GSV is also a fallback for OEMs whose
+     * GnssStatus callback fails or is registered only after precise permission.
+     */
     private fun parseNmea(sentence: String) {
         if (!sentence.startsWith("$")) return
         val type = sentence.substringBefore(',')
-        if (!type.endsWith("GGA")) return
         val parts = sentence.substringBefore('*').split(',')
+        if (type.endsWith("GSV") && parts.size >= 4) {
+            val talker = type.drop(1).take(2)
+            parts[3].toIntOrNull()?.coerceAtLeast(0)?.let { visible ->
+                nmeaVisibleByTalker[talker] = visible
+                emitNmeaSatelliteFallback()
+            }
+            return
+        }
+        if (!type.endsWith("GGA")) return
         if (parts.size < 12) return
         val fixQuality = parts[6].toIntOrNull() ?: 0
         if (fixQuality <= 0) return
+        nmeaSatellitesUsed = parts[7].toIntOrNull()?.coerceAtLeast(0) ?: nmeaSatellitesUsed
+        emitNmeaSatelliteFallback()
         parts[9].toDoubleOrNull()?.let {
             if (abs(it) < 10_000) {
                 nmeaMsl = it
@@ -205,5 +243,13 @@ class LocationEngine(
         parts[11].toDoubleOrNull()?.let {
             if (abs(it) < 200) geoidSeparation = it
         }
+    }
+
+    private fun emitNmeaSatelliteFallback() {
+        if (SystemClock.elapsedRealtime() - lastGnssStatusAt < 3_000) return
+        val visible = nmeaVisibleByTalker["GN"]
+            ?: nmeaVisibleByTalker.values.sum()
+        val total = maxOf(visible, nmeaSatellitesUsed)
+        if (total > 0) listener.onSatellites(nmeaSatellitesUsed, total)
     }
 }

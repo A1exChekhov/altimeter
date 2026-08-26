@@ -23,6 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.chelmodeev.altimeter.health.HealthReader
 import com.chelmodeev.altimeter.localization.AppLanguage
+import com.chelmodeev.altimeter.share.LocationPhotoComposer
+import com.chelmodeev.altimeter.share.LocationPhotoStamp
 import com.chelmodeev.altimeter.track.TrackingService
 import com.chelmodeev.altimeter.track.AutoTrackService
 import com.chelmodeev.altimeter.util.Fmt
@@ -31,7 +33,9 @@ import com.chelmodeev.altimeter.ui.ScreenActions
 import com.chelmodeev.altimeter.ui.theme.AltimeterTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
@@ -46,6 +50,8 @@ class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private var pendingAutoTrackEnable = false
     private var startTrackAfterLocationGrant = false
+    private var pendingLocationPhotoUri: Uri? = null
+    private var pendingLocationPhotoFile: File? = null
 
     private val locationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -102,14 +108,33 @@ class MainActivity : ComponentActivity() {
         }
 
     private val locationPhotoLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { captured ->
+            val uri = pendingLocationPhotoUri
+            val file = pendingLocationPhotoFile
+            pendingLocationPhotoUri = null
+            pendingLocationPhotoFile = null
+            if (captured && uri != null) {
+                shareLocationPhoto(uri, file)
+            } else {
+                file?.delete()
+            }
+        }
+
+    private val galleryPhotoLauncher =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) shareLocation(uri)
+            if (uri != null) shareLocationPhoto(uri, sourceFile = null)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         AppLanguage.syncProcessLocale(this)
+        pendingLocationPhotoUri = savedInstanceState
+            ?.getString(STATE_LOCATION_PHOTO_URI)
+            ?.let(Uri::parse)
+        pendingLocationPhotoFile = savedInstanceState
+            ?.getString(STATE_LOCATION_PHOTO_PATH)
+            ?.let(::File)
 
         setContent {
             val state by viewModel.ui.collectAsStateWithLifecycle()
@@ -145,7 +170,8 @@ class MainActivity : ComponentActivity() {
                         onDeleteTrack = viewModel::deleteTrack,
                         onMinimizeApp = { moveTaskToBack(true) },
                         onShareLocation = { shareLocation(null) },
-                        onShareLocationWithPhoto = { locationPhotoLauncher.launch("image/*") },
+                        onCaptureLocationPhoto = ::captureLocationPhoto,
+                        onPickLocationPhoto = { galleryPhotoLauncher.launch("image/*") },
                         onImportTrack = {
                             trackImportLauncher.launch(
                                 arrayOf("application/gpx+xml", "application/xml", "text/xml", "*/*")
@@ -184,6 +210,12 @@ class MainActivity : ComponentActivity() {
         } else {
             requestLocationPermissions()
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        pendingLocationPhotoUri?.let { outState.putString(STATE_LOCATION_PHOTO_URI, it.toString()) }
+        pendingLocationPhotoFile?.let { outState.putString(STATE_LOCATION_PHOTO_PATH, it.path) }
+        super.onSaveInstanceState(outState)
     }
 
     private fun hasPermission(permission: String): Boolean =
@@ -313,6 +345,59 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun captureLocationPhoto() {
+        runCatching {
+            val directory = File(cacheDir, "location-photos").apply { mkdirs() }
+            val photo = File.createTempFile("location-", ".jpg", directory)
+            val uri = FileProvider.getUriForFile(this, "$packageName.files", photo)
+            pendingLocationPhotoFile = photo
+            pendingLocationPhotoUri = uri
+            locationPhotoLauncher.launch(uri)
+        }.onFailure {
+            pendingLocationPhotoFile?.delete()
+            pendingLocationPhotoFile = null
+            pendingLocationPhotoUri = null
+            Toast.makeText(this, R.string.location_photo_camera_error, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun shareLocationPhoto(source: Uri, sourceFile: File?) {
+        val state = viewModel.ui.value
+        val latitude = state.latitude
+        val longitude = state.longitude
+        if (latitude == null || longitude == null) {
+            sourceFile?.delete()
+            Toast.makeText(this, R.string.location_photo_location_error, Toast.LENGTH_LONG).show()
+            return
+        }
+        val coordinates = String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
+        val altitude = state.altitude?.let { Fmt.altitude(this, it, state.unit) } ?: "—"
+        val pressure = state.pressureHpa?.let { Fmt.pressure(this, it) } ?: "—"
+        val time = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date())
+        val stamp = LocationPhotoStamp(
+            altitude = getString(R.string.photo_stamp_altitude, altitude),
+            pressure = getString(R.string.photo_stamp_pressure, pressure),
+            coordinates = coordinates,
+            localTime = time,
+        )
+        lifecycleScope.launch {
+            val photo = runCatching {
+                withContext(Dispatchers.IO) {
+                    LocationPhotoComposer.compose(this@MainActivity, source, stamp)
+                }
+            }.getOrElse {
+                Toast.makeText(
+                    this@MainActivity,
+                    R.string.location_photo_process_error,
+                    Toast.LENGTH_LONG,
+                ).show()
+                null
+            }
+            sourceFile?.delete()
+            if (photo != null) shareLocation(photo)
+        }
+    }
+
     private fun shareLocation(photo: Uri?) {
         val state = viewModel.ui.value
         val latitude = state.latitude ?: return
@@ -339,5 +424,10 @@ class MainActivity : ComponentActivity() {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(Intent.createChooser(send, getString(R.string.location_share_title)))
+    }
+
+    private companion object {
+        const val STATE_LOCATION_PHOTO_URI = "state_location_photo_uri"
+        const val STATE_LOCATION_PHOTO_PATH = "state_location_photo_path"
     }
 }

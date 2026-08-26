@@ -8,6 +8,8 @@ val androidSigningStoreFile = System.getenv("ANDROID_SIGNING_STORE_FILE")
 val androidSigningStorePassword = System.getenv("ANDROID_SIGNING_STORE_PASSWORD")
 val androidSigningKeyAlias = System.getenv("ANDROID_SIGNING_KEY_ALIAS")
 val androidSigningKeyPassword = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
+val googleMapsApiKey = System.getenv("GOOGLE_MAPS_ANDROID_API_KEY")
+    ?: (project.findProperty("GOOGLE_MAPS_ANDROID_API_KEY") as? String).orEmpty()
 
 android {
     namespace = "com.chelmodeev.altimeter"
@@ -17,8 +19,8 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 26
-        versionName = "1.6.6"
+        versionCode = 27
+        versionName = "1.6.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
@@ -27,7 +29,9 @@ android {
         buildConfigField("String", "WATCH_APP_PACKAGE", "\"$watchPkg\"")
         buildConfigField("String", "WATCH_APP_FINGERPRINT", "\"$watchFp\"")
         buildConfigField("String", "HUAWEI_APP_ID", "\"$huaweiAppId\"")
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$googleMapsApiKey\"")
         manifestPlaceholders["huaweiAppId"] = huaweiAppId.ifBlank { "0" }
+        manifestPlaceholders["googleMapsApiKey"] = googleMapsApiKey.ifBlank { "UNCONFIGURED" }
     }
 
     signingConfigs {
@@ -88,6 +92,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.osmdroid)
     implementation(libs.maplibre)
+    implementation(libs.play.services.maps)
     implementation(libs.wearengine)
     implementation(libs.huawei.health)
     implementation(libs.androidx.health.connect)

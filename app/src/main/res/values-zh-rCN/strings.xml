@@ -52,4 +52,20 @@
     <string name="cd_settings">设置</string><string name="cd_expand_map">展开地图</string><string name="cd_collapse_map">收起地图</string><string name="cd_center_map">以我的位置为中心</string><string name="cd_north_map">北向上</string><string name="cd_map_layer">地图图层</string>
     <string name="error_gpx_import">GPX 导入失败</string><string name="error_gpx_open">无法打开 GPX</string><string name="error_gpx_save">无法保存 GPX</string><string name="error_gpx_no_coordinates">GPX 中没有轨迹坐标</string>
     <string name="error_map_import">地图导入失败</string><string name="error_map_download">地图下载失败</string><string name="error_map_region_missing">目录中没有此区域</string><string name="error_map_open_file">无法打开所选文件</string><string name="error_map_save">无法保存地图</string><string name="error_map_not_found">未找到地图</string><string name="error_map_invalid_name">地图名称无效</string><string name="error_map_delete">无法删除地图</string><string name="error_map_delete_terrain">无法删除地形数据</string><string name="error_map_invalid_file">地图文件为空或已损坏</string><string name="error_map_read_header">无法读取地图文件头</string><string name="error_map_pmtiles_v3">需要 PMTiles 版本 3 文件</string><string name="error_map_checksum">地图校验和不匹配</string><string name="error_map_update">无法更新地图</string>
+    <string name="location_photo_camera_error">无法打开相机。</string>
+    <string name="location_photo_source_title">添加照片</string>
+    <string name="location_photo_camera">拍照</string>
+    <string name="location_photo_gallery">从图库选择</string>
+    <string name="location_photo_cancel">取消</string>
+    <string name="location_photo_process_error">无法准备要分享的照片。</string>
+    <string name="location_photo_location_error">请等待 GPS 定位后再添加照片。</string>
+    <string name="photo_stamp_altitude">海拔 · %1$s</string>
+    <string name="photo_stamp_pressure">气压 · %1$s</string>
+    <string name="chip_gps_fix">GPS · 已定位</string>
+    <string name="map_source_choose">选择地图</string>
+    <string name="map_source_outdoor">户外</string>
+    <string name="map_source_google">Google</string>
+    <string name="map_source_google_unavailable">Google · 需要密钥</string>
+    <string name="map_source_offline_short">离线</string>
+    <string name="settings_map_switch_hint">可直接使用地图上的紧凑图层按钮切换地图。下方仅管理离线区域。</string>
 </resources>

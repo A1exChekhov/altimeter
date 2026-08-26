@@ -32,6 +32,8 @@
     <string>Altimeter Kailas читает пульс, SpO₂, шаги и активные калории из приложения «Здоровье», чтобы показывать состояние во время маршрута.</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>Altimeter Kailas не записывает данные в приложение «Здоровье»; доступ используется только для чтения и отображения показателей во время маршрута.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Камера нужна, чтобы снять фотографию точки маршрута и отправить её с высотой, давлением, координатами и временем.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Фоновый доступ нужен для автоматического запуска и записи GPX-маршрута при заблокированном экране.</string>
     <key>NSLocationWhenInUseUsageDescription</key>

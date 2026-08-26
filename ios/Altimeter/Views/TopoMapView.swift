@@ -14,8 +14,17 @@ struct TopoMapView: UIViewRepresentable {
         map.mapType = .mutedStandard
         map.showsUserLocation = true
         map.showsCompass = true
-        map.showsScale = true
+        map.showsScale = false
         map.pointOfInterestFilter = .excludingAll
+        let scale = MKScaleView(mapView: map)
+        scale.scaleVisibility = .visible
+        scale.legendAlignment = .leading
+        scale.translatesAutoresizingMaskIntoConstraints = false
+        map.addSubview(scale)
+        NSLayoutConstraint.activate([
+            scale.leadingAnchor.constraint(equalTo: map.leadingAnchor, constant: 12),
+            scale.bottomAnchor.constraint(equalTo: map.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+        ])
         let modeChanged = context.coordinator.configureOverlay(on: map, topographic: topographic)
         context.coordinator.configureRoute(on: map, points: trackPoints, force: modeChanged)
         return map
@@ -116,27 +125,15 @@ struct MapCardView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     SectionHeading(icon: "map.fill", title: L10n.string("Карта"))
-                    Spacer()
-                    if usesKailash {
-                        Text(L10n.string("Кайлас · офлайн"))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Picker("Слой", selection: $topographic) {
-                            Text("Топо").tag(true)
-                            Text("Apple").tag(false)
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(width: 145)
-                    }
                 }
 
                 ZStack {
                     AltimeterMapSurface(
                         coordinate: state.coordinate,
                         trackPoints: state.trackPoints,
-                        topographic: topographic,
-                        sourceMode: sourceMode
+                        topographic: $topographic,
+                        sourceMode: $sourceMode,
+                        compactSourceControl: true
                     )
                     if state.coordinate == nil && !usesKailash {
                         Rectangle().fill(.black.opacity(0.45))

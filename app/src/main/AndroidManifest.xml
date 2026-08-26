@@ -35,6 +35,9 @@
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <queries>
         <package android:name="com.huawei.health" />
@@ -59,6 +62,9 @@
         <meta-data
             android:name="com.huawei.hms.client.appid"
             android:value="appid=${huaweiAppId}" />
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${googleMapsApiKey}" />
 
         <activity
             android:name=".MainActivity"

@@ -153,6 +153,7 @@
     <string name="track_share">Share track</string>
     <string name="location_share">Share</string>
     <string name="location_share_photo">Add photo</string>
+    <string name="location_photo_camera_error">Could not open the camera.</string>
     <string name="location_share_title">Share location</string>
     <string name="location_share_measurements">Altitude: %1$s · Pressure: %2$s</string>
     <string name="track_speed_format">%.1f km/h</string>
@@ -282,4 +283,19 @@
     <string name="cd_map_layer">Map layer</string>
     <string name="error_gpx_import">GPX import failed</string><string name="error_gpx_open">Could not open GPX</string><string name="error_gpx_save">Could not save GPX</string><string name="error_gpx_no_coordinates">The GPX contains no track coordinates</string>
     <string name="error_map_import">Map import failed</string><string name="error_map_download">Map download failed</string><string name="error_map_region_missing">Region is missing from the catalog</string><string name="error_map_open_file">Could not open the selected file</string><string name="error_map_save">Could not save the map</string><string name="error_map_not_found">Map not found</string><string name="error_map_invalid_name">Invalid map name</string><string name="error_map_delete">Could not delete the map</string><string name="error_map_delete_terrain">Could not delete terrain data</string><string name="error_map_invalid_file">The map file is empty or damaged</string><string name="error_map_read_header">Could not read the map header</string><string name="error_map_pmtiles_v3">A PMTiles version 3 file is required</string><string name="error_map_checksum">Map checksum does not match</string><string name="error_map_update">Could not update the map</string>
+    <string name="location_photo_source_title">Add a photo</string>
+    <string name="location_photo_camera">Take a photo</string>
+    <string name="location_photo_gallery">Choose from gallery</string>
+    <string name="location_photo_cancel">Cancel</string>
+    <string name="location_photo_process_error">Could not prepare the photo for sharing.</string>
+    <string name="location_photo_location_error">Wait for a GPS position before adding a photo.</string>
+    <string name="photo_stamp_altitude">Altitude · %1$s</string>
+    <string name="photo_stamp_pressure">Pressure · %1$s</string>
+    <string name="chip_gps_fix">GPS · fix</string>
+    <string name="map_source_choose">Choose map</string>
+    <string name="map_source_outdoor">Outdoor</string>
+    <string name="map_source_google">Google</string>
+    <string name="map_source_google_unavailable">Google · key required</string>
+    <string name="map_source_offline_short">Offline</string>
+    <string name="settings_map_switch_hint">Switch maps with the compact layers button directly on the map. Offline regions are managed below.</string>
 </resources>

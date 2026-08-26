@@ -8,23 +8,33 @@ import android.net.NetworkCapabilities
 import android.view.MotionEvent
 import android.view.ViewGroup
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloseFullscreen
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Navigation
 import androidx.compose.material.icons.rounded.OpenInFull
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -54,6 +65,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.logic.continuousMapTrack
 import com.chelmodeev.altimeter.maps.offlineMapStyle
+import com.chelmodeev.altimeter.model.OfflineMapsState
 import com.chelmodeev.altimeter.model.TrackMapPoint
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -77,6 +89,10 @@ import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 import java.io.File
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class TouristMapSession(context: android.content.Context) {
@@ -86,6 +102,8 @@ class TouristMapSession(context: android.content.Context) {
     var foregroundRevision by mutableIntStateOf(0)
     var follow by mutableStateOf(true)
     var bearing by mutableDoubleStateOf(0.0)
+    var zoom by mutableDoubleStateOf(4.5)
+    var centerLatitude by mutableDoubleStateOf(0.0)
     var hadFirstFix by mutableStateOf(false)
     var requestedStyleKey: String? = null
     var latestTrackPoints: List<TrackMapPoint> = emptyList()
@@ -114,7 +132,10 @@ class TouristMapSession(context: android.content.Context) {
             readyMap.uiSettings.isCompassEnabled = false
             readyMap.cameraPosition = CameraPosition.Builder().zoom(4.5).build()
             readyMap.addOnCameraMoveListener {
-                bearing = readyMap.cameraPosition.bearing
+                val camera = readyMap.cameraPosition
+                bearing = camera.bearing
+                zoom = camera.zoom
+                camera.target?.latitude?.let { centerLatitude = it }
             }
         }
     }
@@ -216,14 +237,20 @@ fun MapCard(
     trackPointCount: Int,
     hasPreciseFix: Boolean,
     fineLocationGranted: Boolean,
-    offlineMapPath: String?,
+    offlineMaps: OfflineMapsState,
     expanded: Boolean,
     showExpandControl: Boolean = true,
     bottomControlPadding: Dp = 10.dp,
+    onSelectOutdoorMap: () -> Unit,
+    onSelectGoogleMap: () -> Unit,
+    onSelectOfflineMap: (String) -> Unit,
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val offlineMapPath = offlineMaps.activePath
+    val googleAvailable = remember(context) { googleMapsAvailable(context) }
+    val useGoogle = offlineMapPath == null && !topo && googleAvailable
     val networkAvailable = rememberNetworkAvailable()
     val map = session.map
     val styleRevision = session.styleRevision
@@ -248,12 +275,13 @@ fun MapCard(
         session.latestLongitude = longitude
     }
 
-    DisposableEffect(session) {
-        session.attach()
+    DisposableEffect(session, useGoogle) {
+        if (!useGoogle) session.attach()
         onDispose { session.detach() }
     }
 
     LaunchedEffect(map, offlineMapPath, topo, networkAvailable) {
+        if (useGoogle) return@LaunchedEffect
         val readyMap = map ?: return@LaunchedEffect
         val localPath = offlineMapPath?.takeIf { File(it).isFile }
         val styleKey = if (localPath != null) {
@@ -294,6 +322,7 @@ fun MapCard(
         accuracyMeters,
         accent,
     ) {
+        if (useGoogle) return@LaunchedEffect
         val readyMap = map ?: return@LaunchedEffect
         val style = readyMap.style ?: return@LaunchedEffect
         installOverlayLayers(style)
@@ -323,6 +352,7 @@ fun MapCard(
     }
 
     LaunchedEffect(map, styleRevision, foregroundRevision, trackPoints, trackRecording) {
+        if (useGoogle) return@LaunchedEffect
         val readyMap = map ?: return@LaunchedEffect
         val style = readyMap.style ?: return@LaunchedEffect
         installOverlayLayers(style)
@@ -348,13 +378,27 @@ fun MapCard(
             .clip(if (expanded) RectangleShape else RoundedCornerShape(22.dp))
             .background(Color(0xFF10192B))
     ) {
-        AndroidView(
-            factory = {
-                (mapView.parent as? ViewGroup)?.removeView(mapView)
-                mapView
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
+        if (useGoogle) {
+            GoogleMapSurface(
+                latitude = latitude,
+                longitude = longitude,
+                accuracyMeters = accuracyMeters,
+                accent = accent,
+                trackPoints = trackPoints,
+                trackRecording = trackRecording,
+                bottomControlPadding = bottomControlPadding,
+                expanded = expanded,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            AndroidView(
+                factory = {
+                    (mapView.parent as? ViewGroup)?.removeView(mapView)
+                    mapView
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -362,17 +406,15 @@ fun MapCard(
                 .then(if (expanded) Modifier.statusBarsPadding() else Modifier)
                 .padding(10.dp),
         ) {
-            Surface(shape = RoundedCornerShape(50), color = Color(0xCC101826)) {
-                Text(
-                    text = stringResource(
-                        if (offlineMapPath != null) R.string.map_offline_beta
-                        else R.string.map_tourist_beta
-                    ),
-                    color = Color(0xFFB9F6CA),
-                    fontSize = 9.sp,
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-                )
-            }
+            MapSourceMenu(
+                topographic = topo,
+                offlineMaps = offlineMaps,
+                googleAvailable = googleAvailable,
+                compact = !expanded,
+                onSelectOutdoor = onSelectOutdoorMap,
+                onSelectGoogle = onSelectGoogleMap,
+                onSelectOffline = onSelectOfflineMap,
+            )
             trackStatus?.let { status ->
                 Surface(
                     shape = RoundedCornerShape(50),
@@ -409,7 +451,7 @@ fun MapCard(
             )
         }
 
-        TouristMapButton(
+        if (!useGoogle) TouristMapButton(
             icon = {
                 Icon(
                     Icons.Rounded.MyLocation,
@@ -442,7 +484,7 @@ fun MapCard(
                 .padding(end = 10.dp, bottom = bottomControlPadding),
         )
 
-        TouristMapButton(
+        if (!useGoogle) TouristMapButton(
             icon = {
                 Icon(
                     Icons.Rounded.Navigation,
@@ -469,6 +511,17 @@ fun MapCard(
                 .padding(top = 58.dp, end = 10.dp),
         )
 
+        if (!useGoogle) {
+            MapScaleIndicator(
+                zoom = session.zoom,
+                latitude = session.centerLatitude.takeIf { it != 0.0 } ?: latitude ?: 0.0,
+                tileSize = 512.0,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 10.dp, bottom = bottomControlPadding + 30.dp),
+            )
+        }
+
         if (latitude == null) {
             Surface(
                 shape = RoundedCornerShape(50),
@@ -480,6 +533,96 @@ fun MapCard(
                     color = Color(0xFFB9C7DD),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MapSourceMenu(
+    topographic: Boolean,
+    offlineMaps: OfflineMapsState,
+    googleAvailable: Boolean,
+    compact: Boolean,
+    onSelectOutdoor: () -> Unit,
+    onSelectGoogle: () -> Unit,
+    onSelectOffline: (String) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val activeOffline = offlineMaps.installed.firstOrNull { it.active }
+    val currentTitle = when {
+        activeOffline != null -> stringResource(R.string.map_source_offline_short)
+        !topographic && googleAvailable -> stringResource(R.string.map_source_google)
+        else -> stringResource(R.string.map_source_outdoor)
+    }
+    Box {
+        Surface(shape = RoundedCornerShape(50), color = Color(0xD9101826)) {
+            if (compact) {
+                IconButton(onClick = { open = true }, modifier = Modifier.size(38.dp)) {
+                    Icon(
+                        Icons.Rounded.Layers,
+                        contentDescription = stringResource(R.string.map_source_choose),
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                TextButton(onClick = { open = true }) {
+                    Icon(Icons.Rounded.Layers, contentDescription = null, tint = Color.White)
+                    Text(
+                        currentTitle,
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
+            }
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.map_source_outdoor)) },
+                leadingIcon = {
+                    Icon(
+                        if (activeOffline == null && topographic) Icons.Rounded.Check
+                        else Icons.Rounded.Map,
+                        contentDescription = null,
+                    )
+                },
+                onClick = { open = false; onSelectOutdoor() },
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        stringResource(
+                            if (googleAvailable) R.string.map_source_google
+                            else R.string.map_source_google_unavailable
+                        )
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        if (activeOffline == null && !topographic && googleAvailable) {
+                            Icons.Rounded.Check
+                        } else {
+                            Icons.Rounded.Map
+                        },
+                        contentDescription = null,
+                    )
+                },
+                enabled = googleAvailable,
+                onClick = { open = false; onSelectGoogle() },
+            )
+            offlineMaps.installed.forEach { region ->
+                DropdownMenuItem(
+                    text = { Text(region.title, maxLines = 1) },
+                    leadingIcon = {
+                        Icon(
+                            if (region.active) Icons.Rounded.Check else Icons.Rounded.CloudOff,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = { open = false; onSelectOffline(region.id) },
                 )
             }
         }
@@ -621,13 +764,54 @@ private fun updateRoute(style: Style, track: List<TrackMapPoint>) {
 }
 
 @Composable
-private fun TouristMapButton(
+internal fun TouristMapButton(
     icon: @Composable () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(shape = CircleShape, color = Color(0xCC101826), modifier = modifier) {
         IconButton(onClick = onClick, modifier = Modifier.size(38.dp)) { icon() }
+    }
+}
+
+@Composable
+internal fun MapScaleIndicator(
+    zoom: Double,
+    latitude: Double,
+    tileSize: Double,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current.density.toDouble()
+    val latitudeFactor = cos(Math.toRadians(latitude.coerceIn(-85.0, 85.0)))
+    val metersPerPixel = (2 * Math.PI * 6_378_137.0 * latitudeFactor) /
+        (tileSize * 2.0.pow(zoom))
+    val rawMeters = metersPerPixel * 82.0 * density
+    val power = 10.0.pow(floor(log10(rawMeters.coerceAtLeast(1.0))))
+    val normalized = rawMeters / power
+    val step = when {
+        normalized >= 5 -> 5.0
+        normalized >= 2 -> 2.0
+        else -> 1.0
+    }
+    val meters = step * power
+    val widthDp = (meters / metersPerPixel / density).coerceIn(42.0, 96.0).dp
+    val label = if (meters >= 1_000) {
+        val km = meters / 1_000.0
+        if (km >= 10 || km % 1.0 == 0.0) "${km.roundToInt()} km" else "%.1f km".format(km)
+    } else {
+        "${meters.roundToInt()} m"
+    }
+
+    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xB3101826), modifier = modifier) {
+        Column(modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)) {
+            Text(text = label, color = Color.White, fontSize = 9.sp)
+            Canvas(modifier = Modifier.width(widthDp).height(6.dp)) {
+                val y = size.height - 1.dp.toPx()
+                drawLine(Color.White, start = androidx.compose.ui.geometry.Offset(0f, y), end = androidx.compose.ui.geometry.Offset(size.width, y), strokeWidth = 1.5.dp.toPx())
+                drawLine(Color.White, start = androidx.compose.ui.geometry.Offset(0f, 0f), end = androidx.compose.ui.geometry.Offset(0f, size.height), strokeWidth = 1.5.dp.toPx())
+                drawLine(Color.White, start = androidx.compose.ui.geometry.Offset(size.width, 0f), end = androidx.compose.ui.geometry.Offset(size.width, size.height), strokeWidth = 1.5.dp.toPx())
+            }
+        }
     }
 }
 

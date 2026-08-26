@@ -1,6 +1,1 @@
-"CFBundleDisplayName" = "Altimeter Kailas";
-"NSHealthShareUsageDescription" = "Altimeter Kailas читает пульс, SpO₂, шаги и активные калории из приложения «Здоровье», чтобы показывать показатели во время маршрута.";
-"NSHealthUpdateUsageDescription" = "Altimeter Kailas не записывает данные в приложение «Здоровье»; доступ используется только для чтения и отображения показателей.";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "Фоновый доступ нужен для автоматического запуска и записи GPX-маршрута при заблокированном экране.";
-"NSLocationWhenInUseUsageDescription" = "Геопозиция нужна для абсолютной высоты GPS, карты и записи маршрута.";
-"NSMotionUsageDescription" = "Данные движения и барометра используются для определения ходьбы, автоматической записи трека и точного изменения высоты.";
+"NSCameraUsageDescription" = "Камера нужна, чтобы снять фотографию точки маршрута и отправить её с высотой, давлением, координатами и временем.";

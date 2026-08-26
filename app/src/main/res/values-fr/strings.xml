@@ -33,4 +33,20 @@
     <string name="cd_settings">Réglages</string><string name="cd_expand_map">Agrandir la carte</string><string name="cd_collapse_map">Réduire la carte</string><string name="cd_center_map">Centrer sur ma position</string><string name="cd_north_map">Nord en haut</string><string name="cd_map_layer">Fond de carte</string>
     <string name="error_gpx_import">Échec de l’importation GPX</string><string name="error_gpx_open">Impossible d’ouvrir le GPX</string><string name="error_gpx_save">Impossible d’enregistrer le GPX</string><string name="error_gpx_no_coordinates">Le GPX ne contient aucune coordonnée de parcours</string>
     <string name="error_map_import">Échec de l’importation de la carte</string><string name="error_map_download">Échec du téléchargement de la carte</string><string name="error_map_region_missing">La région est absente du catalogue</string><string name="error_map_open_file">Impossible d’ouvrir le fichier sélectionné</string><string name="error_map_save">Impossible d’enregistrer la carte</string><string name="error_map_not_found">Carte introuvable</string><string name="error_map_invalid_name">Nom de carte incorrect</string><string name="error_map_delete">Impossible de supprimer la carte</string><string name="error_map_delete_terrain">Impossible de supprimer le relief</string><string name="error_map_invalid_file">Le fichier de carte est vide ou endommagé</string><string name="error_map_read_header">Impossible de lire l’en-tête de la carte</string><string name="error_map_pmtiles_v3">Un fichier PMTiles version 3 est requis</string><string name="error_map_checksum">La somme de contrôle de la carte ne correspond pas</string><string name="error_map_update">Impossible de mettre à jour la carte</string>
+    <string name="location_photo_camera_error">Impossible d’ouvrir l’appareil photo.</string>
+    <string name="location_photo_source_title">Ajouter une photo</string>
+    <string name="location_photo_camera">Prendre une photo</string>
+    <string name="location_photo_gallery">Choisir dans la galerie</string>
+    <string name="location_photo_cancel">Annuler</string>
+    <string name="location_photo_process_error">Impossible de préparer la photo pour le partage.</string>
+    <string name="location_photo_location_error">Attendez la position GPS avant d’ajouter une photo.</string>
+    <string name="photo_stamp_altitude">Altitude · %1$s</string>
+    <string name="photo_stamp_pressure">Pression · %1$s</string>
+    <string name="chip_gps_fix">GPS · position</string>
+    <string name="map_source_choose">Choisir la carte</string>
+    <string name="map_source_outdoor">Randonnée</string>
+    <string name="map_source_google">Google</string>
+    <string name="map_source_google_unavailable">Google · clé requise</string>
+    <string name="map_source_offline_short">Hors ligne</string>
+    <string name="settings_map_switch_hint">Changez de carte avec le bouton compact des couches directement sur la carte. Les régions hors ligne sont gérées ci-dessous.</string>
 </resources>

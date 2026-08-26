@@ -323,13 +323,8 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Spacer(Modifier.height(10.dp))
 
-            SettingSwitch(
-                label = stringResource(R.string.settings_map_topo),
-                checked = state.topoMap,
-                onChecked = actions.onToggleTopo,
-            )
             Text(
-                text = stringResource(R.string.settings_map_offline_cache),
+                text = stringResource(R.string.settings_map_switch_hint),
                 fontSize = 11.sp,
                 lineHeight = 15.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

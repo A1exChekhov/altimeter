@@ -1,6 +1,1 @@
-"CFBundleDisplayName" = "Altimeter Kailas";
-"NSHealthShareUsageDescription" = "Altimeter Kailas 从“健康”读取心率、SpO₂、步数和活动卡路里，以便在轨迹过程中显示。";
-"NSHealthUpdateUsageDescription" = "Altimeter Kailas 不会向“健康”写入数据；此权限仅用于读取和显示测量值。";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "后台位置用于在锁屏时自动启动并记录 GPX 轨迹。";
-"NSLocationWhenInUseUsageDescription" = "位置用于 GPS 绝对海拔、地图和轨迹记录。";
-"NSMotionUsageDescription" = "运动和气压计数据用于检测步行、自动开始记录轨迹并精确测量海拔变化。";
+"NSCameraUsageDescription" = "相机用于拍摄路线点照片，并连同海拔、气压、坐标和当地时间一起分享。";

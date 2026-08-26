@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material.icons.rounded.MonitorHeart
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
@@ -151,7 +152,8 @@ data class ScreenActions(
     val onDeleteTrack: (String) -> Unit,
     val onMinimizeApp: () -> Unit,
     val onShareLocation: () -> Unit,
-    val onShareLocationWithPhoto: () -> Unit,
+    val onCaptureLocationPhoto: () -> Unit,
+    val onPickLocationPhoto: () -> Unit,
     val onImportTrack: () -> Unit,
     val onImportOfflineMap: () -> Unit,
     val onDownloadOfflineMap: (String) -> Unit,
@@ -436,8 +438,17 @@ private fun HomePage(
             trackPointCount = state.tracking.points,
             hasPreciseFix = state.hasFix,
             fineLocationGranted = state.fineLocationPermissionGranted,
-            offlineMapPath = state.offlineMaps.activePath,
+            offlineMaps = state.offlineMaps,
             expanded = false,
+            onSelectOutdoorMap = {
+                actions.onUseOnlineMap()
+                actions.onToggleTopo(true)
+            },
+            onSelectGoogleMap = {
+                actions.onUseOnlineMap()
+                actions.onToggleTopo(false)
+            },
+            onSelectOfflineMap = actions.onActivateOfflineMap,
             onToggleExpanded = onOpenMap,
             modifier = Modifier.fillMaxWidth().height(230.dp),
         )
@@ -459,6 +470,47 @@ private fun MapPage(
     actions: ScreenActions,
     onOpenSettings: () -> Unit,
 ) {
+    var showPhotoSourceChooser by rememberSaveable { mutableStateOf(false) }
+
+    if (showPhotoSourceChooser) {
+        AlertDialog(
+            onDismissRequest = { showPhotoSourceChooser = false },
+            title = { Text(stringResource(R.string.location_photo_source_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(
+                        onClick = {
+                            showPhotoSourceChooser = false
+                            actions.onCaptureLocationPhoto()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.PhotoCamera, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.location_photo_camera))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showPhotoSourceChooser = false
+                            actions.onPickLocationPhoto()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.location_photo_gallery))
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPhotoSourceChooser = false }) {
+                    Text(stringResource(R.string.location_photo_cancel))
+                }
+            },
+        )
+    }
+
     Box(Modifier.fillMaxSize()) {
         MapCard(
             session = mapSession,
@@ -472,10 +524,19 @@ private fun MapPage(
             trackPointCount = state.tracking.points,
             hasPreciseFix = state.hasFix,
             fineLocationGranted = state.fineLocationPermissionGranted,
-            offlineMapPath = state.offlineMaps.activePath,
+            offlineMaps = state.offlineMaps,
             expanded = true,
             showExpandControl = false,
             bottomControlPadding = 146.dp,
+            onSelectOutdoorMap = {
+                actions.onUseOnlineMap()
+                actions.onToggleTopo(true)
+            },
+            onSelectGoogleMap = {
+                actions.onUseOnlineMap()
+                actions.onToggleTopo(false)
+            },
+            onSelectOfflineMap = actions.onActivateOfflineMap,
             onToggleExpanded = {},
             modifier = Modifier.fillMaxSize(),
         )
@@ -533,7 +594,7 @@ private fun MapPage(
                         Text(stringResource(R.string.location_share), maxLines = 1, fontSize = 11.sp)
                     }
                     FilledTonalButton(
-                        onClick = actions.onShareLocationWithPhoto,
+                        onClick = { showPhotoSourceChooser = true },
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
@@ -650,7 +711,11 @@ private fun HomeStatusRow(state: UiState) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         HomeStatusCell(
-            value = if (state.hasFix) "${state.satellitesUsed}/${state.satellitesTotal}" else "—",
+            value = if (state.hasFix && state.satellitesTotal > 0) {
+                "${state.satellitesUsed}/${state.satellitesTotal}"
+            } else {
+                "—"
+            },
             caption = "GPS",
             modifier = Modifier.weight(1f),
         )
@@ -913,8 +978,10 @@ private fun StatusChipsRow(state: UiState) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         StatusChip(
-            text = if (state.hasFix) {
+            text = if (state.hasFix && state.satellitesTotal > 0) {
                 stringResource(R.string.chip_gps, state.satellitesUsed, state.satellitesTotal)
+            } else if (state.hasFix) {
+                stringResource(R.string.chip_gps_fix)
             } else {
                 stringResource(R.string.chip_gps_search)
             },
