@@ -1,11 +1,15 @@
 package com.chelmodeev.altimeter
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.Xml
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.chelmodeev.altimeter.core.AltimeterCore
@@ -63,6 +67,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val huaweiHealthReader = HuaweiHealthReader(app)
     private val bluetoothHeartRateReader = BluetoothHeartRateReader(app)
     private val trackRegionPrefs = app.getSharedPreferences("track_regions", Context.MODE_PRIVATE)
+    private val bluetoothPrefs = app.getSharedPreferences("bluetooth_heart_rate", Context.MODE_PRIVATE)
 
     private var lastAutoSendAt = 0L
     private var placeJob: Job? = null
@@ -135,8 +140,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             refreshHealthStatus()
             while (true) {
-                delay(300_000)
-                if (appInForeground) refreshVitals()
+                delay(120_000)
+                if (appInForeground) {
+                    refreshVitals()
+                    autoReconnectBluetoothHeartRate()
+                }
             }
         }
     }
@@ -321,7 +329,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             // the resumed activity to foreground. onPostResume + a short main-loop
             // delay avoids the foreground race seen on Honor/MagicOS.
             delay(350)
-            if (appInForeground) refreshHealthStatus()
+            if (appInForeground) {
+                refreshHealthStatus()
+                autoReconnectBluetoothHeartRate()
+                // A watch synchronizer can publish its batch just after the
+                // activity becomes visible. Retry once instead of leaving a
+                // blank pulse until the next long periodic refresh.
+                delay(5_000)
+                if (appInForeground && _ui.value.vitals.heartRateBpm == null) refreshVitals()
+            }
         }
     }
 
@@ -334,6 +350,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun connectBluetoothHeartRate() {
+        bluetoothPrefs.edit().putBoolean(KEY_BLUETOOTH_AUTO_RECONNECT, true).apply()
+        startBluetoothHeartRate(force = true)
+    }
+
+    private fun autoReconnectBluetoothHeartRate() {
+        val explicit = bluetoothPrefs.getBoolean(KEY_BLUETOOTH_AUTO_RECONNECT, false)
+        val previouslyGranted = Build.VERSION.SDK_INT >= 31 &&
+            ContextCompat.checkSelfPermission(
+                getApplication(),
+                Manifest.permission.BLUETOOTH_SCAN,
+            ) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(
+                getApplication(),
+                Manifest.permission.BLUETOOTH_CONNECT,
+            ) == PackageManager.PERMISSION_GRANTED
+        if (explicit || previouslyGranted) startBluetoothHeartRate(force = false)
+    }
+
+    private fun startBluetoothHeartRate(force: Boolean) {
+        val current = _ui.value.vitals.bluetoothState
+        if (!force && current in setOf(
+                BluetoothVitalsState.SCANNING,
+                BluetoothVitalsState.CONNECTING,
+                BluetoothVitalsState.CONNECTED,
+            )
+        ) return
         bluetoothHeartRateReader.start(object : BluetoothHeartRateReader.Listener {
             override fun onState(state: BluetoothVitalsState, deviceName: String?) {
                 _ui.update {
@@ -936,5 +978,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         const val GRAPH_WINDOW_MS = 6 * 60 * 60 * 1_000L
+        const val KEY_BLUETOOTH_AUTO_RECONNECT = "auto_reconnect"
     }
 }

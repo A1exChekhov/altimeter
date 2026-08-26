@@ -146,13 +146,6 @@ class TrackingService : Service() {
     private fun launchTracking(automatic: Boolean) {
         ensureChannel()
         acquireWakeLock()
-        val c = AltimeterCore.get(this)
-        core = c
-        c.onLocationPermission(
-            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-        )
-        c.acquire()
         _state.update {
             TrackRecState(
                 recording = true,
@@ -186,6 +179,17 @@ class TrackingService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        // On a sticky restart Android can recreate this service while the app
+        // is still in the background. Location access must begin only after
+        // the service is visibly foreground; otherwise Android 14+/OEM builds
+        // can reject the request and leave the recorder permanently stale.
+        val c = AltimeterCore.get(this)
+        core = c
+        c.onLocationPermission(
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+        c.acquire()
         collectJob = scope.launch {
             c.state.collect { s -> onCoreState(s) }
         }

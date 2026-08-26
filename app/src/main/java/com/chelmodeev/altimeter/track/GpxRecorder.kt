@@ -15,8 +15,8 @@ import org.xmlpull.v1.XmlPullParser
  * Накапливает точки трека и пишет GPX 1.1.
  * Принимает каждый новый качественный GPS-фикс примерно раз в секунду.
  * Геометрия не упрощается: все принятые точки и повороты остаются в GPX.
- * После длительной потери GPS начинается новый сегмент, поэтому карта не
- * соединяет неизвестный участок вымышленной прямой.
+ * Редкие фоновые фиксы остаются частью одной непрерывной линии: сам временной
+ * разрыв не означает, что пользователь остановил запись маршрута.
  */
 class GpxRecorder {
 
@@ -89,7 +89,10 @@ class GpxRecorder {
         val lon = s.longitude ?: return false
         if (!s.hasFix) return false
         val hAcc = s.gpsAccuracy
-        if (hAcc != null && hAcc > 35f) return false
+        // В ущельях и при работе в фоне точность часто временно хуже 35 м.
+        // Полностью отбрасывать такие фиксы нельзя: маршрут тогда исчезает
+        // длинными кусками. Принимаем их реже за счёт порога движения ниже.
+        if (hAcc != null && hAcc > 75f) return false
 
         // CoreState меняется и по таймеру UI. Записываем только новый GPS-фикс.
         val now = s.gpsFixTimeMs.takeIf { it > 0L } ?: return false
@@ -97,7 +100,7 @@ class GpxRecorder {
         lastSeenFixAt = now
         val prev = lastPt
         val moved = if (prev == null) Double.MAX_VALUE else distanceBetween(prev.lat, prev.lon, lat, lon)
-        val minimumMovement = (((hAcc ?: 8f) * 0.10).toDouble()).coerceIn(0.8, 2.5)
+        val minimumMovement = (((hAcc ?: 8f) * 0.15).toDouble()).coerceIn(0.8, 8.0)
         val elapsed = if (prev == null) 0L else (now - prev.timeMs).coerceAtLeast(0L)
         val speedMps = if (prev != null && elapsed > 0L) moved / (elapsed / 1_000.0) else 0.0
         val bearing = if (prev == null) null else bearingBetween(prev.lat, prev.lon, lat, lon)
@@ -116,11 +119,9 @@ class GpxRecorder {
         }
         if (lastAcceptAt > 0L && elapsed < intervalMs && !isSharpTurn) return false
         if (lastAcceptAt > 0L && elapsed < 750L) return false
-        if (moved < minimumMovement && now - lastAcceptAt < 10_000L) return false
+        if (moved < minimumMovement && now - lastAcceptAt < 15_000L) return false
 
-        val startsNewSegment = prev == null ||
-            (elapsed > 30_000L && moved > 10.0) ||
-            (moved > 250.0 && speedMps > 12.0)
+        val startsNewSegment = prev == null
 
         if (prev != null && !startsNewSegment && moved < 10_000) {
             distanceM += moved

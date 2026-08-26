@@ -52,6 +52,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chelmodeev.altimeter.R
+import com.chelmodeev.altimeter.logic.continuousMapTrack
 import com.chelmodeev.altimeter.maps.offlineMapStyle
 import com.chelmodeev.altimeter.model.TrackMapPoint
 import org.maplibre.android.camera.CameraPosition
@@ -589,17 +590,20 @@ private fun updateLocation(style: Style, latitude: Double?, longitude: Double?, 
 
 private fun updateRoute(style: Style, track: List<TrackMapPoint>) {
     val source = style.getSourceAs<GeoJsonSource>(ROUTE_SOURCE) ?: return
-    val segments = mutableListOf<MutableList<Point>>()
-    for (point in track) {
-        if (segments.isEmpty() || point.startsNewSegment) segments.add(mutableListOf())
-        segments.last() += Point.fromLngLat(point.longitude, point.latitude)
+    val visibleTrack = continuousMapTrack(track)
+    val features = if (visibleTrack.size >= 2) {
+        arrayOf(
+            Feature.fromGeometry(
+                LineString.fromLngLats(
+                    visibleTrack.map { Point.fromLngLat(it.longitude, it.latitude) }
+                )
+            )
+        )
+    } else {
+        emptyArray()
     }
-    val features = segments
-        .filter { it.size >= 2 }
-        .map { Feature.fromGeometry(LineString.fromLngLats(it)) }
-        .toTypedArray()
     source.setGeoJson(FeatureCollection.fromFeatures(features))
-    val startFeatures = track.firstOrNull()?.let { first ->
+    val startFeatures = visibleTrack.firstOrNull()?.let { first ->
         arrayOf(Feature.fromGeometry(Point.fromLngLat(first.longitude, first.latitude)))
     } ?: emptyArray()
     style.getSourceAs<GeoJsonSource>(TRACK_START_SOURCE)

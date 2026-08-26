@@ -103,10 +103,10 @@ class HuaweiHealthReader(private val context: Context) {
         val heartPoint = latest[DataType.DT_INSTANTANEOUS_HEART_RATE]
         val oxygenPoint = latest[HealthDataTypes.DT_INSTANTANEOUS_SPO2]
         val stepsPoint = latest[DataType.DT_CONTINUOUS_STEPS_TOTAL]
-        val heartAt = heartPoint?.sampleTime()
+        var heartAt = heartPoint?.sampleTime()
         val oxygenAt = oxygenPoint?.sampleTime()
         val stepsAt = stepsPoint?.sampleTime()
-        val heartRate = heartPoint
+        var heartRate = heartPoint
             ?.getFieldValue(Field.FIELD_BPM)
             ?.asDoubleValue()
             ?.takeIf { it in 1.0..255.0 }
@@ -124,6 +124,13 @@ class HuaweiHealthReader(private val context: Context) {
         val series = runCatching {
             readHeartRateSeries(controller.read(heartRateReadOptions()).await())
         }.getOrDefault(emptyList())
+        series.lastOrNull()?.let { (atMs, bpm) ->
+            val seriesAt = Instant.ofEpochMilli(atMs)
+            if (heartAt == null || seriesAt.isAfter(heartAt)) {
+                heartAt = seriesAt
+                heartRate = bpm
+            }
+        }
 
         return VitalsSnapshot(
             heartRateBpm = heartRate,

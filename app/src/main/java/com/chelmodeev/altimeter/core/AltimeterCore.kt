@@ -159,8 +159,7 @@ class AltimeterCore private constructor(private val appContext: Context) {
 
     private fun startLocation() {
         if (!locationRunning) {
-            locationRunning = true
-            locationEngine.start()
+            locationRunning = locationEngine.start()
         }
     }
 
@@ -180,6 +179,7 @@ class AltimeterCore private constructor(private val appContext: Context) {
     }
 
     private fun tick(n: Long) {
+        if (n % 15L == 0L && locationAllowed && !locationRunning) startLocation()
         val now = System.currentTimeMillis()
         val rawAltitude = fusion.displayAltitude()
         val alt = rawAltitude?.let { altitudeStabilizer.update(it, now) }

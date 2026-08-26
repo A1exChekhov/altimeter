@@ -118,17 +118,16 @@ class HealthReader(private val context: Context) {
         var hrOrigin: String? = null
         var hrIsResting = false
         val series = mutableListOf<Pair<Long, Long>>()
-        if (permissions.heartRate) runCatching {
-            var pageToken: String? = null
-            var pageCount = 0
-            do {
+        if (permissions.heartRate) {
+            // Read the current value independently from the chart history. A
+            // failure on a later history page must never erase a valid pulse.
+            runCatching {
                 val resp = client.readRecords(
                     ReadRecordsRequest(
                         recordType = HeartRateRecord::class,
                         timeRangeFilter = TimeRangeFilter.between(from, now),
                         ascendingOrder = false,
-                        pageSize = 1_000,
-                        pageToken = pageToken,
+                        pageSize = 100,
                     )
                 )
                 for (rec in resp.records) {
@@ -139,15 +138,39 @@ class HealthReader(private val context: Context) {
                             hrBpm = sample.beatsPerMinute
                             hrOrigin = rec.metadata.dataOrigin.packageName
                         }
-                        if (!sample.time.isBefore(graphFrom)) {
-                            series += sample.time.toEpochMilli() to sample.beatsPerMinute
-                        }
                     }
                 }
-                pageToken = resp.pageToken
-                pageCount++
-            } while (pageToken != null && pageCount < 20)
-        }.onFailure { errors += it.readError("heart_rate") }
+            }.onFailure { errors += it.readError("heart_rate_latest") }
+
+            runCatching {
+                var pageToken: String? = null
+                var pageCount = 0
+                do {
+                    val resp = client.readRecords(
+                        ReadRecordsRequest(
+                            recordType = HeartRateRecord::class,
+                            timeRangeFilter = TimeRangeFilter.between(graphFrom, now),
+                            ascendingOrder = true,
+                            pageSize = 1_000,
+                            pageToken = pageToken,
+                        )
+                    )
+                    for (rec in resp.records) {
+                        for (sample in rec.samples) {
+                            series += sample.time.toEpochMilli() to sample.beatsPerMinute
+                            val cur = hrAt
+                            if (cur == null || sample.time.isAfter(cur)) {
+                                hrAt = sample.time
+                                hrBpm = sample.beatsPerMinute
+                                hrOrigin = rec.metadata.dataOrigin.packageName
+                            }
+                        }
+                    }
+                    pageToken = nextHealthPageToken(resp.pageToken)
+                    pageCount++
+                } while (pageToken != null && pageCount < 20)
+            }.onFailure { errors += it.readError("heart_rate_series") }
+        }
 
         // Некоторые синхронизаторы пишут суточный пульс Huawei как отдельный
         // RestingHeartRateRecord, а не как серию HeartRateRecord.
@@ -271,3 +294,5 @@ class HealthReader(private val context: Context) {
         else -> "$metric:${javaClass.simpleName}"
     }
 }
+
+internal fun nextHealthPageToken(value: String?): String? = value?.takeIf { it.isNotEmpty() }

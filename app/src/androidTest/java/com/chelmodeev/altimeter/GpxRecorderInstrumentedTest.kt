@@ -51,33 +51,48 @@ class GpxRecorderInstrumentedTest {
     }
 
     @Test
-    fun gpsGapCreatesNewSegmentAndRestoreKeepsAllPoints() {
+    fun gpsGapKeepsRouteContinuousAndRestoreKeepsAllPoints() {
         val recorder = GpxRecorder().apply { begin() }
         val started = 1_800_000_200_000L
         assertTrue(recorder.offer(fix(55.0, 37.0, started)))
         assertTrue(recorder.offer(fix(55.00001, 37.0, started + 1_000L)))
         assertTrue(recorder.offer(fix(55.001, 37.001, started + 41_000L)))
-        assertTrue(recorder.mapPoints().last().startsNewSegment)
+        assertFalse(recorder.mapPoints().last().startsNewSegment)
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val file = File(context.cacheDir, "precise-route-test.gpx")
         recorder.saveTo(file)
         val xml = file.readText()
         assertEquals(3, Regex("<trkpt ").findAll(xml).count())
-        assertEquals(2, Regex("<trkseg>").findAll(xml).count())
+        assertEquals(1, Regex("<trkseg>").findAll(xml).count())
 
         val restored = GpxRecorder()
         assertTrue(restored.restoreFrom(file))
         assertEquals(3, restored.pointCount)
-        assertTrue(restored.mapPoints().last().startsNewSegment)
+        assertFalse(restored.mapPoints().last().startsNewSegment)
         file.delete()
     }
 
-    private fun fix(lat: Double, lon: Double, timeMs: Long) = AltimeterCore.CoreState(
+    @Test
+    fun mountainFixWithModerateAccuracyIsNotDiscarded() {
+        val recorder = GpxRecorder().apply { begin() }
+        val started = 1_800_000_300_000L
+
+        assertTrue(recorder.offer(fix(27.0, 85.0, started, accuracy = 55f)))
+        assertTrue(recorder.offer(fix(27.0001, 85.0001, started + 15_000L, accuracy = 55f)))
+        assertEquals(2, recorder.pointCount)
+    }
+
+    private fun fix(
+        lat: Double,
+        lon: Double,
+        timeMs: Long,
+        accuracy: Float = 3f,
+    ) = AltimeterCore.CoreState(
         latitude = lat,
         longitude = lon,
         altitude = 300.0,
-        gpsAccuracy = 3f,
+        gpsAccuracy = accuracy,
         hasFix = true,
         gpsFixTimeMs = timeMs,
         timestampMs = timeMs,

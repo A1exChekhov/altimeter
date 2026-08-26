@@ -6,6 +6,7 @@ import android.location.GnssStatus
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.location.LocationRequest
 import android.location.OnNmeaMessageListener
 import android.os.Build
 import android.os.Bundle
@@ -90,19 +91,41 @@ class LocationEngine(
     }
 
     @SuppressLint("MissingPermission")
-    fun start() {
-        if (running) return
-        running = true
-        runCatching {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 1000L, 0f, gpsListener, Looper.getMainLooper()
-            )
-        }
-        runCatching {
+    fun start(): Boolean {
+        if (running) return true
+        val gpsRegistered = runCatching {
+            if (Build.VERSION.SDK_INT >= 31) {
+                val request = LocationRequest.Builder(1_000L)
+                    .setMinUpdateIntervalMillis(750L)
+                    .setMaxUpdateDelayMillis(2_000L)
+                    .setQuality(LocationRequest.QUALITY_HIGH_ACCURACY)
+                    .build()
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    request,
+                    context.mainExecutor,
+                    gpsListener,
+                )
+            } else {
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    1_000L,
+                    0f,
+                    gpsListener,
+                    Looper.getMainLooper(),
+                )
+            }
+        }.isSuccess
+        val networkRegistered = runCatching {
             locationManager.requestLocationUpdates(
                 LocationManager.NETWORK_PROVIDER, 5000L, 0f, networkListener, Looper.getMainLooper()
             )
+        }.isSuccess
+        if (!gpsRegistered) {
+            if (networkRegistered) runCatching { locationManager.removeUpdates(networkListener) }
+            return false
         }
+        running = true
         runCatching { locationManager.addNmeaListener(nmeaListener, handler) }
         runCatching { locationManager.registerGnssStatusCallback(gnssCallback, handler) }
         // стартовая точка для карты
@@ -111,6 +134,7 @@ class LocationEngine(
                 ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             last?.let { handleLocation(it, precise = false) }
         }
+        return true
     }
 
     fun stop() {
