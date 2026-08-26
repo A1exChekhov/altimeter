@@ -21,7 +21,7 @@ struct HealthSourcesView: View {
                     sourceRow(
                         icon: "figure.run.circle.fill",
                         color: .blue,
-                        title: "Garmin",
+                        title: "Garmin Connect · iOS",
                         subtitle: "Garmin Connect передаёт в Apple Health пульс и шаги. Pulse Ox в Apple Health не экспортируется."
                     )
                     VStack(alignment: .leading, spacing: 8) {
@@ -31,7 +31,7 @@ struct HealthSourcesView: View {
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("Garmin Connect")
+                    Text("Garmin Connect · iOS")
                 } footer: {
                     Text("Прямой Garmin Pulse Ox возможен через Garmin Health API или Health SDK. Они выдаются Garmin корпоративным партнёрам; коммерческое использование может потребовать лицензии.")
                 }
