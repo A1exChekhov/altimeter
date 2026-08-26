@@ -42,6 +42,11 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Altimeter/Supporting/Altimeter.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: Errarium Altimeter Ad Hoc plus
     dependencies:
       - target: AltimeterWidget
 
@@ -68,6 +73,11 @@ targets:
         INFOPLIST_FILE: AltimeterWidget/Info.plist
         CODE_SIGN_ENTITLEMENTS: AltimeterWidget/AltimeterWidget.entitlements
         SKIP_INSTALL: YES
+      configs:
+        Release:
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Distribution
+          PROVISIONING_PROFILE_SPECIFIER: Errarium Altimeter Widget Ad Hoc plus
 
   AltimeterTests:
     type: bundle.unit-test
