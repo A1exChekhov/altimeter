@@ -88,7 +88,24 @@ struct SettingsView: View {
                 }
 
                 Section("Экран и карта") {
+                    Picker("Режим карты", selection: $model.mapSourceMode) {
+                        ForEach(MapSourceMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    Text("Авто использует встроенную карту внутри региона Кайласа и онлайн-карту за его пределами.")
+                        .font(.footnote.weight(.light))
+                        .foregroundStyle(.secondary)
+                    Label(
+                        "Карта Кайласа встроена · 12,7 МБ · работает без сети",
+                        systemImage: KailashOfflineMap.resources == nil
+                            ? "exclamationmark.triangle.fill"
+                            : "checkmark.circle.fill"
+                    )
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(KailashOfflineMap.resources == nil ? .orange : .green)
                     Toggle("Топографическая карта", isOn: $model.useTopographicMap)
+                        .disabled(model.mapSourceMode == .kailash)
                     Toggle("Не выключать экран", isOn: $model.keepScreenAwake)
                 }
 

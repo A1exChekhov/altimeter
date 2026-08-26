@@ -62,7 +62,11 @@ struct AltimeterScreen: View {
         case .home:
             hero
             permissionCard
-            MapCardView(state: state, topographic: $model.useTopographicMap)
+            MapCardView(
+                state: state,
+                topographic: $model.useTopographicMap,
+                sourceMode: $model.mapSourceMode
+            )
             healthCard
             adviceSection
         case .track:

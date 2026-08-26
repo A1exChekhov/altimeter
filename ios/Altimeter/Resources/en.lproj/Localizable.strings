@@ -182,6 +182,13 @@
 "Garmin передаёт в Apple Health пульс, но не экспортирует Pulse Ox. Для SpO₂ нужен Garmin Health API/SDK." = "Garmin sends heart rate to Apple Health but does not export Pulse Ox. SpO₂ requires Garmin Health API/SDK.";
 "Garmin Connect передаёт в Apple Health пульс и шаги. Pulse Ox в Apple Health не экспортируется." = "Garmin Connect sends heart rate and steps to Apple Health. Pulse Ox is not exported.";
 "track.ascent" = "+%d m";
+"map.source.auto" = "Automatic";
+"map.source.online" = "Online";
+"map.source.kailash" = "Kailash offline";
+"Режим карты" = "Map mode";
+"Авто использует встроенную карту внутри региона Кайласа и онлайн-карту за его пределами." = "Automatic mode uses the built-in map in the Kailash region and the online map elsewhere.";
+"Карта Кайласа встроена · 12,7 МБ · работает без сети" = "Kailash map included · 12.7 MB · works offline";
+"Кайлас · офлайн" = "Kailash · offline";
 "Altimeter Kailas только читает выбранные вами показатели. Данные не отправляются на сервер и используются локально для отображения и предупреждений о высоте." = "Altimeter Kailas only reads the metrics you select. Data stays on the device and is used only for display.";
 "Откройте Garmin Connect → Ещё → Настройки → Подключённые приложения." = "Open Garmin Connect → More → Settings → Connected Apps.";
 "После синхронизации часов оставьте Garmin Connect открытым на переднем плане до завершения передачи." = "After syncing the watch, keep Garmin Connect open until transfer completes.";

@@ -62,6 +62,20 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | tee build/ios-simulator-build.log
 
+      - name: Verify embedded Kailash map
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios-simulator/Build/Products/Debug-iphonesimulator/Altimeter.app"
+          BASE_MAP="$APP_PATH/errarium-kailash-kora-2026.pmtiles"
+          TERRAIN_MAP="$APP_PATH/errarium-kailash-kora-2026-dem.pmtiles"
+
+          test -f "$BASE_MAP"
+          test -f "$TERRAIN_MAP"
+          test "$(shasum -a 256 "$BASE_MAP" | awk '{print $1}')" = "09f7f2bd1a0551dcd4292f483d285433e66384e986ebce73f82fdd409f80c780"
+          test "$(shasum -a 256 "$TERRAIN_MAP" | awk '{print $1}')" = "d49acb704d95dd39842cedc5b4b8ad59f1d5a1f9d766a5693d438084d8f075bd"
+          test -f "$APP_PATH/fonts/Noto Sans Regular/0-255.pbf"
+          test -f "$APP_PATH/fonts/Noto Sans Regular/256-511.pbf"
+
       - name: Run iPhone unit tests
         run: |
           set -o pipefail
@@ -102,6 +116,7 @@ jobs:
 
   signed-ipa:
     name: Export signed IPA
+    needs: verify
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.distribution == 'development-ipa' }}
     runs-on: macos-15
     timeout-minutes: 30
@@ -255,6 +270,7 @@ jobs:
 
   testflight:
     name: Upload to TestFlight
+    needs: verify
     if: ${{ github.event_name == 'workflow_dispatch' && (inputs.distribution == 'testflight' || inputs.distribution == 'testflight-dry-run') }}
     runs-on: macos-26
     timeout-minutes: 45

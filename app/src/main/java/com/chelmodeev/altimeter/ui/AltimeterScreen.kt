@@ -1808,7 +1808,9 @@ private fun ChartCard(
             label = altitudeLabel,
             unit = " ${stringResource(if (state.unit == AltUnit.METERS) R.string.unit_m else R.string.unit_ft)}",
             color = altitudeColor,
-            points = state.history.map { it.timeMs to it.altitude },
+            points = state.history.map {
+                it.timeMs to if (state.unit == AltUnit.FEET) it.altitude * 3.2808399 else it.altitude
+            },
         ),
         TrendLine(
             key = "heart",
@@ -1879,6 +1881,21 @@ private fun ChartCard(
                 stepsConnected = !stepsConnected
             }
         }
+        Spacer(Modifier.height(7.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TrendCurrentValue(
+                line = allLines.first { it.key == "altitude" },
+                window = window,
+            )
+            Spacer(Modifier.size(8.dp))
+            TrendCurrentValue(
+                line = allLines.first { it.key == "heart" },
+                window = window,
+            )
+        }
         if (scales.isNotEmpty()) {
             Spacer(Modifier.height(7.dp))
             FlowRow(
@@ -1914,6 +1931,38 @@ private fun ChartCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(210.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrendCurrentValue(line: TrendLine, window: ChartTimeWindow) {
+    val point = line.points.asSequence()
+        .filter { (time, value) -> time in window.startMs..window.endMs && value.isFinite() }
+        .maxByOrNull { it.first }
+    Surface(
+        shape = RoundedCornerShape(11.dp),
+        color = line.color.copy(alpha = 0.16f),
+        border = BorderStroke(1.dp, line.color.copy(alpha = 0.62f)),
+    ) {
+        Column(
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+        ) {
+            Text(
+                text = line.label.uppercase(),
+                color = line.color,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = point?.let {
+                    formatTrendValue(it.second, line.decimals) + line.unit
+                } ?: "—",
+                color = line.color,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
             )
         }
     }

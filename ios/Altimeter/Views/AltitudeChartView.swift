@@ -83,7 +83,8 @@ struct AltitudeChartView: View {
     private let stepsColor = Color(red: 0.45, green: 0.73, blue: 0.55)
 
     var body: some View {
-        let lines = metricLines.filter { connected.contains($0.id) && !$0.points.isEmpty }
+        let allLines = metricLines
+        let lines = allLines.filter { connected.contains($0.id) && !$0.points.isEmpty }
         let timeline = timeline(for: lines)
         let scales = makeScales(lines: lines, timeline: timeline)
 
@@ -104,10 +105,12 @@ struct AltitudeChartView: View {
                 .scrollIndicators(.hidden)
 
                 HStack(spacing: 6) {
-                    ForEach(metricLines) { line in
+                    ForEach(allLines) { line in
                         metricConnector(line)
                     }
                 }
+
+                currentValueStrip(lines: allLines)
 
                 if scales.isEmpty || timeline == nil {
                     ContentUnavailableView(
@@ -209,13 +212,28 @@ struct AltitudeChartView: View {
                     .foregroundStyle(scale.line.color)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
+                if let selectedDate,
+                   let point = nearestPoint(to: selectedDate, in: scale.points) {
+                    PointMark(
+                        x: .value("Выбранное время", point.date),
+                        y: .value(scale.line.title, scale.normalized(point.value))
+                    )
+                    .foregroundStyle(scale.line.color)
+                    .symbolSize(46)
+                }
             }
 
             if let selectedDate {
                 RuleMark(x: .value("Выбранное время", selectedDate))
-                    .foregroundStyle(.secondary.opacity(0.7))
-                    .annotation(position: .top, alignment: .leading, spacing: 5) {
+                    .foregroundStyle(.secondary.opacity(0.82))
+                    .lineStyle(StrokeStyle(lineWidth: 1.2))
+                    .annotation(position: .top, alignment: .center, spacing: 5) {
                         cursorValues(at: selectedDate, scales: scales)
+                    }
+                RuleMark(x: .value("Выбранное время", selectedDate))
+                    .foregroundStyle(.clear)
+                    .annotation(position: .bottom, alignment: .center, spacing: 4) {
+                        cursorTime(at: selectedDate)
                     }
             }
         }
@@ -271,23 +289,87 @@ struct AltitudeChartView: View {
         .buttonStyle(.plain)
     }
 
+    private func currentValueStrip(lines: [MetricLine]) -> some View {
+        HStack(spacing: 8) {
+            Spacer(minLength: 0)
+            if let altitude = lines.first(where: { $0.id == .altitude }) {
+                currentValueBadge(altitude)
+            }
+            if let heart = lines.first(where: { $0.id == .heart }) {
+                currentValueBadge(heart)
+            }
+        }
+    }
+
+    private func currentValueBadge(_ line: MetricLine) -> some View {
+        let point = currentPoint(for: line)
+        return VStack(alignment: .trailing, spacing: 2) {
+            Text(line.title.uppercased())
+                .font(.system(size: 9, weight: .bold))
+                .tracking(0.7)
+                .foregroundStyle(line.color)
+            Text(point.map { "\(format($0.value, decimals: line.decimals))\(line.unit)" } ?? "—")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(line.color)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(line.color.opacity(0.16), in: RoundedRectangle(cornerRadius: 11))
+        .overlay {
+            RoundedRectangle(cornerRadius: 11)
+                .stroke(line.color.opacity(0.62), lineWidth: 1)
+        }
+    }
+
+    private func currentPoint(for line: MetricLine) -> VitalPoint? {
+        let end = Date()
+        let start = selectedRange.startDate(reference: end)
+        let visible = line.points.filter { $0.date >= start && $0.date <= end }
+        guard !visible.isEmpty else { return nil }
+        if let selectedDate {
+            return visible.min {
+                abs($0.date.timeIntervalSince(selectedDate))
+                    < abs($1.date.timeIntervalSince(selectedDate))
+            }
+        }
+        return visible.max { $0.date < $1.date }
+    }
+
     private func cursorValues(at date: Date, scales: [MetricScale]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(date, format: .dateTime.hour().minute())
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.secondary)
+        HStack(spacing: 8) {
             ForEach(scales) { scale in
-                if let point = scale.points.min(by: {
-                    abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
-                }) {
+                if let point = nearestPoint(to: date, in: scale.points) {
                     Text("\(format(point.value, decimals: scale.line.decimals))\(scale.line.unit)")
-                        .font(.caption2.monospacedDigit())
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .monospacedDigit()
                         .foregroundStyle(scale.line.color)
                 }
             }
         }
-        .padding(7)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .background(Color(uiColor: .systemBackground).opacity(0.97), in: RoundedRectangle(cornerRadius: 9))
+        .overlay {
+            RoundedRectangle(cornerRadius: 9)
+                .stroke(Color.secondary.opacity(0.48), lineWidth: 1)
+        }
+    }
+
+    private func cursorTime(at date: Date) -> some View {
+        Text(date, format: .dateTime.hour().minute())
+            .font(.caption.weight(.bold).monospacedDigit())
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color(uiColor: .systemBackground).opacity(0.97), in: Capsule())
+            .overlay { Capsule().stroke(Color.secondary.opacity(0.4), lineWidth: 1) }
+    }
+
+    private func nearestPoint(to date: Date, in points: [VitalPoint]) -> VitalPoint? {
+        points.min {
+            abs($0.date.timeIntervalSince(date)) < abs($1.date.timeIntervalSince(date))
+        }
     }
 
     private func format(_ value: Double, decimals: Int) -> String {

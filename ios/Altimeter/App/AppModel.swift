@@ -35,6 +35,9 @@ final class AppModel: ObservableObject {
     @Published var useTopographicMap: Bool {
         didSet { defaults.set(useTopographicMap, forKey: Keys.topographicMap) }
     }
+    @Published var mapSourceMode: MapSourceMode {
+        didSet { defaults.set(mapSourceMode.rawValue, forKey: Keys.mapSourceMode) }
+    }
     @Published var keepScreenAwake: Bool {
         didSet {
             defaults.set(keepScreenAwake, forKey: Keys.keepScreenAwake)
@@ -74,6 +77,9 @@ final class AppModel: ObservableObject {
         qnhHPA = storedQNH == 0 ? 1013.25 : storedQNH
         manualOffset = store.object(forKey: Keys.manualOffset) as? Double
         useTopographicMap = store.object(forKey: Keys.topographicMap) as? Bool ?? true
+        mapSourceMode = MapSourceMode(
+            rawValue: store.string(forKey: Keys.mapSourceMode) ?? ""
+        ) ?? .automatic
         keepScreenAwake = store.object(forKey: Keys.keepScreenAwake) as? Bool ?? true
         darkTheme = store.object(forKey: Keys.darkTheme) as? Bool ?? true
         autoTrackEnabled = store.object(forKey: Keys.autoTrackEnabled) as? Bool ?? false
@@ -202,6 +208,7 @@ final class AppModel: ObservableObject {
         static let qnh = "qnhHPA"
         static let manualOffset = "manualOffset"
         static let topographicMap = "useTopographicMap"
+        static let mapSourceMode = "mapSourceMode"
         static let keepScreenAwake = "keepScreenAwake"
         static let darkTheme = "darkTheme"
         static let autoTrackEnabled = "autoTrackEnabled"

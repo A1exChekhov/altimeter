@@ -116,7 +116,6 @@ fun CombinedTrendChart(
                     val change = event.changes.firstOrNull()
                     if (change != null) cursorX = change.position.x
                 } while (event.changes.any { it.pressed })
-                cursorX = null
             }
         }
     ) {
@@ -225,12 +224,6 @@ fun CombinedTrendChart(
 
         cursorX?.takeIf { it.isFinite() }?.coerceIn(left, right)?.let { x ->
             val cursorTime = startTime + (((x - left) / plotWidth) * span).toLong()
-            drawLine(
-                color = axisColor.copy(alpha = 0.72f),
-                start = Offset(x, top),
-                end = Offset(x, bottom),
-                strokeWidth = 1.dp.toPx(),
-            )
             val cursorValues = scales.mapNotNull { scale ->
                 val nearest = scale.line.points.asSequence()
                     .filter { it.first in startTime..endTime }
@@ -244,30 +237,79 @@ fun CombinedTrendChart(
                 scale to nearest
             }
 
+            val valuePaints = cursorValues.map { (scale, _) ->
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = 12.dp.toPx()
+                    color = scale.line.color.toArgb()
+                    isFakeBoldText = true
+                }
+            }
+            val valueLabels = cursorValues.map { (scale, nearest) ->
+                formatTrendValue(nearest.second, scale.line.decimals) + scale.line.unit
+            }
+            val valueGap = 10.dp.toPx()
+            val valueContentWidth = valueLabels.indices.sumOf { index ->
+                valuePaints[index].measureText(valueLabels[index]).toDouble()
+            }.toFloat() + valueGap * (valueLabels.size - 1).coerceAtLeast(0)
+            val valueBubbleWidth = (valueContentWidth + 14.dp.toPx()).coerceAtMost(plotWidth)
+            val valueBubbleHeight = 28.dp.toPx()
+            val valueBubbleLeft = (x - valueBubbleWidth / 2f)
+                .coerceIn(left, right - valueBubbleWidth)
             drawRoundRect(
-                color = backgroundColor.copy(alpha = 0.94f),
-                topLeft = Offset(left, top),
-                size = Size(plotWidth, 25.dp.toPx()),
+                color = backgroundColor.copy(alpha = 0.98f),
+                topLeft = Offset(valueBubbleLeft, top),
+                size = Size(valueBubbleWidth, valueBubbleHeight),
                 cornerRadius = CornerRadius(7.dp.toPx()),
             )
-            var textX = left + 6.dp.toPx()
-            cursorValues.forEach { (scale, nearest) ->
-                val value = formatTrendValue(nearest.second, scale.line.decimals) + scale.line.unit
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    textSize = 10.dp.toPx()
-                    color = scale.line.color.toArgb()
-                }
-                drawContext.canvas.nativeCanvas.drawText(value, textX, top + 17.dp.toPx(), paint)
-                textX += paint.measureText(value) + 10.dp.toPx()
+            drawRoundRect(
+                color = axisColor.copy(alpha = 0.46f),
+                topLeft = Offset(valueBubbleLeft, top),
+                size = Size(valueBubbleWidth, valueBubbleHeight),
+                cornerRadius = CornerRadius(7.dp.toPx()),
+                style = Stroke(width = 1.dp.toPx()),
+            )
+            var valueTextX = valueBubbleLeft + 7.dp.toPx()
+            valueLabels.indices.forEach { index ->
+                drawContext.canvas.nativeCanvas.drawText(
+                    valueLabels[index],
+                    valueTextX,
+                    top + 19.dp.toPx(),
+                    valuePaints[index],
+                )
+                valueTextX += valuePaints[index].measureText(valueLabels[index]) + valueGap
             }
+
+            drawLine(
+                color = axisColor.copy(alpha = 0.82f),
+                start = Offset(x, top + valueBubbleHeight + 2.dp.toPx()),
+                end = Offset(x, bottom),
+                strokeWidth = 1.2.dp.toPx(),
+            )
 
             val timeLabel = timeFormatter.format(Date(cursorTime))
             val timeWidth = axisPaint.measureText(timeLabel)
-            val timeX = (x - timeWidth / 2f).coerceIn(left, right - timeWidth)
+            val timeBubbleWidth = timeWidth + 12.dp.toPx()
+            val timeBubbleHeight = 19.dp.toPx()
+            val timeBubbleLeft = (x - timeBubbleWidth / 2f)
+                .coerceIn(left, right - timeBubbleWidth)
+            val timeBubbleTop = bottom + 3.dp.toPx()
+            drawRoundRect(
+                color = backgroundColor.copy(alpha = 0.98f),
+                topLeft = Offset(timeBubbleLeft, timeBubbleTop),
+                size = Size(timeBubbleWidth, timeBubbleHeight),
+                cornerRadius = CornerRadius(6.dp.toPx()),
+            )
+            drawRoundRect(
+                color = axisColor.copy(alpha = 0.4f),
+                topLeft = Offset(timeBubbleLeft, timeBubbleTop),
+                size = Size(timeBubbleWidth, timeBubbleHeight),
+                cornerRadius = CornerRadius(6.dp.toPx()),
+                style = Stroke(width = 1.dp.toPx()),
+            )
             drawContext.canvas.nativeCanvas.drawText(
                 timeLabel,
-                timeX,
-                bottom - 5.dp.toPx(),
+                timeBubbleLeft + 6.dp.toPx(),
+                timeBubbleTop + 13.dp.toPx(),
                 axisPaint,
             )
         }

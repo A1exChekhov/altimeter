@@ -307,7 +307,17 @@ fun MapCard(
                     readyMap.animateCamera(CameraUpdateFactory.newLatLngZoom(target, zoom))
                 }
             } else if (session.follow) {
-                readyMap.animateCamera(CameraUpdateFactory.newLatLng(target))
+                val current = readyMap.cameraPosition
+                val maxZoom = if (offlineMapPath != null) OFFLINE_MAX_FOLLOW_ZOOM
+                    else ONLINE_MAX_FOLLOW_ZOOM
+                readyMap.animateCamera(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.Builder(current)
+                            .target(target)
+                            .zoom(current.zoom.coerceIn(MIN_FOLLOW_ZOOM, maxZoom))
+                            .build()
+                    )
+                )
             }
         }
     }
@@ -633,10 +643,10 @@ private const val LOCATION_OUTER_LAYER = "errarium-location-outer"
 private const val LOCATION_INNER_LAYER = "errarium-location-inner"
 private const val MAX_TRACK_ACCURACY_METERS = 50f
 private const val MIN_FOLLOW_ZOOM = 11.0
-private const val OFFLINE_FOLLOW_ZOOM = 13.0
-private const val OFFLINE_MAX_FOLLOW_ZOOM = 13.5
-private const val ONLINE_FOLLOW_ZOOM = 15.0
-private const val ONLINE_MAX_FOLLOW_ZOOM = 17.0
+private const val OFFLINE_FOLLOW_ZOOM = 12.0
+private const val OFFLINE_MAX_FOLLOW_ZOOM = 13.0
+private const val ONLINE_FOLLOW_ZOOM = 12.5
+private const val ONLINE_MAX_FOLLOW_ZOOM = 13.5
 private val TRACK_COLOR_ARGB = 0xFF35E0D0.toInt()
 private val TRACK_CASING_COLOR = 0xE6101826.toInt()
 private val TRACK_COLOR = Color(TRACK_COLOR_ARGB)

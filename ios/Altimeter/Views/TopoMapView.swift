@@ -29,8 +29,8 @@ struct TopoMapView: UIViewRepresentable {
             map.setRegion(
                 MKCoordinateRegion(
                     center: coordinate,
-                    latitudinalMeters: 4_000,
-                    longitudinalMeters: 4_000
+                    latitudinalMeters: 18_000,
+                    longitudinalMeters: 18_000
                 ),
                 animated: false
             )
@@ -105,6 +105,11 @@ struct TopoMapView: UIViewRepresentable {
 struct MapCardView: View {
     let state: AltimeterState
     @Binding var topographic: Bool
+    @Binding var sourceMode: MapSourceMode
+
+    private var usesKailash: Bool {
+        sourceMode.usesKailash(at: state.coordinate) && KailashOfflineMap.resources != nil
+    }
 
     var body: some View {
         InstrumentCard {
@@ -112,21 +117,28 @@ struct MapCardView: View {
                 HStack {
                     SectionHeading(icon: "map.fill", title: L10n.string("Карта"))
                     Spacer()
-                    Picker("Слой", selection: $topographic) {
-                        Text("Топо").tag(true)
-                        Text("Apple").tag(false)
+                    if usesKailash {
+                        Text(L10n.string("Кайлас · офлайн"))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Picker("Слой", selection: $topographic) {
+                            Text("Топо").tag(true)
+                            Text("Apple").tag(false)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 145)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 145)
                 }
 
                 ZStack {
-                    TopoMapView(
+                    AltimeterMapSurface(
                         coordinate: state.coordinate,
                         trackPoints: state.trackPoints,
-                        topographic: topographic
+                        topographic: topographic,
+                        sourceMode: sourceMode
                     )
-                    if state.coordinate == nil {
+                    if state.coordinate == nil && !usesKailash {
                         Rectangle().fill(.black.opacity(0.45))
                         ProgressView("Ждём координаты…")
                     }
@@ -134,9 +146,11 @@ struct MapCardView: View {
                 .frame(height: 260)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                Text(topographic
-                     ? "© OpenStreetMap contributors · © OpenTopoMap (CC-BY-SA)"
-                     : "Картографические данные © Apple")
+                Text(usesKailash
+                     ? "© OpenStreetMap contributors · Terrain © Mapterhorn"
+                     : (topographic
+                        ? "© OpenStreetMap contributors · © OpenTopoMap (CC-BY-SA)"
+                        : "Картографические данные © Apple"))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

@@ -57,10 +57,11 @@ private struct FullMapScreen: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                TopoMapView(
+                AltimeterMapSurface(
                     coordinate: model.state.coordinate,
                     trackPoints: model.state.trackPoints,
-                    topographic: model.useTopographicMap
+                    topographic: model.useTopographicMap,
+                    sourceMode: model.mapSourceMode
                 )
                 .ignoresSafeArea(edges: .bottom)
 
