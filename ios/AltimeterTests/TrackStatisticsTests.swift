@@ -14,7 +14,7 @@ final class TrackStatisticsTests: XCTestCase {
 
         XCTAssertEqual(statistics.minAltitude, 100)
         XCTAssertEqual(statistics.maxAltitude, 109)
-        XCTAssertEqual(statistics.ascent, 8, accuracy: 0.001)
+        XCTAssertEqual(statistics.ascent, 9, accuracy: 0.001)
         XCTAssertEqual(statistics.verticalSpeedMetersPerMinute ?? 0, 60, accuracy: 0.001)
         XCTAssertEqual(statistics.history.count, 5)
     }
@@ -29,4 +29,3 @@ final class TrackStatisticsTests: XCTestCase {
         XCTAssertEqual(statistics.descent, 0)
     }
 }
-

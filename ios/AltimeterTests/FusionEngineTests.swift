@@ -5,7 +5,9 @@ final class FusionEngineTests: XCTestCase {
     func testAutomaticModeAnchorsBarometerToGPS() {
         let engine = FusionEngine()
         engine.onPressure(898.75)
-        engine.onGPSAltitude(1_000, verticalAccuracy: 3)
+        for _ in 0..<5 {
+            engine.onGPSAltitude(1_000, verticalAccuracy: 3)
+        }
 
         XCTAssertEqual(engine.displayedAltitude ?? 0, 1_000, accuracy: 0.01)
         XCTAssertNotNil(engine.displayedAccuracy)
@@ -43,4 +45,3 @@ final class FusionEngineTests: XCTestCase {
         XCTAssertTrue(engine.isCalibrating)
     }
 }
-

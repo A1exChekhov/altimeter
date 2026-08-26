@@ -2,7 +2,7 @@ import XCTest
 @testable import Altimeter
 
 final class AdvisorTests: XCTestCase {
-    func testHighAltitudeAndLowOxygenProduceWarning() {
+    func testOnlyNonMedicalFieldInformationIsProduced() {
         let now = Date()
         let result = Advisor().evaluate(
             AdvisorInput(
@@ -19,10 +19,10 @@ final class AdvisorTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(result.count, 4)
-        XCTAssertTrue(result.contains { $0.kind == .oxygenVeryLow })
-        XCTAssertTrue(result.contains { $0.kind == .altitudeVeryHigh })
-        XCTAssertTrue(result.allSatisfy { $0.severity == .warning || $0.severity == .caution })
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.contains { $0.kind == .pressureFallingFast })
+        XCTAssertTrue(result.contains { $0.kind == .hydration })
+        XCTAssertTrue(result.allSatisfy { $0.isFieldInformation })
     }
 
     func testStaleOxygenIsIgnored() {
@@ -44,4 +44,3 @@ final class AdvisorTests: XCTestCase {
         XCTAssertFalse(result.contains { $0.kind == .oxygenVeryLow || $0.kind == .oxygenLow })
     }
 }
-
