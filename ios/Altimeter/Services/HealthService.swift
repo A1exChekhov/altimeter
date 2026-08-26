@@ -35,7 +35,7 @@ final class HealthService: ObservableObject {
             hasRequestedAccess = true
             await refresh()
         } catch {
-            errorMessage = "Не удалось запросить доступ к Здоровью: \(error.localizedDescription)"
+            errorMessage = L10n.string("health.permission.error", error.localizedDescription)
         }
     }
 

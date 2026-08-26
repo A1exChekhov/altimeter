@@ -138,7 +138,7 @@ struct AltimeterScreen: View {
                 )
                 StatusChip(
                     icon: "gauge.with.dots.needle.50percent",
-                    text: state.pressureHPA.map { String(format: "%.0f гПа", $0) }
+                    text: state.pressureHPA.map { L10n.string("format.pressure", $0) }
                         ?? (state.hasBarometer ? "барометр" : "без барометра"),
                     color: .secondary
                 )
@@ -180,7 +180,10 @@ struct AltimeterScreen: View {
         let period = altitudeStatistics
         return InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeading(icon: "mountain.2.fill", title: "Показатели · \(chartRange.title)")
+                SectionHeading(
+                    icon: "mountain.2.fill",
+                    title: L10n.string("section.metrics", chartRange.title)
+                )
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
                     MetricCell(
                         title: "Скорость",
@@ -234,7 +237,7 @@ struct AltimeterScreen: View {
         let estimatedCalories = track.distanceMeters / 1_000 * 50 + track.ascentMeters * 0.1
         return InstrumentCard {
             VStack(alignment: .leading, spacing: 13) {
-                SectionHeading(icon: "figure.hiking", title: "Запись маршрута · GPX")
+                SectionHeading(icon: "figure.hiking", title: L10n.string("section.track"))
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 9) {
                     MetricCell(title: "Дистанция", value: AltimeterFormat.distance(track.distanceMeters), unit: "")
                     MetricCell(title: "В движении", value: AltimeterFormat.duration(track.movingTime), unit: "")
@@ -247,14 +250,18 @@ struct AltimeterScreen: View {
                     MetricCell(title: "Подъём", value: "\(Int(track.ascentMeters.rounded()))", unit: "м")
                     MetricCell(title: "Спуск", value: "\(Int(track.descentMeters.rounded()))", unit: "м")
                 }
-                Text("🔥 ≈\(Int(estimatedCalories.rounded())) ккал за трек · \(track.pointCount) точек")
+                Text(L10n.string(
+                    "track.calories.points",
+                    Int(estimatedCalories.rounded()),
+                    track.pointCount
+                ))
                     .font(.caption.weight(.regular))
                     .foregroundStyle(.secondary)
 
                 if model.vitals.heartRateSource != nil || model.vitals.oxygenSource != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if let source = model.vitals.heartRateSource {
-                            Label("Пульс: \(source)", systemImage: "waveform.path.ecg")
+                            Label(L10n.string("health.source.heart", source), systemImage: "waveform.path.ecg")
                         }
                         if let source = model.vitals.oxygenSource {
                             Label("SpO₂: \(source)", systemImage: "lungs.fill")
@@ -284,7 +291,10 @@ struct AltimeterScreen: View {
 
                 if let url = state.track.lastSavedURL {
                     ShareLink(item: url) {
-                        Label("Поделиться \(url.lastPathComponent)", systemImage: "square.and.arrow.up")
+                        Label(
+                            L10n.string("track.share.file", url.lastPathComponent),
+                            systemImage: "square.and.arrow.up"
+                        )
                     }
                 }
                 Button { showsTracks = true } label: {
@@ -310,7 +320,7 @@ struct AltimeterScreen: View {
         InstrumentCard {
             VStack(alignment: .leading, spacing: 13) {
                 HStack {
-                    SectionHeading(icon: "heart.text.square.fill", title: "Здоровье")
+                    SectionHeading(icon: "heart.text.square.fill", title: L10n.string("section.health"))
                     Spacer()
                     if model.health.isLoading { ProgressView().controlSize(.small) }
                 }
@@ -343,7 +353,11 @@ struct AltimeterScreen: View {
 
                 if model.health.hasRequestedAccess {
                     HStack {
-                        Text("Пульс: \(AltimeterFormat.freshness(model.vitals.heartRateDate)) · SpO₂: \(AltimeterFormat.freshness(model.vitals.oxygenDate))")
+                        Text(L10n.string(
+                            "health.freshness",
+                            AltimeterFormat.freshness(model.vitals.heartRateDate),
+                            AltimeterFormat.freshness(model.vitals.oxygenDate)
+                        ))
                             .font(.caption).foregroundStyle(.secondary)
                         Spacer()
                         Button("Обновить") { Task { await model.health.refresh() } }
@@ -376,7 +390,7 @@ struct AltimeterScreen: View {
     private var watchCard: some View {
         InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeading(icon: "applewatch", title: "Отправить на Apple Watch")
+                SectionHeading(icon: "applewatch", title: L10n.string("section.watch"))
                 Text("Создаёт уведомление с текущей высотой. Часы покажут его, когда iPhone заблокирован и зеркалирование уведомлений Altimeter Kailas включено в Watch.")
                     .font(.footnote).foregroundStyle(.secondary)
                 Button {
@@ -398,7 +412,7 @@ struct AltimeterScreen: View {
         if !fieldInformation.isEmpty {
             InstrumentCard {
                 VStack(alignment: .leading, spacing: 12) {
-                    SectionHeading(icon: "info.circle.fill", title: "Информация и напоминания")
+                    SectionHeading(icon: "info.circle.fill", title: L10n.string("section.information"))
                     ForEach(fieldInformation) { advice in
                         HStack(alignment: .top, spacing: 11) {
                             Image(systemName: advice.icon)

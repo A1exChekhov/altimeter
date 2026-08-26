@@ -9,6 +9,17 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Язык") {
+                    Picker("Язык приложения", selection: $model.appLanguage) {
+                        ForEach(AppLanguage.allCases) { language in
+                            Text(language.title).tag(language)
+                        }
+                    }
+                    Text("По умолчанию используется язык системы. Здесь можно выбрать язык только для приложения.")
+                        .font(.footnote.weight(.light))
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Оформление") {
                     Picker(
                         "Тема",
@@ -107,8 +118,8 @@ struct SettingsView: View {
                 }
 
                 Section("О приложении") {
-                    Text("Высота: барометр + GPS с медленным фильтром Калмана. Файлы GPX сохраняются в приложении «Файлы» → На iPhone → Altimeter Kailas → Tracks.")
-                    Text("Советы носят информационный характер и не являются медицинской рекомендацией.")
+                    Text(L10n.string("about.altitude"))
+                    Text("Только сведения о воде, погоде и качестве GPS.")
                         .foregroundStyle(.secondary)
                     LabeledContent("Автор") { Text("Aleksey Hermes") }
                     Link("errarium.ai@gmail.com", destination: URL(string: "mailto:errarium.ai@gmail.com")!)

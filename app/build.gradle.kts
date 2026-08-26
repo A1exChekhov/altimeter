@@ -17,8 +17,8 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 23
-        versionName = "1.6.3"
+        versionCode = 24
+        versionName = "1.6.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
@@ -100,4 +100,5 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:rules:1.6.1")
+    testImplementation("junit:junit:4.13.2")
 }

@@ -7,8 +7,8 @@ enum AltitudeUnit: String, CaseIterable, Identifiable {
     case feet
 
     var id: Self { self }
-    var symbol: String { self == .meters ? "м" : "фт" }
-    var speedSymbol: String { self == .meters ? "м/мин" : "фт/мин" }
+    var symbol: String { self == .meters ? L10n.string("unit.m") : L10n.string("unit.ft") }
+    var speedSymbol: String { self == .meters ? L10n.string("unit.mpm") : L10n.string("unit.ftpm") }
 
     func value(fromMeters meters: Double) -> Double {
         self == .meters ? meters : meters * 3.280_839_9
@@ -27,8 +27,8 @@ enum CalibrationMode: String, CaseIterable, Identifiable {
     var id: Self { self }
     var title: String {
         switch self {
-        case .automatic: "Авто"
-        case .manual: "Вручную"
+        case .automatic: L10n.string("calibration.auto")
+        case .manual: L10n.string("calibration.manual")
         case .qnh: "QNH"
         }
     }
@@ -49,10 +49,10 @@ enum TrackSamplingMode: String, CaseIterable, Identifiable {
     var id: Self { self }
     var title: String {
         switch self {
-        case .automatic: "Авто"
-        case .everySecond: "1 с"
-        case .everyTwoSeconds: "2 с"
-        case .everyFourSeconds: "4 с"
+        case .automatic: L10n.string("sampling.auto")
+        case .everySecond: L10n.string("sampling.1s")
+        case .everyTwoSeconds: L10n.string("sampling.2s")
+        case .everyFourSeconds: L10n.string("sampling.4s")
         }
     }
 }

@@ -9,6 +9,7 @@ struct AltimeterApp: App {
         WindowGroup {
             AltimeterRootView()
                 .environmentObject(model)
+                .environment(\.locale, model.appLanguage.locale)
                 .preferredColorScheme(model.darkTheme ? .dark : .light)
         }
     }

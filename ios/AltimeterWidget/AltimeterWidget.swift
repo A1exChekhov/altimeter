@@ -9,6 +9,14 @@ private enum ErrariumWidgetKind {
     static let expedition = "AltimeterStatusWidget"
 }
 
+private enum WidgetL10n {
+    static func string(_ key: String, _ arguments: CVarArg...) -> String {
+        let format = Bundle.main.localizedString(forKey: key, value: key, table: nil)
+        guard !arguments.isEmpty else { return format }
+        return String(format: format, locale: .current, arguments: arguments)
+    }
+}
+
 struct AltimeterWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: AltimeterWidgetSnapshot
@@ -59,8 +67,13 @@ private extension AltimeterWidgetSnapshot {
         return Int(value.rounded()).formatted(.number.grouping(.automatic))
     }
 
-    var altitudeUnitText: String { altitudeMeters == nil ? "" : (usesFeet ? "фт" : "м") }
-    var pressureText: String { pressureHPA.map { String(format: "%.1f гПа", $0) } ?? "— гПа" }
+    var altitudeUnitText: String {
+        altitudeMeters == nil ? "" : WidgetL10n.string(usesFeet ? "unit.ft" : "unit.m")
+    }
+    var pressureText: String {
+        pressureHPA.map { WidgetL10n.string("format.pressure", $0) }
+            ?? WidgetL10n.string("format.pressure.empty")
+    }
     var coordinateText: String {
         guard let latitude, let longitude else { return "—, —" }
         return String(format: "%.5f, %.5f", latitude, longitude)
@@ -71,8 +84,8 @@ private extension AltimeterWidgetSnapshot {
     }
     var distanceText: String {
         trackDistanceMeters >= 1_000
-            ? String(format: "%.1f км", trackDistanceMeters / 1_000)
-            : "\(Int(trackDistanceMeters.rounded())) м"
+            ? WidgetL10n.string("format.distance.km", trackDistanceMeters / 1_000)
+            : WidgetL10n.string("format.distance.m", Int(trackDistanceMeters.rounded()))
     }
     var heartText: String { heartRateBPM.map { Int($0.rounded()).formatted() } ?? "—" }
     var oxygenText: String { oxygenPercent.map { "\(Int($0.rounded()))%" } ?? "—" }
@@ -91,7 +104,7 @@ private extension AltimeterWidgetSnapshot {
         let totalMinutes = max(0, Int(trackMovingTime / 60))
         return totalMinutes >= 60
             ? String(format: "%d:%02d", totalMinutes / 60, totalMinutes % 60)
-            : "\(totalMinutes) мин"
+            : WidgetL10n.string("duration.minutes", totalMinutes)
     }
 }
 
@@ -195,8 +208,8 @@ struct TrackWidgetView: View {
                 InlineMetric(emoji: "◷", value: entry.snapshot.movingTimeText, size: 17)
             }
             HStack(spacing: 10) {
-                InlineMetric(emoji: "↑", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 15, color: .green)
-                InlineMetric(emoji: "↓", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 15, color: .cyan)
+                InlineMetric(emoji: "↑", value: WidgetL10n.string("format.distance.m", Int(entry.snapshot.trackAscentMeters.rounded())), size: 15, color: .green)
+                InlineMetric(emoji: "↓", value: WidgetL10n.string("format.distance.m", Int(entry.snapshot.trackDescentMeters.rounded())), size: 15, color: .cyan)
                 InlineMetric(emoji: "🔥", value: entry.snapshot.trackCaloriesText, size: 15, color: .orange)
             }
         }
@@ -219,8 +232,8 @@ struct ExpeditionWidgetView: View {
                 }
                 HStack(spacing: 11) {
                     InlineMetric(emoji: "↔", value: entry.snapshot.distanceText, size: 14)
-                    InlineMetric(emoji: "↑", value: "\(Int(entry.snapshot.trackAscentMeters.rounded())) м", size: 14, color: .green)
-                    InlineMetric(emoji: "↓", value: "\(Int(entry.snapshot.trackDescentMeters.rounded())) м", size: 14, color: .cyan)
+                    InlineMetric(emoji: "↑", value: WidgetL10n.string("format.distance.m", Int(entry.snapshot.trackAscentMeters.rounded())), size: 14, color: .green)
+                    InlineMetric(emoji: "↓", value: WidgetL10n.string("format.distance.m", Int(entry.snapshot.trackDescentMeters.rounded())), size: 14, color: .cyan)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import com.chelmodeev.altimeter.data.SettingsRepository
 import com.chelmodeev.altimeter.logic.FusionEngine
+import com.chelmodeev.altimeter.logic.AltitudeStabilizer
 import com.chelmodeev.altimeter.logic.TrackStats
 import com.chelmodeev.altimeter.model.ChartPoint
 import com.chelmodeev.altimeter.model.MslSource
@@ -70,6 +71,7 @@ class AltimeterCore private constructor(private val appContext: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val settingsRepo = SettingsRepository(appContext)
     private val fusion = FusionEngine()
+    private val altitudeStabilizer = AltitudeStabilizer()
     private val stats = TrackStats()
 
     private val _state = MutableStateFlow(CoreState())
@@ -99,6 +101,7 @@ class AltimeterCore private constructor(private val appContext: Context) {
         scope.launch {
             settingsRepo.flow.collect {
                 fusion.applySettings(it.calibrationMode, it.manualOffset, it.qnhHpa)
+                altitudeStabilizer.reset()
             }
         }
     }
@@ -124,7 +127,10 @@ class AltimeterCore private constructor(private val appContext: Context) {
         if (granted && refCount > 0) startLocation()
     }
 
-    fun calibrateManual(meters: Double): Double? = fusion.calibrateManual(meters)
+    fun calibrateManual(meters: Double): Double? {
+        altitudeStabilizer.reset()
+        return fusion.calibrateManual(meters)
+    }
 
     fun resetStats() = stats.reset()
 
@@ -175,7 +181,8 @@ class AltimeterCore private constructor(private val appContext: Context) {
 
     private fun tick(n: Long) {
         val now = System.currentTimeMillis()
-        val alt = fusion.displayAltitude()
+        val rawAltitude = fusion.displayAltitude()
+        val alt = rawAltitude?.let { altitudeStabilizer.update(it, now) }
         if (alt != null) stats.onAltitude(now, alt)
         if (n % 60L == 5L) samplePressure(alt)
 

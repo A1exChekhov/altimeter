@@ -56,6 +56,12 @@ final class AppModel: ObservableObject {
             engine.setTrackSamplingMode(trackSamplingMode)
         }
     }
+    @Published var appLanguage: AppLanguage {
+        didSet {
+            defaults.set(appLanguage.rawValue, forKey: Keys.appLanguage)
+            L10n.language = appLanguage
+        }
+    }
 
     private let defaults = UserDefaults.standard
     private var subscriptions: Set<AnyCancellable> = []
@@ -74,6 +80,8 @@ final class AppModel: ObservableObject {
         trackSamplingMode = TrackSamplingMode(
             rawValue: store.string(forKey: Keys.trackSamplingMode) ?? ""
         ) ?? .everySecond
+        appLanguage = AppLanguage(rawValue: store.string(forKey: Keys.appLanguage) ?? "") ?? .system
+        L10n.language = appLanguage
 
         engine.objectWillChange
             .sink { [weak self] _ in
@@ -198,5 +206,6 @@ final class AppModel: ObservableObject {
         static let darkTheme = "darkTheme"
         static let autoTrackEnabled = "autoTrackEnabled"
         static let trackSamplingMode = "trackSamplingMode"
+        static let appLanguage = "appLanguage"
     }
 }

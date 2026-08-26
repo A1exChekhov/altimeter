@@ -1,0 +1,6 @@
+"CFBundleDisplayName" = "Altimeter Kailas";
+"NSHealthShareUsageDescription" = "Altimeter Kailas reads heart rate, SpO₂, steps and active calories from Health to display readings during a track.";
+"NSHealthUpdateUsageDescription" = "Altimeter Kailas does not write Health data; access is used only to read and display readings.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Background location is required to start automatically and record GPX tracks while the screen is locked.";
+"NSLocationWhenInUseUsageDescription" = "Location is required for absolute GPS altitude, the map and track recording.";
+"NSMotionUsageDescription" = "Motion and barometer data are used to detect walking, start track recording automatically and measure altitude changes accurately.";

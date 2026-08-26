@@ -2,6 +2,7 @@ package com.chelmodeev.altimeter
 
 import android.Manifest
 import android.content.Intent
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -21,8 +22,10 @@ import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.chelmodeev.altimeter.health.HealthReader
+import com.chelmodeev.altimeter.localization.AppLanguage
 import com.chelmodeev.altimeter.track.TrackingService
 import com.chelmodeev.altimeter.track.AutoTrackService
+import com.chelmodeev.altimeter.util.Fmt
 import com.chelmodeev.altimeter.ui.AltimeterScreen
 import com.chelmodeev.altimeter.ui.ScreenActions
 import com.chelmodeev.altimeter.ui.theme.AltimeterTheme
@@ -35,6 +38,10 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
+    }
 
     private val viewModel: MainViewModel by viewModels()
     private var pendingAutoTrackEnable = false
@@ -102,6 +109,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        AppLanguage.syncProcessLocale(this)
 
         setContent {
             val state by viewModel.ui.collectAsStateWithLifecycle()
@@ -128,6 +136,7 @@ class MainActivity : ComponentActivity() {
                         onToggleDarkTheme = viewModel::setDarkTheme,
                         onToggleAutoTrack = ::setAutoTrackEnabled,
                         onSetTrackSampling = viewModel::setTrackSampling,
+                        onSetLanguage = { AppLanguage.set(this, it) },
                         onResetStats = viewModel::resetStats,
                         onStartTrack = ::startTrackWithPermission,
                         onStopTrack = { TrackingService.stop(this) },
@@ -309,15 +318,13 @@ class MainActivity : ComponentActivity() {
         val latitude = state.latitude ?: return
         val longitude = state.longitude ?: return
         val coordinates = String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
-        val altitude = state.altitude?.let { String.format(Locale.getDefault(), "%.0f м", it) } ?: "—"
-        val pressure = state.pressureHpa?.let {
-            String.format(Locale.getDefault(), "%.1f гПа", it)
-        } ?: "—"
+        val altitude = state.altitude?.let { Fmt.altitude(this, it, state.unit) } ?: "—"
+        val pressure = state.pressureHpa?.let { Fmt.pressure(this, it) } ?: "—"
         val time = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date())
         val mapLink = "https://maps.google.com/?q=$latitude,$longitude"
         val message = buildString {
             appendLine("📍 $coordinates")
-            appendLine("Высота: $altitude · Давление: $pressure")
+            appendLine(getString(R.string.location_share_measurements, altitude, pressure))
             appendLine(time)
             appendLine(mapLink)
             appendLine()

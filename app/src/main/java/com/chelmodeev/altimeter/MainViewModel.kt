@@ -476,7 +476,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     onFailure = { error ->
                         state.copy(
                             trackImporting = false,
-                            trackImportError = error.message ?: "Ошибка импорта GPX",
+                            trackImportError = error.message
+                                ?: getApplication<Application>().getString(R.string.error_gpx_import),
                         )
                     },
                 )
@@ -586,10 +587,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         try {
             app.contentResolver.openInputStream(uri)?.use { input ->
                 partial.outputStream().buffered().use { output -> input.copyTo(output) }
-            } ?: error("Не удалось открыть GPX")
-            check(partial.renameTo(destination)) { "Не удалось сохранить GPX" }
+            } ?: error(app.getString(R.string.error_gpx_open))
+            check(partial.renameTo(destination)) { app.getString(R.string.error_gpx_save) }
             require(loadGpxTrack(destination.absolutePath).isNotEmpty()) {
-                "В GPX нет координат трека"
+                app.getString(R.string.error_gpx_no_coordinates)
             }
             return destination
         } catch (error: Throwable) {
@@ -609,7 +610,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update {
                 it.copy(
                     offlineMaps = result.getOrElse { error ->
-                        offlineMapRepository.snapshot(error = error.message ?: "Ошибка импорта карты")
+                        offlineMapRepository.snapshot(
+                            error = error.message
+                                ?: getApplication<Application>().getString(R.string.error_map_import)
+                        )
                     }
                 )
             }
@@ -626,7 +630,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _ui.update {
                 it.copy(
                     offlineMaps = result.getOrElse { error ->
-                        offlineMapRepository.snapshot(error = error.message ?: "Ошибка загрузки карты")
+                        offlineMapRepository.snapshot(
+                            error = error.message
+                                ?: getApplication<Application>().getString(R.string.error_map_download)
+                        )
                     }
                 )
             }

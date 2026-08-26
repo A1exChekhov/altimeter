@@ -12,6 +12,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
     private let fusion = FusionEngine()
+    private let altitudeStabilizer = AltitudeStabilizer()
     private let statistics = TrackStatistics()
     private let recorder = GPXRecorder()
     private let motionActivity = CMMotionActivityManager()
@@ -19,6 +20,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
     private let placeResolver = PlaceResolver()
 
     private var ticker: Timer?
+    private var lastTickAt = Date.distantPast
     private var pressureSamples: [(Date, Double)] = []
     private var lastPressureSampleAt = Date.distantPast
     private var lastPreciseFixAt = Date.distantPast
@@ -56,7 +58,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
         ticker = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
-        tick()
+        tick(force: true)
     }
 
     func stop() {
@@ -110,12 +112,14 @@ final class AltimeterEngine: NSObject, ObservableObject {
 
     func applySettings(mode: CalibrationMode, manualOffset: Double?, qnhHPA: Double) {
         fusion.apply(mode: mode, manualOffset: manualOffset, qnhHPA: qnhHPA)
-        tick()
+        altitudeStabilizer.reset()
+        tick(force: true)
     }
 
     func calibrateManually(meters: Double) -> Double? {
         let offset = fusion.calibrateManually(knownAltitude: meters)
-        tick()
+        altitudeStabilizer.reset()
+        tick(force: true)
         return offset
     }
 
@@ -195,14 +199,21 @@ final class AltimeterEngine: NSObject, ObservableObject {
         altimeter.startRelativeAltitudeUpdates(to: .main) { [weak self] data, _ in
             guard let pressure = data?.pressure.doubleValue else { return }
             Task { @MainActor in
-                self?.fusion.onPressure(pressure * 10.0) // kPa -> hPa
+                self?.fusion.onPressure(
+                    pressure * 10.0,
+                    timestamp: data?.timestamp ?? ProcessInfo.processInfo.systemUptime
+                ) // kPa -> hPa
                 self?.tick()
             }
         }
     }
 
-    private func tick(at date: Date = Date()) {
-        let altitude = fusion.displayedAltitude
+    private func tick(at date: Date = Date(), force: Bool = false) {
+        guard force || date.timeIntervalSince(lastTickAt) >= 0.85 else { return }
+        lastTickAt = date
+        let altitude = fusion.displayedAltitude.flatMap {
+            altitudeStabilizer.update(rawAltitude: $0, at: date)
+        }
         if let altitude { statistics.add(date: date, altitude: altitude) }
         sampleSeaLevelPressureIfNeeded(at: date, altitude: altitude)
 
@@ -233,7 +244,7 @@ final class AltimeterEngine: NSObject, ObservableObject {
         state.coordinate = location.coordinate
         state.horizontalAccuracy = location.horizontalAccuracy
         state.verticalAccuracy = verticalAccuracy
-        tick(at: location.timestamp)
+        tick()
 
         if resolvePlace {
             Task { @MainActor [weak self] in
@@ -311,7 +322,10 @@ final class AltimeterEngine: NSObject, ObservableObject {
         }
         startRecording(automatic: true)
         resetAutoCandidate()
-        notifyAutoTrack(title: "Трек начат автоматически", body: "Подтверждены 90 секунд и 120 м движения.")
+        notifyAutoTrack(
+            title: L10n.string("notification.autotrack.title"),
+            body: L10n.string("notification.autotrack.body")
+        )
     }
 
     private func resetAutoCandidate() {

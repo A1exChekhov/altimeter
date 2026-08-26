@@ -12,14 +12,14 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
 
     func sendAltitude(_ state: AltimeterState, unit: AltitudeUnit) async {
         guard let altitude = state.altitude else {
-            statusMessage = "Высота ещё не определена."
+            statusMessage = L10n.string("notification.altitude.unavailable")
             return
         }
         do {
             let center = UNUserNotificationCenter.current()
             let granted = try await center.requestAuthorization(options: [.alert, .sound])
             guard granted else {
-                statusMessage = "Разрешите уведомления в настройках iPhone."
+                statusMessage = L10n.string("notification.permission.required")
                 return
             }
 
@@ -28,8 +28,10 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
             content.title = "⛰ \(Int(shown.rounded())) \(unit.symbol)"
             var details: [String] = []
             if let placeName = state.placeName { details.append(placeName) }
-            if let pressure = state.pressureHPA { details.append(String(format: "%.1f гПа", pressure)) }
-            content.body = details.isEmpty ? "Высота над уровнем моря" : details.joined(separator: " · ")
+            if let pressure = state.pressureHPA { details.append(L10n.string("format.pressure", pressure)) }
+            content.body = details.isEmpty
+                ? L10n.string("altitude.aboveSeaLevel")
+                : details.joined(separator: " · ")
             content.sound = .default
             content.threadIdentifier = "altimeter"
 
@@ -39,9 +41,9 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 trigger: UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
             )
             try await center.add(request)
-            statusMessage = "Уведомление создано. Apple Watch покажет его по обычным правилам зеркалирования."
+            statusMessage = L10n.string("notification.sent")
         } catch {
-            statusMessage = "Не удалось отправить уведомление: \(error.localizedDescription)"
+            statusMessage = L10n.string("notification.error", error.localizedDescription)
         }
     }
 
@@ -52,4 +54,3 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
         [.banner, .sound]
     }
 }
-

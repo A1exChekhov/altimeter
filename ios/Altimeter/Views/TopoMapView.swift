@@ -110,7 +110,7 @@ struct MapCardView: View {
         InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    SectionHeading(icon: "map.fill", title: "Карта")
+                    SectionHeading(icon: "map.fill", title: L10n.string("Карта"))
                     Spacer()
                     Picker("Слой", selection: $topographic) {
                         Text("Топо").tag(true)

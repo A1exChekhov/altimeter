@@ -1,6 +1,8 @@
 package com.chelmodeev.altimeter.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,12 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.chelmodeev.altimeter.R
+import com.chelmodeev.altimeter.localization.AppLanguage
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.UiState
@@ -50,7 +54,7 @@ import com.chelmodeev.altimeter.model.TrackSamplingMode
 import com.chelmodeev.altimeter.util.Fmt
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit) {
     ModalBottomSheet(
@@ -66,6 +70,8 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
         var qnhText by remember {
             mutableStateOf(((state.qnhHpa * 10).roundToInt() / 10.0).toString())
         }
+        val context = LocalContext.current
+        var selectedLanguage by remember { mutableStateOf(AppLanguage.currentTag(context)) }
 
         Column(
             Modifier
@@ -80,6 +86,43 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(Modifier.height(16.dp))
+
+            Text(
+                text = stringResource(R.string.settings_language),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            val languages = listOf(
+                AppLanguage.SYSTEM to R.string.language_system,
+                AppLanguage.RUSSIAN to R.string.language_russian,
+                AppLanguage.ENGLISH to R.string.language_english,
+                AppLanguage.CHINESE_SIMPLIFIED to R.string.language_chinese_simplified,
+                AppLanguage.FRENCH to R.string.language_french,
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                languages.forEach { (tag, label) ->
+                    FilterChip(
+                        selected = selectedLanguage == tag,
+                        onClick = {
+                            selectedLanguage = tag
+                            actions.onSetLanguage(tag)
+                        },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.language_hint),
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(18.dp))
 
             Text(
                 text = stringResource(R.string.settings_appearance),
@@ -358,7 +401,7 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                         Column(Modifier.weight(1f)) {
                             Text(item.title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                             Text(
-                                text = "${item.description} · ${formatMapSize(item.sizeBytes + item.terrainSizeBytes)}",
+                                text = "${item.description} · ${formatMapSize(context, item.sizeBytes + item.terrainSizeBytes)}",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 10.sp,
                                 lineHeight = 13.sp,
@@ -396,7 +439,7 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
                             Text(region.title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                             Text(
                                 text = buildString {
-                                    append(formatMapSize(region.sizeBytes))
+                                    append(formatMapSize(context, region.sizeBytes))
                                     region.sha256?.let { append(" · SHA-256 ").append(it.take(8)) }
                                 },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -446,11 +489,8 @@ fun SettingsSheet(state: UiState, actions: ScreenActions, onDismiss: () -> Unit)
     }
 }
 
-private fun formatMapSize(bytes: Long): String = when {
-    bytes >= 1024L * 1024L * 1024L -> "%.1f ГБ".format(bytes / (1024.0 * 1024.0 * 1024.0))
-    bytes >= 1024L * 1024L -> "%.1f МБ".format(bytes / (1024.0 * 1024.0))
-    else -> "%.0f КБ".format(bytes / 1024.0)
-}
+private fun formatMapSize(context: android.content.Context, bytes: Long): String =
+    android.text.format.Formatter.formatShortFileSize(context, bytes)
 
 @Composable
 private fun SettingSwitch(label: String, checked: Boolean, onChecked: (Boolean) -> Unit) {

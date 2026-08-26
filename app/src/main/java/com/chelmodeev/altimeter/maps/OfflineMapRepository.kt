@@ -3,6 +3,7 @@ package com.chelmodeev.altimeter.maps
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.model.OfflineMapRegion
 import com.chelmodeev.altimeter.model.OfflineMapPackage
 import com.chelmodeev.altimeter.model.OfflineMapsState
@@ -56,7 +57,7 @@ class OfflineMapRepository(private val context: Context) {
 
     suspend fun download(packageId: String): OfflineMapsState = withContext(Dispatchers.IO) {
         val item = loadCatalog().firstOrNull { it.id == packageId }
-            ?: error("Регион отсутствует в каталоге")
+            ?: error(context.getString(R.string.error_map_region_missing))
         directory.mkdirs()
         val destination = File(directory, item.fileName)
         downloadFile(item.downloadUrl, item.sha256, destination)
@@ -97,9 +98,9 @@ class OfflineMapRepository(private val context: Context) {
                         output.write(buffer, 0, count)
                     }
                 }
-            } ?: error("Не удалось открыть выбранный файл")
+            } ?: error(context.getString(R.string.error_map_open_file))
             validatePmTiles(partial)
-            check(partial.renameTo(destination)) { "Не удалось сохранить карту" }
+            check(partial.renameTo(destination)) { context.getString(R.string.error_map_save) }
             val sha256 = digest.digest().joinToString("") { "%02x".format(it) }
             sidecar(destination).writeText(sha256)
             preferences.edit().putString(KEY_ACTIVE, destination.name).apply()
@@ -114,7 +115,7 @@ class OfflineMapRepository(private val context: Context) {
         if (id == null) {
             preferences.edit().remove(KEY_ACTIVE).apply()
         } else {
-            require(File(directory, id).isFile) { "Карта не найдена" }
+            require(File(directory, id).isFile) { context.getString(R.string.error_map_not_found) }
             preferences.edit().putString(KEY_ACTIVE, id).apply()
         }
         return snapshot()
@@ -122,12 +123,16 @@ class OfflineMapRepository(private val context: Context) {
 
     fun delete(id: String): OfflineMapsState {
         val file = File(directory, id)
-        require(file.parentFile?.canonicalFile == directory.canonicalFile) { "Некорректное имя карты" }
+        require(file.parentFile?.canonicalFile == directory.canonicalFile) {
+            context.getString(R.string.error_map_invalid_name)
+        }
         if (file.isFile) {
-            check(file.delete()) { "Не удалось удалить карту" }
+            check(file.delete()) { context.getString(R.string.error_map_delete) }
             sidecar(file).delete()
             terrainFile(file).let { terrain ->
-                if (terrain.isFile) check(terrain.delete()) { "Не удалось удалить рельеф" }
+                if (terrain.isFile) check(terrain.delete()) {
+                    context.getString(R.string.error_map_delete_terrain)
+                }
                 sidecar(terrain).delete()
             }
         }
@@ -145,14 +150,16 @@ class OfflineMapRepository(private val context: Context) {
     }.getOrNull().orEmpty().ifBlank { "region.pmtiles" }
 
     private fun validatePmTiles(file: File) {
-        require(file.length() >= 127) { "Файл карты пуст или повреждён" }
+        require(file.length() >= 127) { context.getString(R.string.error_map_invalid_file) }
         val header = ByteArray(8)
         FileInputStream(file).use { input ->
-            require(input.read(header) == header.size) { "Не удалось прочитать заголовок карты" }
+            require(input.read(header) == header.size) {
+                context.getString(R.string.error_map_read_header)
+            }
         }
         val magic = header.copyOfRange(0, 7).toString(Charsets.US_ASCII)
         require(magic == "PMTiles" && header[7].toInt() == 3) {
-            "Нужен файл PMTiles версии 3"
+            context.getString(R.string.error_map_pmtiles_v3)
         }
     }
 
@@ -192,10 +199,12 @@ class OfflineMapRepository(private val context: Context) {
             validatePmTiles(partial)
             val actualSha = digest.digest().joinToString("") { "%02x".format(it) }
             require(actualSha.equals(expectedSha, ignoreCase = true)) {
-                "Контрольная сумма карты не совпала"
+                context.getString(R.string.error_map_checksum)
             }
-            if (destination.exists()) check(destination.delete()) { "Не удалось обновить карту" }
-            check(partial.renameTo(destination)) { "Не удалось сохранить карту" }
+            if (destination.exists()) check(destination.delete()) {
+                context.getString(R.string.error_map_update)
+            }
+            check(partial.renameTo(destination)) { context.getString(R.string.error_map_save) }
             sidecar(destination).writeText(actualSha)
         } catch (error: Throwable) {
             partial.delete()

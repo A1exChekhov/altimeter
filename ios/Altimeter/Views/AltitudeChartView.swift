@@ -22,12 +22,12 @@ enum ChartTimeRange: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .minutes15: "15 мин"
-        case .hour: "1 ч"
-        case .hours3: "3 ч"
-        case .hours6: "6 ч"
-        case .hours12: "12 ч"
-        case .today: "Сегодня"
+        case .minutes15: L10n.string("chart.range.15m")
+        case .hour: L10n.string("chart.range.1h")
+        case .hours3: L10n.string("chart.range.3h")
+        case .hours6: L10n.string("chart.range.6h")
+        case .hours12: L10n.string("chart.range.12h")
+        case .today: L10n.string("chart.range.today")
         }
     }
 
@@ -89,7 +89,7 @@ struct AltitudeChartView: View {
 
         InstrumentCard {
             VStack(alignment: .leading, spacing: 12) {
-                SectionHeading(icon: "chart.xyaxis.line", title: "Динамика показателей")
+                SectionHeading(icon: "chart.xyaxis.line", title: L10n.string("chart.trends"))
 
                 ScrollView(.horizontal) {
                     HStack(spacing: 6) {
@@ -127,7 +127,7 @@ struct AltitudeChartView: View {
         [
             MetricLine(
                 id: .altitude,
-                title: "Высота",
+                title: L10n.string("metric.altitude"),
                 unit: " \(unit.symbol)",
                 color: altitudeColor,
                 points: points.map {
@@ -137,8 +137,8 @@ struct AltitudeChartView: View {
             ),
             MetricLine(
                 id: .heart,
-                title: "Пульс",
-                unit: " уд/мин",
+                title: L10n.string("metric.heart"),
+                unit: " \(L10n.string("unit.bpm"))",
                 color: heartColor,
                 points: vitals.heartRateSeries,
                 decimals: 0
@@ -153,7 +153,7 @@ struct AltitudeChartView: View {
             ),
             MetricLine(
                 id: .steps,
-                title: "Шаги",
+                title: L10n.string("metric.steps"),
                 unit: "",
                 color: stepsColor,
                 points: vitals.stepsSeries,

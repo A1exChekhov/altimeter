@@ -12,6 +12,7 @@ final class FusionEngine {
     private var standardBarometricAltitude: Double?
     private var pressureWindow: [Double] = []
     private var smoothedPressureHPA: Double?
+    private var lastPressureTimestamp: TimeInterval?
 
     private var automaticOffset: Double?
     private var automaticOffsetVariance = 1_600.0
@@ -20,12 +21,18 @@ final class FusionEngine {
     private var gpsAltitude: Double?
     private var gpsVariance = 1_600.0
 
-    func onPressure(_ hpa: Double) {
+    func onPressure(
+        _ hpa: Double,
+        timestamp: TimeInterval = ProcessInfo.processInfo.systemUptime
+    ) {
         guard hpa.isFinite, hpa > 0 else { return }
         pressureWindow.append(hpa)
         if pressureWindow.count > 9 { pressureWindow.removeFirst() }
         let median = Self.median(pressureWindow)
-        let filtered = smoothedPressureHPA.map { $0 + 0.08 * (median - $0) } ?? median
+        let dt = min(max(timestamp - (lastPressureTimestamp ?? timestamp - 0.2), 0.02), 1.5)
+        lastPressureTimestamp = timestamp
+        let alpha = 1 - exp(-dt / 2.2)
+        let filtered = smoothedPressureHPA.map { $0 + alpha * (median - $0) } ?? median
         smoothedPressureHPA = filtered
         pressureHPA = filtered
         let altitude = Self.standardAltitude(pressureHPA: filtered, seaLevelHPA: 1013.25)

@@ -79,13 +79,19 @@ struct SavedTracksView: View {
             HStack(spacing: 16) {
                 Label(AltimeterFormat.duration(track.duration), systemImage: "clock")
                 Label(AltimeterFormat.distance(track.distanceMeters), systemImage: "point.topleft.down.to.point.bottomright.curvepath")
-                Label("+\(Int(track.ascentMeters.rounded())) м", systemImage: "arrow.up.right")
+                Label(
+                    L10n.string("track.ascent", Int(track.ascentMeters.rounded())),
+                    systemImage: "arrow.up.right"
+                )
             }
             .font(.caption)
             .foregroundStyle(.secondary)
 
             HStack {
-                Label("\(track.pointCount) точек", systemImage: "mappin.and.ellipse")
+                Label(
+                    L10n.string("track.points", track.pointCount),
+                    systemImage: "mappin.and.ellipse"
+                )
                     .font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 ShareLink(item: model.engine.fileURL(for: track)) {

@@ -73,6 +73,13 @@
     <string name="we_error">Wear Engine: ошибка %1$s. Проверьте: установлен и авторизован Huawei Health; приложение зарегистрировано в AppGallery Connect с доступом Wear Engine; в gradle.properties указаны пакет и отпечаток приложения на часах.</string>
 
     <string name="settings">Настройки</string>
+    <string name="settings_language">Язык</string>
+    <string name="language_system">Как в системе</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese_simplified">简体中文</string>
+    <string name="language_french">Français</string>
+    <string name="language_hint">По умолчанию используется язык системы. Здесь можно выбрать язык только для приложения.</string>
     <string name="settings_appearance">Оформление</string>
     <string name="theme_light">Светлая</string>
     <string name="theme_dark">Тёмная</string>
@@ -146,6 +153,9 @@
     <string name="location_share">Поделиться</string>
     <string name="location_share_photo">Добавить фото</string>
     <string name="location_share_title">Поделиться местоположением</string>
+    <string name="location_share_measurements">Высота: %1$s · Давление: %2$s</string>
+    <string name="track_speed_format">%.1f км/ч</string>
+    <string name="duration_minutes">%1$d мин</string>
     <string name="track_import">Импорт GPX с телефона или Диска</string>
     <string name="track_importing">Импортирую GPX…</string>
     <string name="track_view_on_map">Показать трек на карте</string>
@@ -239,6 +249,8 @@
     <string name="widget_health_waiting">откройте приложение</string>
     <string name="widget_updated">обновлено %1$s</string>
     <string name="widget_open_to_update">нажмите для обновления</string>
+    <string name="widget_pressure_missing">давление · нет</string>
+    <string name="widget_coordinates_missing">координаты · нет</string>
     <string name="widget_label_heart">ПУЛЬС</string>
     <string name="widget_label_oxygen">SpO₂</string>
     <string name="widget_label_steps">ШАГИ</string>
@@ -267,4 +279,6 @@
     <string name="cd_center_map">Центрировать на мне</string>
     <string name="cd_north_map">Север наверху</string>
     <string name="cd_map_layer">Слой карты</string>
+    <string name="error_gpx_import">Ошибка импорта GPX</string><string name="error_gpx_open">Не удалось открыть GPX</string><string name="error_gpx_save">Не удалось сохранить GPX</string><string name="error_gpx_no_coordinates">В GPX нет координат трека</string>
+    <string name="error_map_import">Ошибка импорта карты</string><string name="error_map_download">Ошибка загрузки карты</string><string name="error_map_region_missing">Регион отсутствует в каталоге</string><string name="error_map_open_file">Не удалось открыть выбранный файл</string><string name="error_map_save">Не удалось сохранить карту</string><string name="error_map_not_found">Карта не найдена</string><string name="error_map_invalid_name">Некорректное имя карты</string><string name="error_map_delete">Не удалось удалить карту</string><string name="error_map_delete_terrain">Не удалось удалить рельеф</string><string name="error_map_invalid_file">Файл карты пуст или повреждён</string><string name="error_map_read_header">Не удалось прочитать заголовок карты</string><string name="error_map_pmtiles_v3">Нужен файл PMTiles версии 3</string><string name="error_map_checksum">Контрольная сумма карты не совпала</string><string name="error_map_update">Не удалось обновить карту</string>
 </resources>

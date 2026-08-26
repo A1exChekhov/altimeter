@@ -1,0 +1,15 @@
+"unit.m" = "m";
+"unit.ft" = "pi";
+"format.pressure" = "%.1f hPa";
+"format.pressure.empty" = "— hPa";
+"format.distance.km" = "%.1f km";
+"format.distance.m" = "%d m";
+"duration.minutes" = "%d min";
+"Высота" = "Altitude";
+"Высота, давление и координаты." = "Altitude, pression et coordonnées.";
+"Здоровье" = "Santé";
+"Пульс, SpO₂, шаги и активные калории." = "Fréquence cardiaque, SpO₂, pas et calories actives.";
+"Поход" = "Randonnée";
+"Движение, путь, подъём, спуск и калории трека." = "Mouvement, distance, montée, descente et calories du parcours.";
+"Экспедиция" = "Expédition";
+"Высота, здоровье и текущий маршрут." = "Altitude, santé et parcours actuel.";

@@ -27,12 +27,11 @@ internal data class WidgetContent(
         fun create(context: Context, data: AltimeterWidgetSnapshot): WidgetContent {
             val altitude = data.altitudeM?.let { Fmt.altitudeValue(it, data.unit) } ?: "—"
             val altitudeUnit = data.altitudeM?.let { Fmt.unitLabel(context, data.unit) } ?: ""
-            val pressure = data.pressureHpa?.let {
-                String.format(Locale.getDefault(), "%.1f гПа", it)
-            } ?: "давление · нет"
+            val pressure = data.pressureHpa?.let { Fmt.pressure(context, it) }
+                ?: context.getString(R.string.widget_pressure_missing)
             val coordinates = if (data.latitude != null && data.longitude != null) {
                 String.format(Locale.US, "%.5f, %.5f", data.latitude, data.longitude)
-            } else "координаты · нет"
+            } else context.getString(R.string.widget_coordinates_missing)
             val distance = Fmt.distance(context, data.trackDistanceM)
             val track = when {
                 data.trackRecording -> context.getString(R.string.widget_track_recording, distance)
@@ -50,9 +49,7 @@ internal data class WidgetContent(
             val calories = data.activeCaloriesToday?.roundToInt()?.toString()
                 ?: estimatedCalories?.let { "≈$it" }
                 ?: "—"
-            val moving = formatDuration(data.trackMovingTimeMs)
-            val ascent = data.trackAscentM.roundToInt()
-            val descent = data.trackDescentM.roundToInt()
+            val moving = formatDuration(context, data.trackMovingTimeMs)
             return WidgetContent(
                 altitude = altitude,
                 altitudeUnit = altitudeUnit,
@@ -62,8 +59,8 @@ internal data class WidgetContent(
                 track = track,
                 trackPrimary = "↔ $distance",
                 moving = "◷ $moving",
-                ascent = "↑ $ascent м",
-                descent = "↓ $descent м",
+                ascent = "↑ ${Fmt.altitude(context, data.trackAscentM, data.unit)}",
+                descent = "↓ ${Fmt.altitude(context, data.trackDescentM, data.unit)}",
                 heart = heart,
                 oxygen = oxygen,
                 steps = steps,
@@ -71,12 +68,12 @@ internal data class WidgetContent(
             )
         }
 
-        private fun formatDuration(ms: Long): String {
+        private fun formatDuration(context: Context, ms: Long): String {
             val totalMinutes = (ms / 60_000L).coerceAtLeast(0L)
             val hours = totalMinutes / 60
             val minutes = totalMinutes % 60
             return if (hours > 0) String.format(Locale.getDefault(), "%d:%02d", hours, minutes)
-            else "$minutes мин"
+            else context.getString(R.string.duration_minutes, minutes)
         }
     }
 }

@@ -18,23 +18,25 @@ enum AltimeterFormat {
     }
 
     static func distance(_ meters: Double) -> String {
-        meters >= 1_000 ? String(format: "%.2f км", meters / 1_000) : "\(Int(meters.rounded())) м"
+        meters >= 1_000
+            ? L10n.string("format.distance.km", meters / 1_000)
+            : L10n.string("format.distance.m", Int(meters.rounded()))
     }
 
     static func freshness(_ date: Date?) -> String {
-        guard let date else { return "нет данных" }
+        guard let date else { return L10n.string("freshness.none") }
         let interval = max(0, Date().timeIntervalSince(date))
-        if interval < 60 { return "только что" }
-        if interval < 3_600 { return "\(Int(interval / 60)) мин назад" }
-        return "\(Int(interval / 3_600)) ч назад"
+        if interval < 60 { return L10n.string("freshness.now") }
+        if interval < 3_600 { return L10n.string("freshness.minutes", Int(interval / 60)) }
+        return L10n.string("freshness.hours", Int(interval / 3_600))
     }
 
     static func duration(_ interval: TimeInterval) -> String {
         let seconds = max(0, Int(interval.rounded()))
         let hours = seconds / 3_600
         let minutes = (seconds % 3_600) / 60
-        if hours > 0 { return String(format: "%d:%02d ч", hours, minutes) }
-        return "\(minutes) мин"
+        if hours > 0 { return L10n.string("duration.hours", hours, minutes) }
+        return L10n.string("duration.minutes", minutes)
     }
 
     static func altitudeColor(_ meters: Double?) -> Color {
@@ -61,47 +63,47 @@ extension Advice {
 
     var title: String {
         switch kind {
-        case .pressureFallingFast: "Давление быстро падает"
-        case .pressureFalling: "Давление падает"
-        case .pressureRising: "Давление растёт"
-        case .altitudeAcclimatize: "Нужна акклиматизация"
-        case .altitudeHigh: "Большая высота"
-        case .altitudeVeryHigh: "Очень большая высота"
-        case .fastAscent: "Быстрый набор"
-        case .hydration: "Пейте регулярно"
-        case .oxygenLow: "Снижен SpO₂"
-        case .oxygenVeryLow: "Низкий SpO₂"
-        case .heartRateHigh: "Высокий пульс"
-        case .gpsWeak: "Слабый GPS"
+        case .pressureFallingFast: L10n.string("advice.pressure.fast.title")
+        case .pressureFalling: L10n.string("advice.pressure.falling.title")
+        case .pressureRising: L10n.string("advice.pressure.rising.title")
+        case .altitudeAcclimatize: L10n.string("advice.altitude.acclimatize.title")
+        case .altitudeHigh: L10n.string("advice.altitude.high.title")
+        case .altitudeVeryHigh: L10n.string("advice.altitude.veryHigh.title")
+        case .fastAscent: L10n.string("advice.ascent.fast.title")
+        case .hydration: L10n.string("advice.hydration.title")
+        case .oxygenLow: L10n.string("advice.oxygen.low.title")
+        case .oxygenVeryLow: L10n.string("advice.oxygen.veryLow.title")
+        case .heartRateHigh: L10n.string("advice.heart.high.title")
+        case .gpsWeak: L10n.string("advice.gps.weak.title")
         }
     }
 
     var message: String {
         switch kind {
         case .pressureFallingFast:
-            "−\(value ?? "?") гПа/ч: возможна гроза и быстрое ухудшение погоды."
+            L10n.string("advice.pressure.fast.message", value ?? "?")
         case .pressureFalling:
-            "−\(value ?? "?") гПа/ч: погода может ухудшиться."
+            L10n.string("advice.pressure.falling.message", value ?? "?")
         case .pressureRising:
-            "Погода, вероятно, улучшается."
+            L10n.string("advice.pressure.rising.message")
         case .altitudeAcclimatize:
-            "Выше 2500 м возможна горная болезнь — набирайте высоту постепенно."
+            L10n.string("advice.altitude.acclimatize.message")
         case .altitudeHigh:
-            "Ограничьте суточный набор высоты сна до 300–500 м."
+            L10n.string("advice.altitude.high.message")
         case .altitudeVeryHigh:
-            "При головной боли, тошноте или головокружении немедленно спускайтесь."
+            L10n.string("advice.altitude.veryHigh.message")
         case .fastAscent:
-            "Снизьте темп — это поможет акклиматизации."
+            L10n.string("advice.ascent.fast.message")
         case .hydration:
-            "На высоте организм быстрее теряет воду."
+            L10n.string("advice.hydration.message")
         case .oxygenLow:
-            "SpO₂ \(value ?? "?")%: отдохните; при плохом самочувствии спускайтесь."
+            L10n.string("advice.oxygen.low.message", value ?? "?")
         case .oxygenVeryLow:
-            "SpO₂ \(value ?? "?")%: остановитесь, согрейтесь; при ухудшении ищите помощь."
+            L10n.string("advice.oxygen.veryLow.message", value ?? "?")
         case .heartRateHigh:
-            "Пульс \(value ?? "?") уд/мин на высоте — сделайте паузу."
+            L10n.string("advice.heart.high.message", value ?? "?")
         case .gpsWeak:
-            "Точность геопозиции и записанного трека снижена."
+            L10n.string("advice.gps.weak.message")
         }
     }
 

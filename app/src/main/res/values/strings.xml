@@ -74,6 +74,13 @@
     <string name="we_error">Wear Engine: error %1$s. Check that Huawei Health is installed and signed in, the app is registered in AppGallery Connect with Wear Engine access, and the watch app package/fingerprint are set in gradle.properties.</string>
 
     <string name="settings">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System</string>
+    <string name="language_russian">Русский</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese_simplified">简体中文</string>
+    <string name="language_french">Français</string>
+    <string name="language_hint">The system language is used by default. You can override it for this app.</string>
     <string name="settings_appearance">Appearance</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -147,6 +154,9 @@
     <string name="location_share">Share</string>
     <string name="location_share_photo">Add photo</string>
     <string name="location_share_title">Share location</string>
+    <string name="location_share_measurements">Altitude: %1$s · Pressure: %2$s</string>
+    <string name="track_speed_format">%.1f km/h</string>
+    <string name="duration_minutes">%1$d min</string>
     <string name="track_import">Import GPX from device or Drive</string>
     <string name="track_importing">Importing GPX…</string>
     <string name="track_view_on_map">Show track on map</string>
@@ -240,6 +250,8 @@
     <string name="widget_health_waiting">open app</string>
     <string name="widget_updated">updated %1$s</string>
     <string name="widget_open_to_update">tap to update</string>
+    <string name="widget_pressure_missing">pressure · unavailable</string>
+    <string name="widget_coordinates_missing">coordinates · unavailable</string>
     <string name="widget_label_heart">PULSE</string>
     <string name="widget_label_oxygen">SpO₂</string>
     <string name="widget_label_steps">STEPS</string>
@@ -268,4 +280,6 @@
     <string name="cd_center_map">Center on my location</string>
     <string name="cd_north_map">North up</string>
     <string name="cd_map_layer">Map layer</string>
+    <string name="error_gpx_import">GPX import failed</string><string name="error_gpx_open">Could not open GPX</string><string name="error_gpx_save">Could not save GPX</string><string name="error_gpx_no_coordinates">The GPX contains no track coordinates</string>
+    <string name="error_map_import">Map import failed</string><string name="error_map_download">Map download failed</string><string name="error_map_region_missing">Region is missing from the catalog</string><string name="error_map_open_file">Could not open the selected file</string><string name="error_map_save">Could not save the map</string><string name="error_map_not_found">Map not found</string><string name="error_map_invalid_name">Invalid map name</string><string name="error_map_delete">Could not delete the map</string><string name="error_map_delete_terrain">Could not delete terrain data</string><string name="error_map_invalid_file">The map file is empty or damaged</string><string name="error_map_read_header">Could not read the map header</string><string name="error_map_pmtiles_v3">A PMTiles version 3 file is required</string><string name="error_map_checksum">Map checksum does not match</string><string name="error_map_update">Could not update the map</string>
 </resources>

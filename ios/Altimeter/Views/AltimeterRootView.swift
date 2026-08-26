@@ -11,10 +11,10 @@ enum AppTab: Hashable {
 
     var title: String {
         switch self {
-        case .home: "Главная"
-        case .map: "Карта"
-        case .track: "Поход"
-        case .data: "Данные"
+        case .home: L10n.string("Главная")
+        case .map: L10n.string("Карта")
+        case .track: L10n.string("Поход")
+        case .data: L10n.string("Данные")
         }
     }
 }
@@ -123,17 +123,24 @@ private struct FullMapScreen: View {
     }
 
     private func prepareShare(coordinate: CLLocationCoordinate2D) {
-        let altitude = model.state.altitude.map { String(format: "%.0f м", $0) } ?? "—"
-        let pressure = model.state.pressureHPA.map { String(format: "%.1f гПа", $0) } ?? "—"
+        let altitude = model.state.altitude.map {
+            L10n.string(
+                "format.altitude.value",
+                Int(model.unit.value(fromMeters: $0).rounded()),
+                model.unit.symbol
+            )
+        } ?? "—"
+        let pressure = model.state.pressureHPA.map { L10n.string("format.pressure", $0) } ?? "—"
         let formatter = DateFormatter()
+        formatter.locale = model.appLanguage.locale
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let link = "https://maps.apple.com/?ll=\(coordinate.latitude),\(coordinate.longitude)"
         let text = """
-        📍 (String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude))
-        Высота: (altitude) · Давление: (pressure)
-        (formatter.string(from: Date()))
-        (link)
+        📍 \(String(format: "%.5f, %.5f", coordinate.latitude, coordinate.longitude))
+        \(L10n.string("share.measurements", altitude, pressure))
+        \(formatter.string(from: Date()))
+        \(link)
 
         Errarium™ by Aleksey Hermes
         errarium.ai@gmail.com

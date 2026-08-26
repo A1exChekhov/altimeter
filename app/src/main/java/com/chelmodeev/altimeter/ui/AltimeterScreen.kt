@@ -142,6 +142,7 @@ data class ScreenActions(
     val onToggleDarkTheme: (Boolean) -> Unit,
     val onToggleAutoTrack: (Boolean) -> Unit,
     val onSetTrackSampling: (TrackSamplingMode) -> Unit,
+    val onSetLanguage: (String) -> Unit,
     val onResetStats: () -> Unit,
     val onStartTrack: () -> Unit,
     val onStopTrack: () -> Unit,
@@ -1805,7 +1806,7 @@ private fun ChartCard(
         TrendLine(
             key = "altitude",
             label = altitudeLabel,
-            unit = if (state.unit == AltUnit.METERS) " м" else " ft",
+            unit = " ${stringResource(if (state.unit == AltUnit.METERS) R.string.unit_m else R.string.unit_ft)}",
             color = altitudeColor,
             points = state.history.map { it.timeMs to it.altitude },
         ),
@@ -2207,7 +2208,7 @@ private fun TrackCard(
                     label = stringResource(R.string.track_moving_speed),
                     value = if (t.movingTimeMs > 0) String.format(
                         java.util.Locale.getDefault(),
-                        "%.1f км/ч",
+                        stringResource(R.string.track_speed_format),
                         t.distanceM / (t.movingTimeMs / 3_600_000.0),
                     ) else "—",
                     modifier = Modifier.weight(1f),
