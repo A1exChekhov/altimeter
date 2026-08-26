@@ -357,7 +357,12 @@ jobs:
             -destination "generic/platform=iOS" \
             -archivePath build/Altimeter.xcarchive \
             -derivedDataPath build/ios-testflight \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$API_KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_ISSUER_ID" \
             DEVELOPMENT_TEAM=76UD6VNBTE \
+            CODE_SIGN_STYLE=Automatic \
             ALTIMETER_APP_PROFILE_NAME="$APP_STORE_PROFILE_NAME" \
             ALTIMETER_WIDGET_PROFILE_NAME="$WIDGET_APP_STORE_PROFILE_NAME" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
