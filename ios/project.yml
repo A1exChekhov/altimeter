@@ -30,6 +30,12 @@ targets:
           - Resources
       - path: Altimeter/Resources
         buildPhase: resources
+    entitlements:
+      path: Altimeter/Supporting/Altimeter.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.security.application-groups:
+          - group.ai.errarium.altimeter
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.errarium.altimeter
@@ -61,6 +67,11 @@ targets:
       - path: Altimeter/Shared/WidgetSnapshotStore.swift
       - path: AltimeterWidget/PrivacyInfo.xcprivacy
         buildPhase: resources
+    entitlements:
+      path: AltimeterWidget/AltimeterWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.ai.errarium.altimeter
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.errarium.altimeter.widget
