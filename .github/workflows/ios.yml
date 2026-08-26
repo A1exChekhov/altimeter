@@ -293,6 +293,23 @@ jobs:
         working-directory: ios
         run: xcodegen generate
 
+      - name: Verify generated project entitlements
+        run: |
+          set -euo pipefail
+
+          APP_ENTITLEMENTS="ios/Altimeter/Supporting/Altimeter.entitlements"
+          WIDGET_ENTITLEMENTS="ios/AltimeterWidget/AltimeterWidget.entitlements"
+
+          plutil -lint "$APP_ENTITLEMENTS"
+          plutil -lint "$WIDGET_ENTITLEMENTS"
+          test "$(plutil -extract com.apple.developer.healthkit raw "$APP_ENTITLEMENTS")" = "true"
+          plutil -extract com.apple.security.application-groups xml1 \
+            -o - "$APP_ENTITLEMENTS" \
+            | grep -F "group.ai.errarium.altimeter"
+          plutil -extract com.apple.security.application-groups xml1 \
+            -o - "$WIDGET_ENTITLEMENTS" \
+            | grep -F "group.ai.errarium.altimeter"
+
       - name: Install distribution identity and App Store Connect key
         env:
           IOS_CERTIFICATE_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
