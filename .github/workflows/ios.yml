@@ -389,7 +389,8 @@ jobs:
           for profile in "$APP_PROFILE_PATH" "$WIDGET_PROFILE_PATH"; do
             plist="$profile.plist"
             security cms -D -i "$profile" > "$plist"
-            if /usr/libexec/PlistBuddy -c 'Print :IsXcodeManaged' "$plist" >/dev/null 2>&1; then
+            is_xcode_managed=$(/usr/libexec/PlistBuddy -c 'Print :IsXcodeManaged' "$plist" 2>/dev/null || true)
+            if [ "$is_xcode_managed" = "true" ]; then
               echo "::error::Expected a manually managed App Store profile"
               exit 1
             fi
