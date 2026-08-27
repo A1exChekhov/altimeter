@@ -89,6 +89,10 @@
 "photo.stamp.pressure" = "Давление · %@";
 "map.choice.apple" = "Apple";
 "map.choice.topographic" = "Туристическая";
+"map.choice.appleStandard" = "Apple · Карта";
+"map.choice.appleSatellite" = "Apple · Спутник";
+"map.choice.appleHybrid" = "Apple · Гибрид";
+"map.choice.outdoor" = "Туристическая";
 "map.choice.kailash" = "Кайлас офлайн";
 "map.choice.accessibility" = "Выбрать карту";
 "map.choice.on.map" = "Карта переключается компактной кнопкой слоёв прямо на экране карты.";

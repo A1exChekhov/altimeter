@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.chelmodeev.altimeter.BuildConfig
 import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.logic.continuousMapTrack
+import com.chelmodeev.altimeter.model.OnlineMapMode
 import com.chelmodeev.altimeter.model.TrackMapPoint
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
@@ -73,7 +74,7 @@ private class GoogleMapSession(context: Context) {
         view.onCreate(null)
         view.getMapAsync { ready ->
             map = ready
-            ready.mapType = GoogleMap.MAP_TYPE_TERRAIN
+            ready.mapType = GoogleMap.MAP_TYPE_NORMAL
             ready.uiSettings.isCompassEnabled = false
             ready.uiSettings.isMapToolbarEnabled = false
             ready.uiSettings.isMyLocationButtonEnabled = false
@@ -133,6 +134,7 @@ internal fun GoogleMapSurface(
     accent: Color,
     trackPoints: List<TrackMapPoint>,
     trackRecording: Boolean,
+    mapMode: OnlineMapMode,
     bottomControlPadding: Dp,
     expanded: Boolean,
     modifier: Modifier = Modifier,
@@ -140,6 +142,15 @@ internal fun GoogleMapSurface(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val session = remember(context) { GoogleMapSession(context) }
+
+    LaunchedEffect(session.map, mapMode) {
+        session.map?.mapType = when (mapMode) {
+            OnlineMapMode.GOOGLE_TERRAIN -> GoogleMap.MAP_TYPE_TERRAIN
+            OnlineMapMode.GOOGLE_SATELLITE -> GoogleMap.MAP_TYPE_SATELLITE
+            OnlineMapMode.GOOGLE_HYBRID -> GoogleMap.MAP_TYPE_HYBRID
+            else -> GoogleMap.MAP_TYPE_NORMAL
+        }
+    }
 
     DisposableEffect(session, lifecycleOwner) {
         val lifecycle = lifecycleOwner.lifecycle

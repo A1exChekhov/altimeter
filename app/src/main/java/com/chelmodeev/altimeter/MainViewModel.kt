@@ -24,6 +24,7 @@ import com.chelmodeev.altimeter.logic.AdvisorInput
 import com.chelmodeev.altimeter.maps.OfflineMapRepository
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
+import com.chelmodeev.altimeter.model.OnlineMapMode
 import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.TrackMapPoint
 import com.chelmodeev.altimeter.model.TrackSamplingMode
@@ -95,7 +96,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         calibrationMode = s.calibrationMode,
                         manualAltitude = s.manualAltitude,
                         qnhHpa = s.qnhHpa,
-                        topoMap = s.topoMap,
+                        onlineMapMode = s.onlineMapMode,
                         keepScreenOn = s.keepScreenOn,
                         autoSendToWatch = s.autoSendToWatch,
                     )
@@ -140,7 +141,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             refreshHealthStatus()
             while (true) {
-                delay(120_000)
+                delay(60_000)
                 if (appInForeground) {
                     refreshVitals()
                     autoReconnectBluetoothHeartRate()
@@ -239,7 +240,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setUnit(u: AltUnit) = launchIo { settingsRepo.setUnit(u) }
     fun setCalibrationAuto() = launchIo { settingsRepo.setCalibrationAuto() }
-    fun setTopo(v: Boolean) = launchIo { settingsRepo.setTopo(v) }
+    fun setOnlineMapMode(v: OnlineMapMode) = launchIo { settingsRepo.setOnlineMapMode(v) }
     fun setKeepScreenOn(v: Boolean) = launchIo { settingsRepo.setKeepScreenOn(v) }
     fun setAutoSend(v: Boolean) = launchIo { settingsRepo.setAutoSend(v) }
     fun setDarkTheme(v: Boolean) = launchIo { settingsRepo.setDarkTheme(v) }
@@ -336,7 +337,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 // activity becomes visible. Retry once instead of leaving a
                 // blank pulse until the next long periodic refresh.
                 delay(5_000)
-                if (appInForeground && _ui.value.vitals.heartRateBpm == null) refreshVitals()
+                if (appInForeground && _ui.value.vitals.needsHealthRetry()) refreshVitals()
             }
         }
     }
@@ -980,4 +981,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         const val GRAPH_WINDOW_MS = 6 * 60 * 60 * 1_000L
         const val KEY_BLUETOOTH_AUTO_RECONNECT = "auto_reconnect"
     }
+}
+
+private fun com.chelmodeev.altimeter.model.VitalsState.needsHealthRetry(): Boolean {
+    val missingHeartRate = (heartRatePermissionGranted || restingHeartRatePermissionGranted) &&
+        heartRateBpm == null
+    val missingSteps = stepsPermissionGranted && stepsToday == null
+    val missingOxygen = spo2PermissionGranted && spo2Percent == null
+    return missingHeartRate || missingSteps || missingOxygen
 }

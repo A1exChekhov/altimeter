@@ -46,6 +46,10 @@
     <string name="map_source_choose">Choisir la carte</string>
     <string name="map_source_outdoor">Randonnée</string>
     <string name="map_source_google">Google</string>
+    <string name="map_source_google_normal">Google · Plan</string>
+    <string name="map_source_google_terrain">Google · Relief</string>
+    <string name="map_source_google_satellite">Google · Satellite</string>
+    <string name="map_source_google_hybrid">Google · Hybride</string>
     <string name="map_source_google_unavailable">Google · clé requise</string>
     <string name="map_source_offline_short">Hors ligne</string>
     <string name="settings_map_switch_hint">Changez de carte avec le bouton compact des couches directement sur la carte. Les régions hors ligne sont gérées ci-dessous.</string>

@@ -295,6 +295,10 @@
     <string name="map_source_choose">Choose map</string>
     <string name="map_source_outdoor">Outdoor</string>
     <string name="map_source_google">Google</string>
+    <string name="map_source_google_normal">Google · Map</string>
+    <string name="map_source_google_terrain">Google · Terrain</string>
+    <string name="map_source_google_satellite">Google · Satellite</string>
+    <string name="map_source_google_hybrid">Google · Hybrid</string>
     <string name="map_source_google_unavailable">Google · key required</string>
     <string name="map_source_offline_short">Offline</string>
     <string name="settings_map_switch_hint">Switch maps with the compact layers button directly on the map. Offline regions are managed below.</string>

@@ -10,6 +10,8 @@ val androidSigningKeyAlias = System.getenv("ANDROID_SIGNING_KEY_ALIAS")
 val androidSigningKeyPassword = System.getenv("ANDROID_SIGNING_KEY_PASSWORD")
 val googleMapsApiKey = System.getenv("GOOGLE_MAPS_ANDROID_API_KEY")
     ?: (project.findProperty("GOOGLE_MAPS_ANDROID_API_KEY") as? String).orEmpty()
+val huaweiAppId = System.getenv("HUAWEI_APP_ID")
+    ?: (project.findProperty("HUAWEI_APP_ID") as? String).orEmpty()
 
 android {
     namespace = "com.chelmodeev.altimeter"
@@ -19,13 +21,12 @@ android {
         applicationId = "com.chelmodeev.altimeter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "1.6.7"
+        versionCode = 28
+        versionName = "1.6.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val watchPkg = (project.findProperty("WATCH_APP_PACKAGE") as? String).orEmpty()
         val watchFp = (project.findProperty("WATCH_APP_FINGERPRINT") as? String).orEmpty()
-        val huaweiAppId = (project.findProperty("HUAWEI_APP_ID") as? String).orEmpty()
         buildConfigField("String", "WATCH_APP_PACKAGE", "\"$watchPkg\"")
         buildConfigField("String", "WATCH_APP_FINGERPRINT", "\"$watchFp\"")
         buildConfigField("String", "HUAWEI_APP_ID", "\"$huaweiAppId\"")

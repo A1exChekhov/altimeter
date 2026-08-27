@@ -103,7 +103,7 @@ Profiles должны относиться к Team `76UD6VNBTE`, bundle IDs `ai.
 
 ### Загрузка в TestFlight
 
-Режим `distribution = testflight` собирает App Store IPA версии 1.2.5 с уникальным
+Режим `distribution = testflight` собирает App Store IPA версии 1.2.6 с уникальным
 build number из `GITHUB_RUN_NUMBER` и загружает его в App Store Connect. Для него нужны:
 
 - активная Apple Developer Program и карточка `ai.errarium.altimeter` в App Store Connect;

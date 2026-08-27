@@ -207,6 +207,10 @@
 "photo.stamp.pressure" = "气压 · %@";
 "map.choice.apple" = "Apple";
 "map.choice.topographic" = "户外";
+"map.choice.appleStandard" = "Apple · 地图";
+"map.choice.appleSatellite" = "Apple · 卫星";
+"map.choice.appleHybrid" = "Apple · 混合";
+"map.choice.outdoor" = "户外";
 "map.choice.kailash" = "冈仁波齐离线";
 "map.choice.accessibility" = "选择地图";
 "map.choice.on.map" = "可直接使用地图上的紧凑图层按钮切换地图。";

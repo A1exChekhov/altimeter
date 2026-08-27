@@ -4,7 +4,7 @@ import SwiftUI
 struct TopoMapView: UIViewRepresentable {
     let coordinate: CLLocationCoordinate2D?
     let trackPoints: [TrackMapPoint]
-    let topographic: Bool
+    let onlineStyle: OnlineMapStyle
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -25,13 +25,13 @@ struct TopoMapView: UIViewRepresentable {
             scale.leadingAnchor.constraint(equalTo: map.leadingAnchor, constant: 12),
             scale.bottomAnchor.constraint(equalTo: map.safeAreaLayoutGuide.bottomAnchor, constant: -12),
         ])
-        let modeChanged = context.coordinator.configureOverlay(on: map, topographic: topographic)
+        let modeChanged = context.coordinator.configureOverlay(on: map, onlineStyle: onlineStyle)
         context.coordinator.configureRoute(on: map, points: trackPoints, force: modeChanged)
         return map
     }
 
     func updateUIView(_ map: MKMapView, context: Context) {
-        let modeChanged = context.coordinator.configureOverlay(on: map, topographic: topographic)
+        let modeChanged = context.coordinator.configureOverlay(on: map, onlineStyle: onlineStyle)
         context.coordinator.configureRoute(on: map, points: trackPoints, force: modeChanged)
         guard let coordinate else { return }
         if context.coordinator.lastCenteredCoordinate == nil {
@@ -52,16 +52,21 @@ struct TopoMapView: UIViewRepresentable {
         private var tileOverlay: MKTileOverlay?
         private var routeOverlays: [MKPolyline] = []
         private var routePoints: [TrackMapPoint] = []
-        private var currentMode: Bool?
+        private var currentMode: OnlineMapStyle?
 
         @discardableResult
-        func configureOverlay(on map: MKMapView, topographic: Bool) -> Bool {
-            guard currentMode != topographic else { return false }
-            currentMode = topographic
+        func configureOverlay(on map: MKMapView, onlineStyle: OnlineMapStyle) -> Bool {
+            guard currentMode != onlineStyle else { return false }
+            currentMode = onlineStyle
             if let tileOverlay { map.removeOverlay(tileOverlay) }
             tileOverlay = nil
-            map.mapType = topographic ? .standard : .mutedStandard
-            guard topographic else { return true }
+            switch onlineStyle {
+            case .appleStandard: map.mapType = .standard
+            case .appleSatellite: map.mapType = .satellite
+            case .appleHybrid: map.mapType = .hybrid
+            case .outdoor: map.mapType = .standard
+            }
+            guard onlineStyle == .outdoor else { return true }
 
             let overlay = MKTileOverlay(
                 urlTemplate: "https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
@@ -113,7 +118,7 @@ struct TopoMapView: UIViewRepresentable {
 
 struct MapCardView: View {
     let state: AltimeterState
-    @Binding var topographic: Bool
+    @Binding var onlineStyle: OnlineMapStyle
     @Binding var sourceMode: MapSourceMode
 
     private var usesKailash: Bool {
@@ -131,7 +136,7 @@ struct MapCardView: View {
                     AltimeterMapSurface(
                         coordinate: state.coordinate,
                         trackPoints: state.trackPoints,
-                        topographic: $topographic,
+                        onlineStyle: $onlineStyle,
                         sourceMode: $sourceMode,
                         compactSourceControl: true
                     )
@@ -145,7 +150,7 @@ struct MapCardView: View {
 
                 Text(usesKailash
                      ? "© OpenStreetMap contributors · Terrain © Mapterhorn"
-                     : (topographic
+                     : (onlineStyle == .outdoor
                         ? "© OpenStreetMap contributors · © OpenTopoMap (CC-BY-SA)"
                         : "Картографические данные © Apple"))
                     .font(.caption2)
