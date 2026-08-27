@@ -59,6 +59,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -110,6 +112,7 @@ import com.chelmodeev.altimeter.model.CalibrationMode
 import com.chelmodeev.altimeter.model.TrackSamplingMode
 import com.chelmodeev.altimeter.model.SavedTrack
 import com.chelmodeev.altimeter.model.MslSource
+import com.chelmodeev.altimeter.model.OnlineMapMode
 import com.chelmodeev.altimeter.model.UiState
 import com.chelmodeev.altimeter.model.VitalsSource
 import com.chelmodeev.altimeter.ui.theme.zoneAccent
@@ -137,7 +140,7 @@ data class ScreenActions(
     val onCalibAuto: () -> Unit,
     val onCalibManual: (String) -> Unit,
     val onCalibQnh: (String) -> Unit,
-    val onToggleTopo: (Boolean) -> Unit,
+    val onSetOnlineMapMode: (OnlineMapMode) -> Unit,
     val onToggleKeepOn: (Boolean) -> Unit,
     val onToggleAutoSend: (Boolean) -> Unit,
     val onToggleDarkTheme: (Boolean) -> Unit,
@@ -431,7 +434,7 @@ private fun HomePage(
             latitude = state.latitude,
             longitude = state.longitude,
             accuracyMeters = state.gpsAccuracy,
-            topo = state.topoMap,
+            onlineMapMode = state.onlineMapMode,
             accent = accent,
             trackPoints = state.mapTrack,
             trackRecording = state.tracking.recording,
@@ -442,11 +445,11 @@ private fun HomePage(
             expanded = false,
             onSelectOutdoorMap = {
                 actions.onUseOnlineMap()
-                actions.onToggleTopo(true)
+                actions.onSetOnlineMapMode(OnlineMapMode.OUTDOOR)
             },
-            onSelectGoogleMap = {
+            onSelectGoogleMap = { mode ->
                 actions.onUseOnlineMap()
-                actions.onToggleTopo(false)
+                actions.onSetOnlineMapMode(mode)
             },
             onSelectOfflineMap = actions.onActivateOfflineMap,
             onToggleExpanded = onOpenMap,
@@ -472,52 +475,13 @@ private fun MapPage(
 ) {
     var showPhotoSourceChooser by rememberSaveable { mutableStateOf(false) }
 
-    if (showPhotoSourceChooser) {
-        AlertDialog(
-            onDismissRequest = { showPhotoSourceChooser = false },
-            title = { Text(stringResource(R.string.location_photo_source_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(
-                        onClick = {
-                            showPhotoSourceChooser = false
-                            actions.onCaptureLocationPhoto()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Rounded.PhotoCamera, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.location_photo_camera))
-                    }
-                    OutlinedButton(
-                        onClick = {
-                            showPhotoSourceChooser = false
-                            actions.onPickLocationPhoto()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Rounded.PhotoLibrary, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.location_photo_gallery))
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showPhotoSourceChooser = false }) {
-                    Text(stringResource(R.string.location_photo_cancel))
-                }
-            },
-        )
-    }
-
     Box(Modifier.fillMaxSize()) {
         MapCard(
             session = mapSession,
             latitude = state.latitude,
             longitude = state.longitude,
             accuracyMeters = state.gpsAccuracy,
-            topo = state.topoMap,
+            onlineMapMode = state.onlineMapMode,
             accent = accent,
             trackPoints = state.mapTrack,
             trackRecording = state.tracking.recording,
@@ -530,11 +494,11 @@ private fun MapPage(
             bottomControlPadding = 146.dp,
             onSelectOutdoorMap = {
                 actions.onUseOnlineMap()
-                actions.onToggleTopo(true)
+                actions.onSetOnlineMapMode(OnlineMapMode.OUTDOOR)
             },
-            onSelectGoogleMap = {
+            onSelectGoogleMap = { mode ->
                 actions.onUseOnlineMap()
-                actions.onToggleTopo(false)
+                actions.onSetOnlineMapMode(mode)
             },
             onSelectOfflineMap = actions.onActivateOfflineMap,
             onToggleExpanded = {},
@@ -593,18 +557,41 @@ private fun MapPage(
                         Spacer(Modifier.size(6.dp))
                         Text(stringResource(R.string.location_share), maxLines = 1, fontSize = 11.sp)
                     }
-                    FilledTonalButton(
-                        onClick = { showPhotoSourceChooser = true },
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        modifier = Modifier.height(40.dp).weight(1f),
-                    ) {
-                        Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text(stringResource(R.string.location_share_photo), maxLines = 1, fontSize = 11.sp)
+                    Box(modifier = Modifier.weight(1f)) {
+                        FilledTonalButton(
+                            onClick = { showPhotoSourceChooser = true },
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ),
+                            modifier = Modifier.height(40.dp).fillMaxWidth(),
+                        ) {
+                            Icon(Icons.Rounded.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.size(6.dp))
+                            Text(stringResource(R.string.location_share_photo), maxLines = 1, fontSize = 11.sp)
+                        }
+                        DropdownMenu(
+                            expanded = showPhotoSourceChooser,
+                            onDismissRequest = { showPhotoSourceChooser = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.location_photo_camera)) },
+                                leadingIcon = { Icon(Icons.Rounded.PhotoCamera, contentDescription = null) },
+                                onClick = {
+                                    showPhotoSourceChooser = false
+                                    actions.onCaptureLocationPhoto()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.location_photo_gallery)) },
+                                leadingIcon = { Icon(Icons.Rounded.PhotoLibrary, contentDescription = null) },
+                                onClick = {
+                                    showPhotoSourceChooser = false
+                                    actions.onPickLocationPhoto()
+                                },
+                            )
+                        }
                     }
                 }
             }

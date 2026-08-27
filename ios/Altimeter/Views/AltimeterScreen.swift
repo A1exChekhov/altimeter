@@ -64,7 +64,7 @@ struct AltimeterScreen: View {
             permissionCard
             MapCardView(
                 state: state,
-                topographic: $model.useTopographicMap,
+                onlineStyle: $model.onlineMapStyle,
                 sourceMode: $model.mapSourceMode
             )
             healthCard

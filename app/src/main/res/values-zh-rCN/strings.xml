@@ -65,6 +65,10 @@
     <string name="map_source_choose">选择地图</string>
     <string name="map_source_outdoor">户外</string>
     <string name="map_source_google">Google</string>
+    <string name="map_source_google_normal">Google · 地图</string>
+    <string name="map_source_google_terrain">Google · 地形</string>
+    <string name="map_source_google_satellite">Google · 卫星</string>
+    <string name="map_source_google_hybrid">Google · 混合</string>
     <string name="map_source_google_unavailable">Google · 需要密钥</string>
     <string name="map_source_offline_short">离线</string>
     <string name="settings_map_switch_hint">可直接使用地图上的紧凑图层按钮切换地图。下方仅管理离线区域。</string>

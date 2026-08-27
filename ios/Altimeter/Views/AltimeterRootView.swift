@@ -51,7 +51,6 @@ private struct FullMapScreen: View {
     @State private var showsSettings = false
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var selectedPhotoURL: URL?
-    @State private var showsPhotoSourceMenu = false
     @State private var showsCamera = false
     @State private var showsPhotoLibrary = false
     @State private var photoErrorMessage: String?
@@ -64,7 +63,7 @@ private struct FullMapScreen: View {
                 AltimeterMapSurface(
                     coordinate: model.state.coordinate,
                     trackPoints: model.state.trackPoints,
-                    topographic: $model.useTopographicMap,
+                    onlineStyle: $model.onlineMapStyle,
                     sourceMode: $model.mapSourceMode
                 )
                 .ignoresSafeArea(edges: .bottom)
@@ -85,8 +84,21 @@ private struct FullMapScreen: View {
                             }
                             .buttonStyle(.borderedProminent)
 
-                            Button {
-                                showsPhotoSourceMenu = true
+                            Menu {
+                                Button {
+                                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                        showsCamera = true
+                                    } else {
+                                        photoErrorMessage = L10n.string("photo.camera.unavailable")
+                                    }
+                                } label: {
+                                    Label(L10n.string("photo.source.camera"), systemImage: "camera.fill")
+                                }
+                                Button {
+                                    showsPhotoLibrary = true
+                                } label: {
+                                    Label(L10n.string("photo.source.gallery"), systemImage: "photo.on.rectangle")
+                                }
                             } label: {
                                 Label(
                                     "Добавить фото",
@@ -121,21 +133,6 @@ private struct FullMapScreen: View {
             selection: $selectedPhoto,
             matching: .images
         )
-        .confirmationDialog(
-            L10n.string("photo.source.title"),
-            isPresented: $showsPhotoSourceMenu,
-            titleVisibility: .visible
-        ) {
-            Button(L10n.string("photo.source.camera")) {
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    showsCamera = true
-                } else {
-                    photoErrorMessage = L10n.string("photo.camera.unavailable")
-                }
-            }
-            Button(L10n.string("photo.source.gallery")) { showsPhotoLibrary = true }
-            Button(L10n.string("photo.source.cancel"), role: .cancel) {}
-        }
         .alert(
             L10n.string("photo.error.title"),
             isPresented: Binding(

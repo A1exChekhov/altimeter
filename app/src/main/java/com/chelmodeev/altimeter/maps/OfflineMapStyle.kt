@@ -39,7 +39,7 @@ fun offlineMapStyle(path: String, includeOnlineFallback: Boolean = false): Strin
             }"""
     } else ""
     val fallbackLayer = if (includeOnlineFallback) {
-        """{"id":"online-topo","type":"raster","source":"online-topo"},"""
+        """{"id":"online-topo","type":"raster","source":"online-topo","paint":{"raster-opacity":0.72,"raster-fade-duration":180}},"""
     } else ""
     return """
         {
@@ -55,11 +55,11 @@ fun offlineMapStyle(path: String, includeOnlineFallback: Boolean = false): Strin
           },
           "layers": [
             {"id":"background","type":"background","paint":{"background-color":"#e8e2d1"}},
-            $fallbackLayer
             {"id":"earth","type":"fill","source":"protomaps","source-layer":"earth","paint":{"fill-color":"#e8e2d1"}},
             {"id":"landcover","type":"fill","source":"protomaps","source-layer":"landcover","paint":{"fill-color":["match",["get","kind"],"forest","#bfd3ae","glacier","#d9edf1","scrub","#d8d6af","grassland","#d5d8ae","#d9d5bb"],"fill-opacity":0.8}},
             {"id":"landuse","type":"fill","source":"protomaps","source-layer":"landuse","paint":{"fill-color":["match",["get","kind"],"forest","#b6cda6","wood","#b6cda6","national_park","#c8dcb8","nature_reserve","#c8dcb8","glacier","#d9edf1","sand","#ead9aa","bare_rock","#c9c1b4","#d7d3bb"],"fill-opacity":0.62}},
             $hillshadeLayer
+            $fallbackLayer
             {"id":"water-fill","type":"fill","source":"protomaps","source-layer":"water","filter":["==",["geometry-type"],"Polygon"],"paint":{"fill-color":"#8fc8dc"}},
             {"id":"water-line","type":"line","source":"protomaps","source-layer":"water","filter":["==",["geometry-type"],"LineString"],"paint":{"line-color":"#63a9c6","line-width":["interpolate",["linear"],["zoom"],8,0.7,14,2.2]}},
             {"id":"boundaries","type":"line","source":"protomaps","source-layer":"boundaries","paint":{"line-color":"#aa9285","line-width":0.7,"line-dasharray":[4,3],"line-opacity":0.6}},

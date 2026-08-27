@@ -102,6 +102,14 @@ data class OfflineMapsState(
 
 enum class VitalsSource { HUAWEI_HEALTH, HEALTH_CONNECT, BLUETOOTH }
 
+enum class OnlineMapMode {
+    OUTDOOR,
+    GOOGLE_NORMAL,
+    GOOGLE_TERRAIN,
+    GOOGLE_SATELLITE,
+    GOOGLE_HYBRID,
+}
+
 enum class BluetoothVitalsState {
     IDLE,
     SCANNING,
@@ -192,7 +200,7 @@ data class UiState(
     val calibrationMode: CalibrationMode = CalibrationMode.AUTO_GPS,
     val manualAltitude: Double = 0.0,
     val qnhHpa: Double = 1013.25,
-    val topoMap: Boolean = true,
+    val onlineMapMode: OnlineMapMode = OnlineMapMode.OUTDOOR,
     val keepScreenOn: Boolean = true,
     val autoSendToWatch: Boolean = false,
 

@@ -155,7 +155,7 @@ class MainActivity : ComponentActivity() {
                         onCalibAuto = viewModel::setCalibrationAuto,
                         onCalibManual = viewModel::calibrateManual,
                         onCalibQnh = viewModel::setQnh,
-                        onToggleTopo = viewModel::setTopo,
+                        onSetOnlineMapMode = viewModel::setOnlineMapMode,
                         onToggleKeepOn = viewModel::setKeepScreenOn,
                         onToggleAutoSend = viewModel::setAutoSend,
                         onToggleDarkTheme = viewModel::setDarkTheme,

@@ -207,6 +207,10 @@
 "photo.stamp.pressure" = "Pression · %@";
 "map.choice.apple" = "Apple";
 "map.choice.topographic" = "Randonnée";
+"map.choice.appleStandard" = "Apple · Plan";
+"map.choice.appleSatellite" = "Apple · Satellite";
+"map.choice.appleHybrid" = "Apple · Hybride";
+"map.choice.outdoor" = "Randonnée";
 "map.choice.kailash" = "Kailash hors ligne";
 "map.choice.accessibility" = "Choisir la carte";
 "map.choice.on.map" = "Changez de carte avec le bouton compact des couches directement sur la carte.";

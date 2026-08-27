@@ -32,8 +32,8 @@ final class AppModel: ObservableObject {
             applyCalibration()
         }
     }
-    @Published var useTopographicMap: Bool {
-        didSet { defaults.set(useTopographicMap, forKey: Keys.topographicMap) }
+    @Published var onlineMapStyle: OnlineMapStyle {
+        didSet { defaults.set(onlineMapStyle.rawValue, forKey: Keys.onlineMapStyle) }
     }
     @Published var mapSourceMode: MapSourceMode {
         didSet { defaults.set(mapSourceMode.rawValue, forKey: Keys.mapSourceMode) }
@@ -76,7 +76,10 @@ final class AppModel: ObservableObject {
         let storedQNH = store.double(forKey: Keys.qnh)
         qnhHPA = storedQNH == 0 ? 1013.25 : storedQNH
         manualOffset = store.object(forKey: Keys.manualOffset) as? Double
-        useTopographicMap = store.object(forKey: Keys.topographicMap) as? Bool ?? true
+        onlineMapStyle = OnlineMapStyle(
+            rawValue: store.string(forKey: Keys.onlineMapStyle) ?? ""
+        ) ?? ((store.object(forKey: Keys.topographicMap) as? Bool ?? true)
+              ? .outdoor : .appleStandard)
         mapSourceMode = MapSourceMode(
             rawValue: store.string(forKey: Keys.mapSourceMode) ?? ""
         ) ?? .automatic
@@ -208,6 +211,7 @@ final class AppModel: ObservableObject {
         static let qnh = "qnhHPA"
         static let manualOffset = "manualOffset"
         static let topographicMap = "useTopographicMap"
+        static let onlineMapStyle = "onlineMapStyle"
         static let mapSourceMode = "mapSourceMode"
         static let keepScreenAwake = "keepScreenAwake"
         static let darkTheme = "darkTheme"

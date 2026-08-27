@@ -8,14 +8,12 @@ import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.ParcelUuid
 import com.chelmodeev.altimeter.model.BluetoothVitalsState
 import java.util.UUID
 
@@ -61,11 +59,11 @@ class BluetoothHeartRateReader(private val context: Context) {
         listener.onState(BluetoothVitalsState.SCANNING)
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                connect(result)
+                if (result.advertisesHeartRate()) connect(result)
             }
 
             override fun onBatchScanResults(results: MutableList<ScanResult>) {
-                results.firstOrNull()?.let(::connect)
+                results.firstOrNull { it.advertisesHeartRate() }?.let(::connect)
             }
 
             override fun onScanFailed(errorCode: Int) {
@@ -74,17 +72,23 @@ class BluetoothHeartRateReader(private val context: Context) {
             }
         }
         scanCallback = callback
-        val filter = ScanFilter.Builder()
-            .setServiceUuid(ParcelUuid(HEART_RATE_SERVICE))
-            .build()
+        // Some Android Bluetooth stacks intermittently drop hardware-filtered
+        // results. Scan broadly and apply the same Heart Rate Service filter in
+        // the app so a previously working watch remains discoverable.
         scanner.startScan(
-            listOf(filter),
+            null,
             ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .build(),
             callback,
         )
         handler.postDelayed(timeout, SCAN_TIMEOUT_MS)
+    }
+
+    private fun ScanResult.advertisesHeartRate(): Boolean {
+        val record = scanRecord ?: return false
+        return record.serviceUuids.orEmpty().any { it.uuid == HEART_RATE_SERVICE } ||
+            record.serviceData.keys.any { it.uuid == HEART_RATE_SERVICE }
     }
 
     @SuppressLint("MissingPermission")
@@ -206,6 +210,6 @@ class BluetoothHeartRateReader(private val context: Context) {
         private val HEART_RATE_MEASUREMENT = UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb")
         private val CLIENT_CHARACTERISTIC_CONFIG =
             UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-        private const val SCAN_TIMEOUT_MS = 20_000L
+        private const val SCAN_TIMEOUT_MS = 30_000L
     }
 }

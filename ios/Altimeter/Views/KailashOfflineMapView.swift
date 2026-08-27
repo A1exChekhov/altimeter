@@ -6,7 +6,7 @@ import UIKit
 struct AltimeterMapSurface: View {
     let coordinate: CLLocationCoordinate2D?
     let trackPoints: [TrackMapPoint]
-    @Binding var topographic: Bool
+    @Binding var onlineStyle: OnlineMapStyle
     @Binding var sourceMode: MapSourceMode
     var compactSourceControl = false
 
@@ -26,13 +26,13 @@ struct AltimeterMapSurface: View {
                 TopoMapView(
                     coordinate: coordinate,
                     trackPoints: trackPoints,
-                    topographic: topographic
+                    onlineStyle: onlineStyle
                 )
             }
 
             MapSourceControl(
                 coordinate: coordinate,
-                topographic: $topographic,
+                onlineStyle: $onlineStyle,
                 sourceMode: $sourceMode,
                 compact: compactSourceControl
             )
@@ -43,7 +43,7 @@ struct AltimeterMapSurface: View {
 
 private struct MapSourceControl: View {
     let coordinate: CLLocationCoordinate2D?
-    @Binding var topographic: Bool
+    @Binding var onlineStyle: OnlineMapStyle
     @Binding var sourceMode: MapSourceMode
     let compact: Bool
 
@@ -51,7 +51,7 @@ private struct MapSourceControl: View {
         if sourceMode.usesKailash(at: coordinate), KailashOfflineMap.resources != nil {
             return .kailash
         }
-        return topographic ? .topographic : .apple
+        return Choice(rawValue: onlineStyle.rawValue) ?? .appleStandard
     }
 
     var body: some View {
@@ -81,11 +81,8 @@ private struct MapSourceControl: View {
 
     private func select(_ item: Choice) {
         switch item {
-        case .apple:
-            topographic = false
-            sourceMode = .online
-        case .topographic:
-            topographic = true
+        case .appleStandard, .appleSatellite, .appleHybrid, .outdoor:
+            onlineStyle = OnlineMapStyle(rawValue: item.rawValue) ?? .appleStandard
             sourceMode = .online
         case .kailash:
             sourceMode = .kailash
@@ -93,16 +90,20 @@ private struct MapSourceControl: View {
     }
 
     private enum Choice: String, CaseIterable, Identifiable {
-        case apple
-        case topographic
+        case appleStandard
+        case appleSatellite
+        case appleHybrid
+        case outdoor
         case kailash
 
         var id: String { rawValue }
         var title: String { L10n.string("map.choice.\(rawValue)") }
         var icon: String {
             switch self {
-            case .apple: "map"
-            case .topographic: "mountain.2"
+            case .appleStandard: "map"
+            case .appleSatellite: "globe.americas.fill"
+            case .appleHybrid: "square.3.layers.3d"
+            case .outdoor: "mountain.2"
             case .kailash: "arrow.down.circle"
             }
         }

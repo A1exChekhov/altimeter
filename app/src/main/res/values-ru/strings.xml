@@ -294,6 +294,10 @@
     <string name="map_source_choose">Выбрать карту</string>
     <string name="map_source_outdoor">Туристическая</string>
     <string name="map_source_google">Google</string>
+    <string name="map_source_google_normal">Google · Карта</string>
+    <string name="map_source_google_terrain">Google · Рельеф</string>
+    <string name="map_source_google_satellite">Google · Спутник</string>
+    <string name="map_source_google_hybrid">Google · Гибрид</string>
     <string name="map_source_google_unavailable">Google · нужен ключ</string>
     <string name="map_source_offline_short">Офлайн</string>
     <string name="settings_map_switch_hint">Карта переключается компактной кнопкой слоёв прямо на экране. Ниже управляются только офлайн-регионы.</string>

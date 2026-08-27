@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.chelmodeev.altimeter.model.AltUnit
 import com.chelmodeev.altimeter.model.CalibrationMode
+import com.chelmodeev.altimeter.model.OnlineMapMode
 import com.chelmodeev.altimeter.model.TrackSamplingMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -27,7 +28,7 @@ class SettingsRepository(private val context: Context) {
         val manualOffset: Double?,
         val manualAltitude: Double,
         val qnhHpa: Double,
-        val topoMap: Boolean,
+        val onlineMapMode: OnlineMapMode,
         val keepScreenOn: Boolean,
         val autoSendToWatch: Boolean,
     )
@@ -39,6 +40,7 @@ class SettingsRepository(private val context: Context) {
         val MANUAL_ALT = doublePreferencesKey("manual_alt")
         val QNH = doublePreferencesKey("qnh")
         val TOPO = booleanPreferencesKey("topo")
+        val ONLINE_MAP_MODE = stringPreferencesKey("online_map_mode")
         val KEEP_ON = booleanPreferencesKey("keep_on")
         val AUTO_SEND = booleanPreferencesKey("auto_send")
         val DARK_THEME = booleanPreferencesKey("dark_theme")
@@ -59,7 +61,10 @@ class SettingsRepository(private val context: Context) {
             manualOffset = p[K.MANUAL_OFFSET],
             manualAltitude = p[K.MANUAL_ALT] ?: 0.0,
             qnhHpa = p[K.QNH] ?: 1013.25,
-            topoMap = p[K.TOPO] ?: true,
+            onlineMapMode = enumOrDefault(
+                p[K.ONLINE_MAP_MODE],
+                if (p[K.TOPO] == false) OnlineMapMode.GOOGLE_TERRAIN else OnlineMapMode.OUTDOOR,
+            ),
             keepScreenOn = p[K.KEEP_ON] ?: true,
             autoSendToWatch = p[K.AUTO_SEND] ?: false,
         )
@@ -85,7 +90,10 @@ class SettingsRepository(private val context: Context) {
         it[K.QNH] = qnh
     }
 
-    suspend fun setTopo(v: Boolean) = context.dataStore.edit { it[K.TOPO] = v }
+    suspend fun setOnlineMapMode(v: OnlineMapMode) = context.dataStore.edit {
+        it[K.ONLINE_MAP_MODE] = v.name
+        it[K.TOPO] = v == OnlineMapMode.OUTDOOR
+    }
     suspend fun setKeepScreenOn(v: Boolean) = context.dataStore.edit { it[K.KEEP_ON] = v }
     suspend fun setAutoSend(v: Boolean) = context.dataStore.edit { it[K.AUTO_SEND] = v }
     suspend fun setDarkTheme(v: Boolean) = context.dataStore.edit { it[K.DARK_THEME] = v }

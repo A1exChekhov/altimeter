@@ -1,6 +1,16 @@
 import CoreLocation
 import Foundation
 
+enum OnlineMapStyle: String, CaseIterable, Identifiable {
+    case appleStandard
+    case appleSatellite
+    case appleHybrid
+    case outdoor
+
+    var id: String { rawValue }
+    var title: String { L10n.string("map.choice.\(rawValue)") }
+}
+
 enum MapSourceMode: String, CaseIterable, Identifiable {
     case automatic
     case online
@@ -118,6 +128,10 @@ enum KailashOfflineMap {
                     "hillshade-accent-color": "#776a59"
                 ]
             ],
+            [
+                "id": "online-topo", "type": "raster", "source": "online-topo",
+                "paint": ["raster-opacity": 0.72, "raster-fade-duration": 180]
+            ],
             ["id": "water-fill", "type": "fill", "source": "protomaps", "source-layer": "water", "filter": ["==", ["geometry-type"], "Polygon"], "paint": ["fill-color": "#8fc8dc"]],
             ["id": "water-line", "type": "line", "source": "protomaps", "source-layer": "water", "filter": ["==", ["geometry-type"], "LineString"], "paint": ["line-color": "#63a9c6", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 0.7, 14, 2.2]]],
             ["id": "boundaries", "type": "line", "source": "protomaps", "source-layer": "boundaries", "paint": ["line-color": "#aa9285", "line-width": 0.7, "line-dasharray": [4, 3], "line-opacity": 0.6]],
@@ -185,6 +199,17 @@ enum KailashOfflineMap {
                     "tileSize": 512,
                     "encoding": "terrarium",
                     "attribution": "Terrain © Mapterhorn"
+                ],
+                "online-topo": [
+                    "type": "raster",
+                    "tiles": [
+                        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png",
+                        "https://b.tile.opentopomap.org/{z}/{x}/{y}.png",
+                        "https://c.tile.opentopomap.org/{z}/{x}/{y}.png"
+                    ],
+                    "tileSize": 256,
+                    "maxzoom": 17,
+                    "attribution": "© OpenStreetMap contributors, © OpenTopoMap"
                 ]
             ],
             "layers": layers

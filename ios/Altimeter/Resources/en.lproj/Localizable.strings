@@ -207,6 +207,10 @@
 "photo.stamp.pressure" = "Pressure · %@";
 "map.choice.apple" = "Apple";
 "map.choice.topographic" = "Outdoor";
+"map.choice.appleStandard" = "Apple · Map";
+"map.choice.appleSatellite" = "Apple · Satellite";
+"map.choice.appleHybrid" = "Apple · Hybrid";
+"map.choice.outdoor" = "Outdoor";
 "map.choice.kailash" = "Kailash offline";
 "map.choice.accessibility" = "Choose map";
 "map.choice.on.map" = "Switch maps with the compact layers button directly on the map.";

@@ -66,6 +66,7 @@ import com.chelmodeev.altimeter.R
 import com.chelmodeev.altimeter.logic.continuousMapTrack
 import com.chelmodeev.altimeter.maps.offlineMapStyle
 import com.chelmodeev.altimeter.model.OfflineMapsState
+import com.chelmodeev.altimeter.model.OnlineMapMode
 import com.chelmodeev.altimeter.model.TrackMapPoint
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -230,7 +231,7 @@ fun MapCard(
     latitude: Double?,
     longitude: Double?,
     accuracyMeters: Float?,
-    topo: Boolean,
+    onlineMapMode: OnlineMapMode,
     accent: Color,
     trackPoints: List<TrackMapPoint>,
     trackRecording: Boolean,
@@ -242,7 +243,7 @@ fun MapCard(
     showExpandControl: Boolean = true,
     bottomControlPadding: Dp = 10.dp,
     onSelectOutdoorMap: () -> Unit,
-    onSelectGoogleMap: () -> Unit,
+    onSelectGoogleMap: (OnlineMapMode) -> Unit,
     onSelectOfflineMap: (String) -> Unit,
     onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
@@ -250,7 +251,8 @@ fun MapCard(
     val context = LocalContext.current
     val offlineMapPath = offlineMaps.activePath
     val googleAvailable = remember(context) { googleMapsAvailable(context) }
-    val useGoogle = offlineMapPath == null && !topo && googleAvailable
+    val useGoogle = offlineMapPath == null &&
+        onlineMapMode != OnlineMapMode.OUTDOOR && googleAvailable
     val networkAvailable = rememberNetworkAvailable()
     val map = session.map
     val styleRevision = session.styleRevision
@@ -280,7 +282,7 @@ fun MapCard(
         onDispose { session.detach() }
     }
 
-    LaunchedEffect(map, offlineMapPath, topo, networkAvailable) {
+    LaunchedEffect(map, offlineMapPath, onlineMapMode, networkAvailable) {
         if (useGoogle) return@LaunchedEffect
         val readyMap = map ?: return@LaunchedEffect
         val localPath = offlineMapPath?.takeIf { File(it).isFile }
@@ -386,6 +388,7 @@ fun MapCard(
                 accent = accent,
                 trackPoints = trackPoints,
                 trackRecording = trackRecording,
+                mapMode = onlineMapMode,
                 bottomControlPadding = bottomControlPadding,
                 expanded = expanded,
                 modifier = Modifier.fillMaxSize(),
@@ -407,7 +410,7 @@ fun MapCard(
                 .padding(10.dp),
         ) {
             MapSourceMenu(
-                topographic = topo,
+                onlineMapMode = onlineMapMode,
                 offlineMaps = offlineMaps,
                 googleAvailable = googleAvailable,
                 compact = !expanded,
@@ -541,19 +544,20 @@ fun MapCard(
 
 @Composable
 private fun MapSourceMenu(
-    topographic: Boolean,
+    onlineMapMode: OnlineMapMode,
     offlineMaps: OfflineMapsState,
     googleAvailable: Boolean,
     compact: Boolean,
     onSelectOutdoor: () -> Unit,
-    onSelectGoogle: () -> Unit,
+    onSelectGoogle: (OnlineMapMode) -> Unit,
     onSelectOffline: (String) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
     val activeOffline = offlineMaps.installed.firstOrNull { it.active }
     val currentTitle = when {
         activeOffline != null -> stringResource(R.string.map_source_offline_short)
-        !topographic && googleAvailable -> stringResource(R.string.map_source_google)
+        onlineMapMode != OnlineMapMode.OUTDOOR && googleAvailable ->
+            googleMapModeTitle(onlineMapMode)
         else -> stringResource(R.string.map_source_outdoor)
     }
     Box {
@@ -584,35 +588,35 @@ private fun MapSourceMenu(
                 text = { Text(stringResource(R.string.map_source_outdoor)) },
                 leadingIcon = {
                     Icon(
-                        if (activeOffline == null && topographic) Icons.Rounded.Check
+                        if (activeOffline == null && onlineMapMode == OnlineMapMode.OUTDOOR) Icons.Rounded.Check
                         else Icons.Rounded.Map,
                         contentDescription = null,
                     )
                 },
                 onClick = { open = false; onSelectOutdoor() },
             )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        stringResource(
-                            if (googleAvailable) R.string.map_source_google
-                            else R.string.map_source_google_unavailable
+            OnlineMapMode.entries.filter { it != OnlineMapMode.OUTDOOR }.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            if (googleAvailable) googleMapModeTitle(mode)
+                            else stringResource(R.string.map_source_google_unavailable)
                         )
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        if (activeOffline == null && !topographic && googleAvailable) {
-                            Icons.Rounded.Check
-                        } else {
-                            Icons.Rounded.Map
-                        },
-                        contentDescription = null,
-                    )
-                },
-                enabled = googleAvailable,
-                onClick = { open = false; onSelectGoogle() },
-            )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (activeOffline == null && onlineMapMode == mode && googleAvailable) {
+                                Icons.Rounded.Check
+                            } else {
+                                Icons.Rounded.Map
+                            },
+                            contentDescription = null,
+                        )
+                    },
+                    enabled = googleAvailable,
+                    onClick = { open = false; onSelectGoogle(mode) },
+                )
+            }
             offlineMaps.installed.forEach { region ->
                 DropdownMenuItem(
                     text = { Text(region.title, maxLines = 1) },
@@ -628,6 +632,17 @@ private fun MapSourceMenu(
         }
     }
 }
+
+@Composable
+private fun googleMapModeTitle(mode: OnlineMapMode): String = stringResource(
+    when (mode) {
+        OnlineMapMode.OUTDOOR -> R.string.map_source_outdoor
+        OnlineMapMode.GOOGLE_NORMAL -> R.string.map_source_google_normal
+        OnlineMapMode.GOOGLE_TERRAIN -> R.string.map_source_google_terrain
+        OnlineMapMode.GOOGLE_SATELLITE -> R.string.map_source_google_satellite
+        OnlineMapMode.GOOGLE_HYBRID -> R.string.map_source_google_hybrid
+    }
+)
 
 @Composable
 private fun rememberNetworkAvailable(): Boolean {
